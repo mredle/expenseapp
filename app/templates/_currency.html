@@ -1,0 +1,23 @@
+    <table class="table table-hover">
+        <tr>
+            <td width="70px">
+                <img src="" />
+            </td>
+            <td>
+                {% set edit_link %}
+                    <span class="currency_popup">
+                        <a href="{{ url_for('main.edit_currency', currency_id=currency.id) }}">
+                            edit
+                        </a>
+                    </span>
+                {% endset %}
+                {{ _('%(name)s: %(code)s 1 equals %(inCHF).4f: %(edit_link)s',
+                    name=currency.name, 
+                    code=currency.code,
+                    inCHF=currency.inCHF,
+                    edit_link=edit_link) }}
+                <br>
+                {{ currency.description }}
+            </td>
+        </tr>
+    </table>

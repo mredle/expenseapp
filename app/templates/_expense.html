@@ -1,0 +1,23 @@
+    <table class="table table-hover">
+        <tr>
+            <td width="70px">
+                <img src="" />
+            </td>
+            <td>
+                {% set user_link %}
+                    <span class="expense_popup">
+                        <a href="{{ url_for('main.user', username=expense.user.username) }}">
+                            {{ expense.user.username }}
+                        </a>
+                    </span>
+                {% endset %}
+                {{ _('%(when)s, %(username)s spent %(amount_str)s for %(affected_users)s:',
+                    when=moment(expense.date).fromNow(),
+                    username=user_link, 
+                    amount_str=expense.get_amount_str(),
+                    affected_users=expense.get_affected_users_str()) }}
+                <br>
+                {{ expense.description }}
+            </td>
+        </tr>
+    </table>

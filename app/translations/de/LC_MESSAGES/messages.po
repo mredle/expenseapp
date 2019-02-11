@@ -1,0 +1,553 @@
+# German translations for PROJECT.
+# Copyright (C) 2018 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2018.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2019-02-09 19:30+0100\n"
+"PO-Revision-Date: 2018-08-29 22:41+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: de\n"
+"Language-Team: de <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.6.0\n"
+
+#: app/__init__.py:25
+msgid "Please log in to access this page."
+msgstr "Bitte melde dich an um diese Seite zu sehen."
+
+#: app/auth/email.py:10 app/templates/auth/reset_password.html:5
+msgid "Reset Your Password"
+msgstr "Passwort zurücksetzen"
+
+#: app/auth/forms.py:11 app/auth/forms.py:17 app/main/forms.py:12
+msgid "Username"
+msgstr "Benutzername"
+
+#: app/auth/forms.py:12 app/auth/forms.py:19 app/auth/forms.py:39
+msgid "Password"
+msgstr "Passwort"
+
+#: app/auth/forms.py:13
+msgid "Remember Me"
+msgstr "Angemeldet bleiben"
+
+#: app/auth/forms.py:14 app/auth/routes.py:30 app/templates/auth/login.html:5
+msgid "Sign In"
+msgstr "Anmelden"
+
+#: app/auth/forms.py:18 app/auth/forms.py:35
+msgid "Email"
+msgstr "Email"
+
+#: app/auth/forms.py:21 app/auth/forms.py:41
+msgid "Repeat Password"
+msgstr "Passwort wiederhohlen"
+
+#: app/auth/forms.py:22 app/auth/routes.py:51
+#: app/templates/auth/register.html:5
+msgid "Register"
+msgstr "Registrieren"
+
+#: app/auth/forms.py:27 app/main/forms.py:26
+msgid "Please use a different username."
+msgstr "Bitte einen anderen Benutzernamen wählen."
+
+#: app/auth/forms.py:32
+msgid "Please use a different email address."
+msgstr "Bitte eine andere email Adresse wählen."
+
+#: app/auth/forms.py:36 app/auth/forms.py:42
+msgid "Request Password Reset"
+msgstr "Passwort Rücksetzung anfordern"
+
+#: app/auth/routes.py:23
+msgid "Invalid username or password"
+msgstr "Ungültiger Benutzername oder Passwort"
+
+#: app/auth/routes.py:49
+msgid "Congratulations, you are now a registered user!"
+msgstr "Gratulation, du wurdest erfolgreich registriert!"
+
+#: app/auth/routes.py:62
+msgid "Check your email for the instructions to reset your password"
+msgstr "Folge den Instruktionen im email um dein Passwort zurückzusetzen"
+
+#: app/auth/routes.py:65 app/templates/auth/reset_password_request.html:5
+msgid "Reset Password"
+msgstr "Passwort zurücksetzen"
+
+#: app/auth/routes.py:79
+msgid "Your password has been reset."
+msgstr "Dein Passwort wurde zurückgesetzt."
+
+#: app/main/forms.py:14
+msgid "About me"
+msgstr "Über mich"
+
+#: app/main/forms.py:16 app/main/forms.py:32 app/main/forms.py:37
+#: app/main/forms.py:52 app/main/forms.py:66 app/main/forms.py:71
+#: app/main/forms.py:85 app/main/forms.py:96
+msgid "Submit"
+msgstr "Senden"
+
+#: app/main/forms.py:29
+msgid "Say something"
+msgstr "Sag etwas"
+
+#: app/main/forms.py:35
+msgid "Message"
+msgstr "Nachricht"
+
+#: app/main/forms.py:40 app/main/forms.py:55
+msgid "Name"
+msgstr "Name"
+
+#: app/main/forms.py:42
+msgid "ISO-4217-Code"
+msgstr "ISO-4217-Code"
+
+#: app/main/forms.py:44
+msgid "ISO-4217-Number"
+msgstr "ISO-4217-Nummer"
+
+#: app/main/forms.py:46
+msgid "ISO-4217-Exponent"
+msgstr "ISO-4217-Exponent"
+
+#: app/main/forms.py:48
+msgid "Value in CHF"
+msgstr "Wert in CHF"
+
+#: app/main/forms.py:50 app/main/forms.py:60 app/main/forms.py:83
+#: app/main/forms.py:94
+msgid "Description"
+msgstr "Beschreibung"
+
+#: app/main/forms.py:57
+msgid "Date in Y-m-d"
+msgstr "Datum als Y-m-d"
+
+#: app/main/forms.py:62
+msgid "Change admin user"
+msgstr "Wechsle Administrator"
+
+#: app/main/forms.py:64
+msgid "Change accountant user"
+msgstr "Wechsle Buchhalter"
+
+#: app/main/forms.py:69
+msgid "Add user"
+msgstr "Benutzer hinzufügen"
+
+#: app/main/forms.py:74 app/main/forms.py:88
+msgid "Currency"
+msgstr "Währung"
+
+#: app/main/forms.py:76 app/main/forms.py:90
+msgid "Amount"
+msgstr "Betrag"
+
+#: app/main/forms.py:78
+msgid "Affected Users"
+msgstr "Betroffene Benutzer"
+
+#: app/main/forms.py:80
+msgid "Date"
+msgstr "Datum"
+
+#: app/main/forms.py:92
+msgid "Recipient"
+msgstr "Empfänger"
+
+#: app/main/routes.py:35
+msgid "Home"
+msgstr "Startseite"
+
+#: app/main/routes.py:46
+msgid "My created events"
+msgstr "Meine erstellten Events"
+
+#: app/main/routes.py:57
+msgid "Current currencies"
+msgstr "Aktuelle Währungen"
+
+#: app/main/routes.py:69
+msgid "Your post is now live!"
+msgstr "Dein Beitrag ist nun online!"
+
+#: app/main/routes.py:90 app/main/routes.py:206
+#, python-format
+msgid "User %(username)s has been added to event %(event_name)s."
+msgstr "Benutzer %(username)s wurde dem Event %(event_name)s hinzugefügt."
+
+#: app/main/routes.py:120
+#, python-format
+msgid "Your new expense has been added to event %(event_name)s."
+msgstr "Deine neue Ausgabe wurde dem event %(event_name)s hinzugefügt."
+
+#: app/main/routes.py:151
+#, python-format
+msgid "Your new settlement has been added to event %(event_name)s."
+msgstr "Deine neue Ausgleichszahlung wurde dem event %(event_name)s hinzugefügt."
+
+#: app/main/routes.py:202
+msgid "You cannot add the admin as user!"
+msgstr "Du kannst den Administrator nicht als Benutzer hinzufügen!"
+
+#: app/main/routes.py:215
+msgid "You cannot remove the admin!"
+msgstr "Du kannst den Administrator nicht entfernen!"
+
+#: app/main/routes.py:219
+#, python-format
+msgid "User %(username)s has been removed from event %(event_name)s."
+msgstr "Benutzer %(username)s wurde aus dem Event %(event_name)s entfernt."
+
+#: app/main/routes.py:248 app/main/routes.py:341 app/main/routes.py:393
+msgid "Your changes have been saved."
+msgstr "Deine Änderungen wurden gespeichert."
+
+#: app/main/routes.py:253 app/templates/edit_profile.html:5
+msgid "Edit Profile"
+msgstr "Benutzerprofil bearbeiten"
+
+#: app/main/routes.py:267
+msgid "Your message has been sent."
+msgstr "Deine Nachricht wurde versendet."
+
+#: app/main/routes.py:269
+msgid "Send Message"
+msgstr "Nachricht senden"
+
+#: app/main/routes.py:305
+msgid "An export task is currently in progress"
+msgstr "Ein Exportvorgang läuft schon zur Zeit"
+
+#: app/main/routes.py:307
+msgid "Exporting posts..."
+msgstr "Beiträge exportieren..."
+
+#: app/main/routes.py:323
+msgid "Your new currency has been added."
+msgstr "Deine neue Währung wurde hinzugefügt."
+
+#: app/main/routes.py:325 app/templates/base.html:23
+#: app/templates/new_currency.html:5
+msgid "New Currency"
+msgstr "Neue Währung"
+
+#: app/main/routes.py:350 app/templates/edit_currency.html:5
+msgid "Edit Currency"
+msgstr "Währung bearbeiten"
+
+#: app/main/routes.py:374
+msgid "Your new event has been added."
+msgstr "Dein neuer Event wurde hinzugefügt."
+
+#: app/main/routes.py:376 app/templates/base.html:24
+#: app/templates/new_event.html:5
+msgid "New Event"
+msgstr "Neuer Event"
+
+#: app/main/routes.py:401 app/templates/edit_event.html:5
+msgid "Edit Event"
+msgstr "Event Bearbeiten"
+
+#: app/templates/_balance.html:11
+#, python-format
+msgid "%(username)s: "
+msgstr "%(username)s: "
+
+#: app/templates/_currency.html:14
+#, python-format
+msgid "%(name)s: %(code)s 1 equals %(inCHF).4f: %(edit_link)s"
+msgstr "%(name)s: %(code)s 1 entspricht %(inCHF).4f: %(edit_link)s"
+
+#: app/templates/_draft_settlement.html:4
+#, python-format
+msgid "%(from)s has to pay %(to)s:"
+msgstr "%(from)s muss %(to)s bezahlen:"
+
+#: app/templates/_draft_settlement.html:13
+msgid "Amount has been paid"
+msgstr "Betrag wurde bezahlt"
+
+#: app/templates/_event.html:16
+#, python-format
+msgid "%(event_name)s (%(when)s):"
+msgstr "%(event_name)s (%(when)s):"
+
+#: app/templates/_expense.html:14
+#, python-format
+msgid "%(when)s, %(username)s spent %(amount_str)s for %(affected_users)s:"
+msgstr "%(when)s, %(username)s gab %(amount_str)s für %(affected_users)s aus:"
+
+#: app/templates/_post.html:16
+#, python-format
+msgid "%(username)s said %(when)s"
+msgstr "%(username)s sagt %(when)s"
+
+#: app/templates/_settlement.html:21
+#, python-format
+msgid "%(when)s, %(sender)s sent %(amount_str)s to %(recipient)s:"
+msgstr "%(when)s, %(sender)s hat %(amount_str)s für %(recipient)s überwiesen:"
+
+#: app/templates/_user.html:27
+#, python-format
+msgid "%(user_name)s: %(remove)s"
+msgstr "%(user_name)s: %(remove)s"
+
+#: app/templates/base.html:4
+msgid "Expense App!"
+msgstr "Ausgaben App"
+
+#: app/templates/base.html:21
+msgid "My Events"
+msgstr "Meine Events"
+
+#: app/templates/base.html:22
+msgid "Currencies"
+msgstr "Währungen"
+
+#: app/templates/base.html:28
+msgid "Login"
+msgstr "Anmelden"
+
+#: app/templates/base.html:32 app/templates/messages.html:4
+msgid "Messages"
+msgstr "Nachrichten"
+
+#: app/templates/base.html:41
+msgid "Profile"
+msgstr "Benutzerprofil"
+
+#: app/templates/base.html:42
+msgid "Logout"
+msgstr "Abmelden"
+
+#: app/templates/currencies.html:5 app/templates/index.html:5
+#, python-format
+msgid "Hi, %(username)s!"
+msgstr "Hallo, %(username)s!"
+
+#: app/templates/currencies.html:17
+msgid "Previous currencies"
+msgstr "Verherige Wärhungen"
+
+#: app/templates/currencies.html:22
+msgid "More currencies"
+msgstr "Weitere Währungen"
+
+#: app/templates/event.html:9
+msgid "Event"
+msgstr "Event"
+
+#: app/templates/event.html:13
+msgid "Admin"
+msgstr "Administrator"
+
+#: app/templates/event.html:14 app/templates/event_balance.html:36
+msgid "Accountant"
+msgstr "Buchhalter"
+
+#: app/templates/event.html:15
+msgid "From"
+msgstr "Von"
+
+#: app/templates/event.html:16
+#, python-format
+msgid "%(count)d users"
+msgstr "%(count)d Benutzer"
+
+#: app/templates/event.html:17
+#, python-format
+msgid "%(count)d posts"
+msgstr "%(count)d Posts"
+
+#: app/templates/event.html:18
+#, python-format
+msgid "%(count)d expenses"
+msgstr "%(count)d Ausgaben"
+
+#: app/templates/event.html:19
+#, python-format
+msgid "%(count)d settlements"
+msgstr "%(count)d Ausgleichszahlungen"
+
+#: app/templates/event.html:20
+msgid "Expenses"
+msgstr "Ausgaben"
+
+#: app/templates/event.html:21
+msgid "Settlements"
+msgstr "Ausgleichszahlungen"
+
+#: app/templates/event.html:22
+msgid "Balance sheet"
+msgstr "Bilanz"
+
+#: app/templates/event.html:24
+msgid "Edit this event"
+msgstr "Diesen Event bearbeiten"
+
+#: app/templates/event.html:25
+msgid "Manage users"
+msgstr "Benutzer verwalten"
+
+#: app/templates/event.html:41 app/templates/user.html:32
+msgid "Newer posts"
+msgstr "Neuere Beiträge"
+
+#: app/templates/event.html:46 app/templates/user.html:37
+msgid "Older posts"
+msgstr "Ältere Beiträge"
+
+#: app/templates/event_balance.html:5 app/templates/event_expenses.html:5
+#: app/templates/event_settlements.html:5 app/templates/event_users.html:5
+msgid "Back to event"
+msgstr "Zurück zum Event"
+
+#: app/templates/event_balance.html:6
+msgid "Summary"
+msgstr "Zusammenfassung"
+
+#: app/templates/event_balance.html:7
+msgid "Total expenses "
+msgstr "Total Ausgaben "
+
+#: app/templates/event_balance.html:15
+msgid "Expenses paid:"
+msgstr "Ausgaben bezahlt:"
+
+#: app/templates/event_balance.html:18
+msgid "Expenses involved:"
+msgstr "In Ausgaben verwickelt:"
+
+#: app/templates/event_balance.html:21
+msgid "Sent to users:"
+msgstr "Benutzern gesendet:"
+
+#: app/templates/event_balance.html:24
+msgid "Received from users:"
+msgstr ""
+
+#: app/templates/event_balance.html:27
+msgid "Balance:"
+msgstr "Saldo:"
+
+#: app/templates/event_balance.html:35
+msgid "Financial compensation"
+msgstr "Finanzausgleich"
+
+#: app/templates/event_expenses.html:6
+msgid "Add expense:"
+msgstr "Ausgaben hinzufügen"
+
+#: app/templates/event_expenses.html:18
+msgid "Newer expenses"
+msgstr "Neuere Ausgaben"
+
+#: app/templates/event_expenses.html:23
+msgid "Older expenses"
+msgstr "Ältere Ausgaben"
+
+#: app/templates/event_settlements.html:6
+msgid "Add settlement:"
+msgstr "Ausgleichszahlungen hinzufügen "
+
+#: app/templates/event_settlements.html:18
+msgid "Newer settlements"
+msgstr "Neuere Ausgleichszahlungen"
+
+#: app/templates/event_settlements.html:23
+msgid "Older settlements"
+msgstr "Ältere Ausgleichszahlungen"
+
+#: app/templates/event_users.html:17
+msgid "Previous users"
+msgstr "Vorherige Benutzer"
+
+#: app/templates/event_users.html:22
+msgid "More users"
+msgstr "Mehr Benutzer"
+
+#: app/templates/index.html:17
+msgid "Newer events"
+msgstr "Neuere Events"
+
+#: app/templates/index.html:22
+msgid "Older events"
+msgstr "Ältere Events"
+
+#: app/templates/messages.html:12
+msgid "Newer messages"
+msgstr "Neuere Nachrichten"
+
+#: app/templates/messages.html:17
+msgid "Older messages"
+msgstr "Ältere Nachrichten"
+
+#: app/templates/send_message.html:5
+#, python-format
+msgid "Send Message to %(recipient)s"
+msgstr "Sende %(recipient)s eine Nachricht"
+
+#: app/templates/user.html:8
+msgid "User"
+msgstr "Benutzer"
+
+#: app/templates/user.html:11 app/templates/user_popup.html:13
+msgid "Last seen on"
+msgstr "Zuletzt angesehen"
+
+#: app/templates/user.html:14
+msgid "Edit your profile"
+msgstr "Benutzerprofil bearbeiten"
+
+#: app/templates/user.html:16
+msgid "Export your posts"
+msgstr "Beiträge exportieren"
+
+#: app/templates/user.html:20
+msgid "Send private message"
+msgstr "Private Nachricht senden"
+
+#: app/templates/auth/login.html:12
+msgid "New User?"
+msgstr "Neuer Benutzer?"
+
+#: app/templates/auth/login.html:12
+msgid "Click to Register!"
+msgstr "Hier klicken um dich zu Registrieren!"
+
+#: app/templates/auth/login.html:14
+msgid "Forgot Your Password?"
+msgstr "Passwort vergessen?"
+
+#: app/templates/auth/login.html:15
+msgid "Click to Reset It"
+msgstr "Klicken um es zurückzusetzen"
+
+#: app/templates/errors/404.html:4
+msgid "Not Found"
+msgstr "Nicht gefunden"
+
+#: app/templates/errors/404.html:5 app/templates/errors/500.html:6
+msgid "Back"
+msgstr "Zurück"
+
+#: app/templates/errors/500.html:4
+msgid "An unexpected error has occurred"
+msgstr "Etwas unerwartetes ist passiert"
+
+#: app/templates/errors/500.html:5
+msgid "The administrator has been notified. Sorry for the inconvenience!"
+msgstr "Der Administrator wurde informiert. Entschuldige die Störung!"
+

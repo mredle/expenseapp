@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block app_content %}
+    <p><a href="{{ url_for('main.event', event_id=event.id) }}">{{ _('Back to event') }}</a></p>
+    <h3>{{ _('Summary') }}</h3>
+    <p>{{ _('Total expenses ') }}: {{ total_expenses_str }}</p>
+    <br>
+    <table class="table table-hover">
+        <tr>
+            <td width="100px">
+            
+            </td>
+            <td width="125px">
+                {{ _('Expenses paid:') }}
+            </td>
+            <td width="125px">
+                {{ _('Expenses involved:') }}
+            </td>
+            <td width="125px">
+                {{ _('Sent to users:') }}
+            </td>
+            <td width="125px">
+                {{ _('Received from users:') }}
+            </td>
+            <td width="125px">
+                {{ _('Balance:') }}
+            </td>
+        </tr>
+    </table>
+    {% for balance in balances_str %}
+        {% include '_balance.html' %}
+    {% endfor %}
+    
+    <h3>{{ _('Financial compensation') }}</h3>
+    <p>{{ _('Accountant') }}: {{ event.accountant.username }}</p>
+    <br>
+    {% for settlement in draft_settlements %}
+        {% include '_draft_settlement.html' %}
+    {% endfor %}
+    
+{% endblock %}

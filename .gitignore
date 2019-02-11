@@ -1,3 +1,8 @@
+# expenseapp temp files
+app.db
+dump.rdb
+logs
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

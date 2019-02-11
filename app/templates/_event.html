@@ -1,0 +1,22 @@
+    <table class="table table-hover">
+        <tr>
+            <td width="70px">
+                <a href="{{ url_for('main.event', event_id=event.id) }}">
+                    <img src="" />
+                </a>
+            </td>
+            <td>
+                {% set event_link %}
+                    <span class="event_popup">
+                        <a href="{{ url_for('main.event', event_id=event.id) }}">
+                            {{ event.name }}
+                        </a>
+                    </span>
+                {% endset %}
+                {{ _('%(event_name)s (%(when)s):',
+                    event_name=event_link, when=moment(event.date).fromNow()) }}
+                <br>
+                {{ event.description }}
+            </td>
+        </tr>
+    </table>

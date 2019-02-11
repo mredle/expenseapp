@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block app_content %}
+    <table class="table table-hover">
+        <tr>
+            <td width="256px"><img src=""></td>
+            <td>
+                <h1>{{ _('Event') }}: {{ event.name }}</h1>
+                {% if event.description %}
+                <p>{{ event.description }}</p>
+                {% endif %}
+                <p>{{ _('Admin') }}: {{ event.admin.username }}</p>
+                <p>{{ _('Accountant') }}: {{ event.accountant.username }}</p>
+                <p>{{ _('From') }}: {{ moment(event.date).format('LLL') }}</p>
+                <p>{{ _('%(count)d users', count=event.users.count()) }}, 
+                   {{ _('%(count)d posts', count=event.posts.count()) }}, 
+                   {{ _('%(count)d expenses', count=event.expenses.count()) }}, 
+                   {{ _('%(count)d settlements', count=event.settlements.count()) }}</p>
+                <p><a href="{{ url_for('main.event_expenses', event_id=event.id) }}">{{ _('Expenses') }}</a></p>
+                <p><a href="{{ url_for('main.event_settlements', event_id=event.id) }}">{{ _('Settlements') }}</a></p>
+                <p><a href="{{ url_for('main.event_balance', event_id=event.id) }}">{{ _('Balance sheet') }}</a></p>
+                {% if event.admin == current_user %}
+                <p><a href="{{ url_for('main.edit_event', event_id=event.id) }}">{{ _('Edit this event') }}</a></p>
+                <p><a href="{{ url_for('main.event_users', event_id=event.id) }}">{{ _('Manage users') }}</a></p>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+    {% if form %}
+    {{ wtf.quick_form(form) }}
+    <br>
+    {% endif %}
+    {% for post in posts %}
+        {% include '_post.html' %}
+    {% endfor %}
+    <nav aria-label="...">
+        <ul class="pager">
+            <li class="previous{% if not prev_url %} disabled{% endif %}">
+                <a href="{{ prev_url or '#' }}">
+                    <span aria-hidden="true">&larr;</span> {{ _('Newer posts') }}
+                </a>
+            </li>
+            <li class="next{% if not next_url %} disabled{% endif %}">
+                <a href="{{ next_url or '#' }}">
+                    {{ _('Older posts') }} <span aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+{% endblock %}

@@ -1,0 +1,75 @@
+version: '3.7'
+services:
+    db:
+      image: mariadb
+      command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+      restart: always
+      environment:
+        MYSQL_ROOT_PASSWORD: pw
+        MYSQL_USER: user
+        MYSQL_PASSWORD: pw
+        MYSQL_DATABASE: expenseapp
+      networks:
+       - db
+      volumes:
+       - type: volume
+         source: mariadb-data
+         target: /var/lib/mysql
+         volume:
+           nocopy: true
+
+    postfix:
+      image: catatnight/postfix
+      restart: always
+      environment:
+        maildomain: 'mail.example.com'
+        smtp_user: 'mailuser:mailpw'
+      networks:
+       - db
+
+    redis:
+      image: redis
+      restart: always
+      networks:
+       - db
+      volumes:
+       - type: volume
+         source: redis-data
+         target: /data
+         volume:
+           nocopy: true
+
+    expenseapp:
+      image: mredle/expenseapp
+      restart: always
+      ports:
+        - "5000:5000"
+      environment:
+        SECRET_KEY: 'you-will-never-guess'
+        DATABASE_URL: 'mysql+pymysql://user:pw@db/expenseapp?charset=utf8mb4'
+        MAIL_SERVER: 'postfix'
+        MAIL_PORT: '25'
+        MAIL_USE_TLS:
+        MAIL_USERNAME: 'mailuser@mail.example.com'
+        MAIL_PASSWORD: 'mailpw'
+        REDIS_URL: 'redis://redis:6379'
+      networks:
+       - db
+      depends_on:
+       - db
+       - redis
+       - postfix
+
+networks:
+    db:
+      driver: bridge
+
+volumes:
+    mariadb-data:
+      driver: local
+      external: false
+      name: mariadb-data
+    redis-data:
+      driver: local
+      external: false
+      name: redis-data

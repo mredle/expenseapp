@@ -1,0 +1,30 @@
+    <table class="table table-hover">
+        <tr>
+            <td width="70px">
+                <img src="" />
+            </td>
+            <td>
+                {% set sender_link %}
+                    <span class="settlement_popup">
+                        <a href="{{ url_for('main.user', username=settlement.sender.username) }}">
+                            {{ settlement.sender.username }}
+                        </a>
+                    </span>
+                {% endset %}
+                {% set recipient_link %}
+                    <span class="settlement_popup">
+                        <a href="{{ url_for('main.user', username=settlement.recipient.username) }}">
+                            {{ settlement.recipient.username }}
+                        </a>
+                    </span>
+                {% endset %}
+                {{ _('%(when)s, %(sender)s sent %(amount_str)s to %(recipient)s:',
+                    when=moment(settlement.date).fromNow(),
+                    sender=sender_link, 
+                    amount_str=settlement.get_amount_str(),
+                    recipient=recipient_link, ) }}
+                <br>
+                {{ settlement.description }}
+            </td>
+        </tr>
+    </table>
