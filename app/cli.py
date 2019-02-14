@@ -2,10 +2,9 @@
 
 import os
 import click
-import random
-from datetime import datetime, timedelta
-from app import db
-from app.models import Currency, Event, Post, Expense, Settlement, User, Message
+from app import create_app, db
+from app.models import Currency, User
+from config import Config
 
 def register(app):
     @app.cli.group()
@@ -45,27 +44,10 @@ def register(app):
         pass
 
     @dbinit.command()
-    @click.option('--count', default=3, help='Number of dummy users to create.')
-    def dummy(count):
-        """Initialize with dummy data."""
-        created_by = 'flask dummy --count {}'.format(count) 
-            
-        # Fill users with dummy values
-        n_users = count
-        users = []
-        existing_usernames = [user.username for user in  User.query.all()]
-        existing_emails = [user.email for user in  User.query.all()]
-        for i_user in range(0, n_users):
-            user = User(username = 'User'+str(i_user), 
-                        email = 'user'+str(i_user)+'@email.ch', 
-                        about_me = 'blablablabla from the life of User'+str(i_user), 
-                        db_created_by = created_by)
-            user.set_password(user.username)
-            if (user.username not in existing_usernames) and (user.email not in existing_emails):
-                user.get_token()
-                users.append(user)
-                db.session.add(user)
-        db.session.commit()
+    @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing currencies.')
+    def currency(overwrite):
+        """Initialize currencies with predefined values."""
+        created_by = 'flask dbinit currency' 
         
         # Fill currencies with example values
         currencies = []
@@ -93,76 +75,45 @@ def register(app):
                              db_created_by = created_by)
         
         for currency in [currency1, currency2, currency3]:
-            if currency.code not in existing_currencies:
+            if currency.code in existing_currencies:
+                if overwrite:
+                    Currency.query.filter_by(code=currency.code).delete()
+                    currencies.append(currency)
+                    db.session.add(currency)
+                    db.session.commit()
+            else:
                 currencies.append(currency)
                 db.session.add(currency)
-        db.session.commit()
+                db.session.commit()
             
-        # Fill events with dummy values
-        n_events = count
-        i_event = 0
-        events = []
-        existing_events = [e.name for e in Event.query.all()]
-        for user in users:
-            for i_event_tmp in range(0, n_events):
-                i_event = i_event + 1
-                event = Event(name = 'Event'+str(i_event)+' created by user '+user.username, 
-                             date = datetime.utcnow() - timedelta(weeks=i_event),
-                             admin = user,
-                             accountant = user,
-                             closed = False, 
-                             description = 'Blablabla funny event nr '+str(i_event), 
-                             db_created_by = created_by)
-                if event.name not in existing_events:
-                    events.append(event)
-                    db.session.add(event)
-                    event.add_user(user)
-        db.session.commit()
+    @dbinit.command()
+    @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing admin.')
+    def admin(overwrite):
+        """Initialize admin with password taken from environment variables."""
+        created_by = 'flask dbinit admin'
+        app = create_app(Config)
         
-        # Add all users to all events
-        for event in events:
-            for user in users:
-                event.add_user(user)
-        db.session.commit()
-
-        # Fill posts with dummy values
-        n_posts = count
-        for event in events:
-            for user in users:
-                for i_post in range(0, n_posts):
-                    ptmp = Post(body = 'post '+str(i_post)+' from user '+user.username+' in event '+event.name, 
-                                timestamp = datetime.utcnow() - timedelta(days=i_post), 
-                                author = user, 
-                                event = event,
-                                db_created_by = created_by)
-                    db.session.add(ptmp)
-        db.session.commit()
+        # look for existing admin account
+        existing_admin_user = User.query.filter_by(username='admin').first()
         
-        # Fill messages with dummy values
-        i_message = 0
-        for sender in users:
-            for recipient in users:
-                mtmp = Message(body = 'Message '+str(i_message)+' from user '+sender.username+' to user '+recipient.username+'.', 
-                            author = sender, 
-                            recipient = recipient, 
-                            db_created_by = created_by)
-                db.session.add(mtmp)
-                i_message = i_message+1
-        db.session.commit()
+        if existing_admin_user:
+            if overwrite:
+                existing_admin_user.username = app.config['ADMIN_USERNAME']
+                existing_admin_user.email = app.config['ADMIN_EMAIL']
+                existing_admin_user.about_me = 'I am the mighty admin!'
+                existing_admin_user.db_created_by = created_by
+                existing_admin_user.set_password(app.config['ADMIN_PASSWORD'])
+                existing_admin_user.get_token()
+                db.session.commit()
+        else:
+            admin_user = User(username = app.config['ADMIN_USERNAME'], 
+                              email = app.config['ADMIN_EMAIL'], 
+                              about_me = 'I am the mighty admin!', 
+                              db_created_by = created_by)
+            admin_user.set_password(app.config['ADMIN_PASSWORD'])
+            admin_user.get_token()
+            db.session.add(admin_user)
+            db.session.commit()
         
-        # Fill expenses with dummy values
-        i_expense = 0
-        for event in events:
-            for user in users:
-                for currency in currencies:
-                    ptmp = Expense(user = user, 
-                                   event = event, 
-                                   currency = currency, 
-                                   amount = float(random.randint(100, 1e5)/100),  
-                                   affected_users = event.users,
-                                   date = datetime.utcnow() - timedelta(hours=i_expense), 
-                                   description = 'Blablabla nobody knows why be bought it nr '+str(i_expense), 
-                                   db_created_by = created_by)
-                    db.session.add(ptmp)
-                    i_expense = i_expense+1
-        db.session.commit()
+        
+        

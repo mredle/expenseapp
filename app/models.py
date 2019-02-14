@@ -446,6 +446,10 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
+        
+    def set_random_password(self):
+        password_tmp = base64.b64encode(os.urandom(24)).decode('utf-8')
+        self.password_hash = generate_password_hash(password_tmp)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)

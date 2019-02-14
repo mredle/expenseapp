@@ -10,5 +10,7 @@ while true; do
     sleep 5
 done
 
+flask dbinit currency
+flask dbinit admin --overwrite
 flask translate compile
 exec gunicorn -b :5000 --access-logfile - --error-logfile - expenseapp:app

@@ -4,6 +4,7 @@ export FLASK_DEBUG=1
 source activate flask_app_dev
 
 flask db upgrade
-flask dbinit dummy --count 3
+flask dbinit currency
+flask dbinit admin
 flask translate compile
 flask run -h localhost
