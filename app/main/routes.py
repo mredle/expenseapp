@@ -355,7 +355,9 @@ def edit_currency(currency_id):
 def new_event():
     form = EventForm()
     form.admin_id.choices = [(u.id, u.username) for u in User.query.order_by('username')]
+    form.admin_id.data = current_user.id
     form.accountant_id.choices = [(u.id, u.username) for u in User.query.order_by('username')]
+    form.accountant_id.data = current_user.id
     if form.validate_on_submit():
         admin = User.query.get(form.admin_id.data)
         accountant = User.query.get(form.accountant_id.data)

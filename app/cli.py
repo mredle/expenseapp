@@ -51,7 +51,6 @@ def register(app):
         
         # Fill currencies with example values
         currencies = []
-        existing_currencies = [currency.code for currency in Currency.query.all()]
         currency1 = Currency(code = 'CHF', 
                              name = 'Schweizer Franken', 
                              number = 756, 
@@ -75,11 +74,16 @@ def register(app):
                              db_created_by = created_by)
         
         for currency in [currency1, currency2, currency3]:
-            if currency.code in existing_currencies:
+            existing_currency = Currency.query.filter_by(code=currency.code).first()
+            if existing_currency:
                 if overwrite:
-                    Currency.query.filter_by(code=currency.code).delete()
-                    currencies.append(currency)
-                    db.session.add(currency)
+                    existing_currency.code = currency.code
+                    existing_currency.name = currency.name
+                    existing_currency.number = currency.number
+                    existing_currency.exponent = currency.exponent
+                    existing_currency.inCHF = currency.inCHF 
+                    existing_currency.description = currency.description
+                    existing_currency.db_created_by = currency.db_created_by
                     db.session.commit()
             else:
                 currencies.append(currency)

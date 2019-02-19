@@ -8,7 +8,7 @@ from werkzeug.urls import url_parse
 from app import db
 from app.auth import bp
 from app.auth.forms import LoginForm, RegistrationForm, ResetPasswordRequestForm, ResetPasswordForm
-from app.auth.email import send_password_reset_email
+from app.auth.email import send_validate_email, send_password_reset_email
 from app.models import User
       
 # routes for rendered pages
@@ -47,7 +47,7 @@ def register():
         user.get_token()
         db.session.add(user)
         db.session.commit()
-        send_password_reset_email(user)
+        send_validate_email(user)
         flash(_('Congratulations, you are now a registered user! Please check your email to activate your account.'))
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', title=_('Register'), form=form)
