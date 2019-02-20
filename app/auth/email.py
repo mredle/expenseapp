@@ -4,6 +4,14 @@ from flask import render_template, current_app
 from flask_babel import _
 from app.email import send_email
 
+def send_newuser_notification(user):
+    send_email(_('New user has registered on ExpenseApp!'),
+               sender=current_app.config['ADMIN_NOREPLY_SENDER'],
+               recipients=[current_app.config['ADMIN_EMAIL']],
+               text_body=render_template('email/notification_newuser.txt',
+                                         user=user),
+               html_body=render_template('email/notification_newuser.html',
+                                         user=user))
 
 def send_validate_email(user):
     token = user.get_reset_password_token()

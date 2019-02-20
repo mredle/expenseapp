@@ -1,0 +1,2 @@
+A new user has registered on ExpenseApp:
+{{ user.username }}: {{ user.email }}

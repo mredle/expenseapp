@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import click
+import time
 from app import create_app, db
 from app.models import Currency, User
 from config import Config
@@ -43,6 +45,24 @@ def register(app):
         """Commands to initialize the database."""
         pass
 
+    @dbinit.command()
+    @click.option('--interval', default=5, help='Polling interval in seconds')
+    @click.option('--timeout', default=60, help='Timeout in seconds')
+    def wait4db(interval, timeout):
+        timer = 0
+        while timer<timeout:
+            time.sleep(interval)
+            timer = timer + interval
+            try:
+                User.query.filter_by(username='admin').first()
+            except ConnectionRefusedError:
+                continue
+            except:
+                print('Unexpected error:', sys.exc_info()[0])
+                raise
+            return
+        raise SystemExit('DB timeout after {}s'.format(timeout))
+    
     @dbinit.command()
     @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing currencies.')
     def currency(overwrite):

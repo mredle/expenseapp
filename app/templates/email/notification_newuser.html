@@ -1,0 +1,6 @@
+<p>A new user has registered on ExpenseApp:</p>
+<p>
+    <a href="{{ url_for('main.user', username=user.username) }}">
+        {{ user.username }}
+    </a>: {{ user.email }}
+</p>
