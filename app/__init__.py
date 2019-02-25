@@ -9,7 +9,7 @@ import os
 from flask import Flask, request, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from flask_mail import Mail
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
@@ -84,10 +84,21 @@ def create_app(config_class=Config):
             
     return app
 
-
 @babel.localeselector
 def get_locale():
-    return request.accept_languages.best_match(current_app.config['LANGUAGES'])
-    #return 'de'
+    # if a user is logged in, use the locale from the user settings
+    # otherwise try to guess the language from the user accept
+    # header the browser transmits. The best match wins.
+    if current_user.is_authenticated:
+        return current_user.locale
+    else:
+        return request.accept_languages.best_match(current_app.config['LANGUAGES'])
+
+@babel.timezoneselector
+def get_timezone():
+    if current_user.is_authenticated:
+        return current_user.timezone
+    else: 
+        return 'Etc/UTC'
 
 from app import models, tasks

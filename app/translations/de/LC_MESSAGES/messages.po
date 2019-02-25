@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-02-09 19:30+0100\n"
+"POT-Creation-Date: 2019-02-25 22:20+0100\n"
 "PO-Revision-Date: 2018-08-29 22:41+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -22,7 +22,15 @@ msgstr ""
 msgid "Please log in to access this page."
 msgstr "Bitte melde dich an um diese Seite zu sehen."
 
-#: app/auth/email.py:10 app/templates/auth/reset_password.html:5
+#: app/auth/email.py:8
+msgid "New user has registered on ExpenseApp!"
+msgstr "Ein neuer Benutzer hat sich bei ExpenseApp registriert!"
+
+#: app/auth/email.py:18
+msgid "Validate Your Email"
+msgstr "Validiere deine Eamil"
+
+#: app/auth/email.py:28 app/templates/auth/reset_password.html:5
 msgid "Reset Your Password"
 msgstr "Passwort zurücksetzen"
 
@@ -30,7 +38,7 @@ msgstr "Passwort zurücksetzen"
 msgid "Username"
 msgstr "Benutzername"
 
-#: app/auth/forms.py:12 app/auth/forms.py:19 app/auth/forms.py:39
+#: app/auth/forms.py:12 app/auth/forms.py:38
 msgid "Password"
 msgstr "Passwort"
 
@@ -42,48 +50,58 @@ msgstr "Angemeldet bleiben"
 msgid "Sign In"
 msgstr "Anmelden"
 
-#: app/auth/forms.py:18 app/auth/forms.py:35
+#: app/auth/forms.py:18 app/auth/forms.py:34
 msgid "Email"
 msgstr "Email"
 
-#: app/auth/forms.py:21 app/auth/forms.py:41
-msgid "Repeat Password"
-msgstr "Passwort wiederhohlen"
+#: app/auth/forms.py:19
+msgid "Language"
+msgstr "Sprache"
 
-#: app/auth/forms.py:22 app/auth/routes.py:51
+#: app/auth/forms.py:20
+msgid "Timezone"
+msgstr "Zeitzone"
+
+#: app/auth/forms.py:21 app/auth/routes.py:59
 #: app/templates/auth/register.html:5
 msgid "Register"
 msgstr "Registrieren"
 
-#: app/auth/forms.py:27 app/main/forms.py:26
+#: app/auth/forms.py:26 app/main/forms.py:26
 msgid "Please use a different username."
 msgstr "Bitte einen anderen Benutzernamen wählen."
 
-#: app/auth/forms.py:32
+#: app/auth/forms.py:31
 msgid "Please use a different email address."
 msgstr "Bitte eine andere email Adresse wählen."
 
-#: app/auth/forms.py:36 app/auth/forms.py:42
+#: app/auth/forms.py:35 app/auth/forms.py:41
 msgid "Request Password Reset"
 msgstr "Passwort Rücksetzung anfordern"
+
+#: app/auth/forms.py:40
+msgid "Repeat Password"
+msgstr "Passwort wiederhohlen"
 
 #: app/auth/routes.py:23
 msgid "Invalid username or password"
 msgstr "Ungültiger Benutzername oder Passwort"
 
-#: app/auth/routes.py:49
-msgid "Congratulations, you are now a registered user!"
-msgstr "Gratulation, du wurdest erfolgreich registriert!"
+#: app/auth/routes.py:57
+msgid ""
+"Congratulations, you are now a registered user! Please check your email "
+"to activate your account."
+msgstr ""
 
-#: app/auth/routes.py:62
+#: app/auth/routes.py:70
 msgid "Check your email for the instructions to reset your password"
 msgstr "Folge den Instruktionen im email um dein Passwort zurückzusetzen"
 
-#: app/auth/routes.py:65 app/templates/auth/reset_password_request.html:5
+#: app/auth/routes.py:73 app/templates/auth/reset_password_request.html:5
 msgid "Reset Password"
 msgstr "Passwort zurücksetzen"
 
-#: app/auth/routes.py:79
+#: app/auth/routes.py:87
 msgid "Your password has been reset."
 msgstr "Dein Passwort wurde zurückgesetzt."
 
@@ -210,7 +228,7 @@ msgstr "Du kannst den Administrator nicht entfernen!"
 msgid "User %(username)s has been removed from event %(event_name)s."
 msgstr "Benutzer %(username)s wurde aus dem Event %(event_name)s entfernt."
 
-#: app/main/routes.py:248 app/main/routes.py:341 app/main/routes.py:393
+#: app/main/routes.py:248 app/main/routes.py:341 app/main/routes.py:395
 msgid "Your changes have been saved."
 msgstr "Deine Änderungen wurden gespeichert."
 
@@ -247,16 +265,16 @@ msgstr "Neue Währung"
 msgid "Edit Currency"
 msgstr "Währung bearbeiten"
 
-#: app/main/routes.py:374
+#: app/main/routes.py:376
 msgid "Your new event has been added."
 msgstr "Dein neuer Event wurde hinzugefügt."
 
-#: app/main/routes.py:376 app/templates/base.html:24
+#: app/main/routes.py:378 app/templates/base.html:24
 #: app/templates/new_event.html:5
 msgid "New Event"
 msgstr "Neuer Event"
 
-#: app/main/routes.py:401 app/templates/edit_event.html:5
+#: app/main/routes.py:403 app/templates/edit_event.html:5
 msgid "Edit Event"
 msgstr "Event Bearbeiten"
 
@@ -550,4 +568,7 @@ msgstr "Etwas unerwartetes ist passiert"
 #: app/templates/errors/500.html:5
 msgid "The administrator has been notified. Sorry for the inconvenience!"
 msgstr "Der Administrator wurde informiert. Entschuldige die Störung!"
+
+#~ msgid "Congratulations, you are now a registered user!"
+#~ msgstr "Gratulation, du wurdest erfolgreich registriert!"
 
