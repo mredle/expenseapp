@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from flask import request, render_template, flash, redirect, url_for
+from flask import request, render_template, flash, redirect, url_for, current_app
 from flask_login import current_user, login_user, logout_user
 from flask_babel import _
 from werkzeug.urls import url_parse
@@ -41,8 +41,13 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = RegistrationForm()
+    form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
+    form.timezone.choices = [(x, x) for x in current_app.config['TIMEZONES']]
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
+        user = User(username=form.username.data, 
+                    email=form.email.data,
+                    locale=form.locale.data,
+                    timezone=form.timezone.data)
         user.set_random_password()
         user.get_token()
         db.session.add(user)

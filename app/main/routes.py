@@ -241,15 +241,21 @@ def user_popup(username):
 @login_required
 def edit_profile():
     form = EditProfileForm(current_user.username)
+    form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
+    form.timezone.choices = [(x, x) for x in current_app.config['TIMEZONES']]
     if form.validate_on_submit():
         current_user.username = form.username.data
         current_user.about_me = form.about_me.data
+        current_user.locale = form.locale.data
+        current_user.timezone = form.timezone.data
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.edit_profile'))
     elif request.method == 'GET':
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
+        form.locale.data = current_user.locale
+        form.timezone.data = current_user.timezone
     return render_template('edit_profile.html', title=_('Edit Profile'),
                            form=form)
 

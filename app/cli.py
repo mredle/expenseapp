@@ -124,7 +124,6 @@ def register(app):
             if overwrite:
                 existing_admin_user.username = app.config['ADMIN_USERNAME']
                 existing_admin_user.email = app.config['ADMIN_EMAIL']
-                existing_admin_user.about_me = 'I am the mighty admin!'
                 existing_admin_user.db_created_by = created_by
                 existing_admin_user.set_password(app.config['ADMIN_PASSWORD'])
                 existing_admin_user.get_token()
@@ -132,6 +131,8 @@ def register(app):
         else:
             admin_user = User(username = app.config['ADMIN_USERNAME'], 
                               email = app.config['ADMIN_EMAIL'], 
+                              locale = app.config['LANGUAGES'][0],
+                              timezone = app.config['TIMEZONES'][0],
                               about_me = 'I am the mighty admin!', 
                               db_created_by = created_by)
             admin_user.set_password(app.config['ADMIN_PASSWORD'])

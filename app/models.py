@@ -387,6 +387,8 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(128), index=True, unique=True)
+    locale = db.Column(db.String(32))
+    timezone = db.Column(db.String(32))
     password_hash = db.Column(db.String(128))
     token = db.Column(db.String(32), index=True, unique=True)
     token_expiration = db.Column(db.DateTime)
@@ -407,10 +409,12 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     about_me = db.Column(db.String(256))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     
-    def __init__(self, username, email, about_me='', db_created_by=''):
+    def __init__(self, username, email, locale, timezone, about_me='', db_created_by=''):
         Entity.__init__(self, db_created_by)
         self.username = username
         self.email = email
+        self.locale = locale
+        self.timezone = timezone
         self.password_hash = ''
         self.token = ''
         self.token_expiration = datetime.utcnow() - timedelta(seconds=1)
