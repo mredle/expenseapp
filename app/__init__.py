@@ -6,7 +6,7 @@ from redis import Redis
 import rq
 import os
 
-from flask import Flask, g, request, current_app
+from flask import Flask, request, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, current_user
@@ -96,9 +96,8 @@ def get_locale():
 
 @babel.timezoneselector
 def get_timezone():
-    user = getattr(g, 'user', None)
-    if user is not None:
-        return user.timezone
+    if current_user.is_authenticated:
+        return current_user.timezone
     else: 
         return 'Etc/UTC'
 
