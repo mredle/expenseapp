@@ -11,7 +11,7 @@ conda config --append channels conda-forge
 conda install  -n $ENVNAME ipython rq python-dotenv pyjwt gunicorn pymysql flask flask-sqlalchemy flask-migrate flask-login flask-mail flask-moment flask-babel flask-httpauth flask-wtf
 
 # add pip packages
-pip install flask-bootstrap flask-shell-ipython
+pip install flask-bootstrap flask-shell-ipython flask-uploads
 
 # export conda environment file
 conda env export > environment_$ENVNAME.yml
