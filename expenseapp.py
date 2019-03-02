@@ -1,7 +1,7 @@
 # coding=utf-8
 
 from app import create_app, db, cli
-from app.models import Currency, Event, Post, Expense, Settlement, User, Message, Notification, Task
+from app.models import Thumbnail, Image, Currency, Event, Post, Expense, Settlement, User, Message, Notification, Task
 
 app = create_app()
 cli.register(app)
@@ -9,6 +9,8 @@ cli.register(app)
 @app.shell_context_processor
 def make_shell_context():
     return {'db': db, 
+            'Thumbnail': Thumbnail, 
+            'Image': Image, 
             'Currency': Currency, 
             'Event': Event, 
             'Post': Post, 

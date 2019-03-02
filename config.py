@@ -12,6 +12,8 @@ class Config(object):
         'sqlite:///' + os.path.join(basedir, 'app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_POOL_RECYCLE = 480
+    UPLOADS_DEFAULT_DEST = './app/static/tmp/'
+    UPLOADED_IMAGES_DEST = './app/static/tmp/'
     MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'localhost'
     MAIL_PORT = int(os.environ.get('MAIL_PORT') or 1025)
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS') is not None
@@ -22,6 +24,10 @@ class Config(object):
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') or 'admin'
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or 'you-will-never-guess'
     ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'admin@expenseapp'
+    IMAGE_DEFAULT_FORMAT = os.environ.get('IMAGE_DEFAULT_FORMAT') or 'JPEG'
+    IMAGE_TMP_PATH = os.environ.get('IMAGE_TMP_PATH') or './app/static/tmp/'
+    IMAGE_IMG_PATH = os.environ.get('IMAGE_IMG_PATH') or './app/static/img/'
+    IMAGE_TIMG_PATH = os.environ.get('IMAGE_TIMG_PATH') or './app/static/timg/'
     POSTS_PER_PAGE = 10
     MESSAGES_PER_PAGE = 10
     LANGUAGES = ['en', 'de']

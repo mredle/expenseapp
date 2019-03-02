@@ -4,12 +4,14 @@ from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from hashlib import md5
 from time import time
+from PIL import Image as PILImage
 import jwt
 import json
 import redis
 import rq
 import base64
 import os
+import uuid
 
 from app import db, login
 from flask import current_app, url_for
@@ -52,7 +54,83 @@ class Entity():
         self.db_created_by = db_created_by
         self.db_updated_by = db_created_by
 
+class Thumbnail(Entity, db.Model):
+    __tablename__ = 'thumbnails'
+    id = db.Column(db.Integer, primary_key=True)
+    
+    name = db.Column(db.String(64))
+    extension = db.Column(db.String(8))
+    path = db.Column(db.String(128))
+    url = db.Column(db.String(128))
+    size = db.Column(db.Integer)
+    format = db.Column(db.String(8))
+    image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    image = db.relationship('Image', foreign_keys=image_id, back_populates='thumbnails')
+    
+    def __init__(self, name, extension, path, url, size, image, db_created_by=''):
+        Entity.__init__(self, db_created_by)
+        self.name = name
+        self.extension = extension
+        self.path = path
+        self.url = url
+        self.size = size
+        self.image = image
+    
+    def __repr__(self):
+        return '<Thumbnail {}x{}px>'.format(self.name, self.size, self.size)
+    
 
+class Image(Entity, db.Model):
+    __tablename__ = 'images'
+    id = db.Column(db.Integer, primary_key=True)
+    
+    name = db.Column(db.String(64))
+    path = db.Column(db.String(128))
+    url = db.Column(db.String(128))
+    width = db.Column(db.Integer)
+    height = db.Column(db.Integer)
+    format = db.Column(db.String(8))
+    mode = db.Column(db.String(8))
+    original_filename = db.Column(db.String(128))
+    description = db.Column(db.String(256))
+    thumbnails = db.relationship('Thumbnail', foreign_keys='Thumbnail.image_id', back_populates='image', lazy='dynamic')
+    
+    def __init__(self):
+        Entity.__init__(self, '')
+        self.name = ''
+        self.path = ''
+        self.url = ''
+        self.width = 0
+        self.height = 0
+        self.format = ''
+        self.mode = ''
+        self.original_filename = ''
+        self.description = ''
+        
+    def __repr__(self):
+        return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
+    
+    def import_image(self, path, user, description):
+        # Read image
+        im = PILImage.open( path )
+        
+        # Saving the image to a new file
+        original_path, original_filename = os.path.split(path)
+        self.name = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.' + current_app.config['IMAGE_DEFAULT_FORMAT']
+        self.path = os.path.join(current_app.config['IMAGE_IMG_PATH'], self.name)
+        im.save(self.path, current_app.config['IMAGE_DEFAULT_FORMAT'])
+        os.remove(path)
+        
+        self.original_filename = original_filename
+        self.url = ''
+        self.width = im.width
+        self.height = im.height
+        self.format = im.format
+        self.mode = im.mode
+        self.user = user
+        self.description = description
+        
+    
 class Currency(Entity, db.Model):
     __tablename__ = 'currencies'
     id = db.Column(db.Integer, primary_key=True)
@@ -392,6 +470,8 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     password_hash = db.Column(db.String(128))
     token = db.Column(db.String(32), index=True, unique=True)
     token_expiration = db.Column(db.DateTime)
+    profile_picture_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    profile_picture = db.relationship('Image', foreign_keys=profile_picture_id)
     events = db.relationship('Event', secondary=event_users, back_populates='users', lazy='dynamic')
     events_admin = db.relationship('Event', foreign_keys='Event.admin_id', back_populates='admin', lazy='dynamic')
     events_accountant = db.relationship('Event', foreign_keys='Event.accountant_id', back_populates='accountant', lazy='dynamic')
@@ -418,6 +498,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         self.password_hash = ''
         self.token = ''
         self.token_expiration = datetime.utcnow() - timedelta(seconds=1)
+        self.profile_picture = Image()
         self.last_message_read_time = datetime.utcnow()
         self.about_me = about_me
         self.last_seen = datetime.utcnow()
@@ -473,7 +554,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         return User.query.get(id)
     
     def avatar(self, size):
-        return self.gravatar(size)
+        return ''
     
     def gravatar(self, size):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()

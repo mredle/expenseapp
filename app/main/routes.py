@@ -5,11 +5,10 @@ from flask import request, render_template, flash, redirect, url_for, jsonify, g
 from flask_login import current_user, login_required
 from flask_babel import get_locale, _
 
-from app import db
+from app import db, images
 from app.main import bp
 from app.main.forms import EditProfileForm, PostForm, MessageForm, CurrencyForm, EventForm, EventAddUserForm, ExpenseForm, SettlementForm
-from app.models import Currency, Event, Expense, Settlement, Post, User, Message, Notification
-
+from app.models import Image, Currency, Event, Expense, Settlement, Post, User, Message, Notification
 
 @bp.before_app_request
 def before_request():
@@ -244,6 +243,15 @@ def edit_profile():
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
     form.timezone.choices = [(x, x) for x in current_app.config['TIMEZONES']]
     if form.validate_on_submit():
+        if 'image' in request.files:
+            image_filename = images.save(request.files['image'])
+            image_path = images.path(image_filename)
+            image = Image()
+            image.import_image(image_path, current_user, '')
+            db.session.add(image)
+            db.session.commit()
+            current_user.profile_picture = image
+            flash(_('File %(filename)s has been successfully uploaded.', filename=image_filename))
         current_user.username = form.username.data
         current_user.about_me = form.about_me.data
         current_user.locale = form.locale.data
