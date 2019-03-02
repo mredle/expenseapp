@@ -63,6 +63,7 @@ class EventForm(FlaskForm):
     date = DateField(_l('Date in Y-m-d'), 
                         format='%Y-%m-%d', 
                         validators=[DataRequired()])
+    image = FileField(_l('Event picture'), validators=[FileAllowed(images, 'Images only!')])
     description = TextAreaField(_l('Description'), 
                                 validators=[Length(min=0, max=256)])
     admin_id = SelectField(_l('Change admin user'), coerce=int,

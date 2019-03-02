@@ -110,7 +110,7 @@ class Image(Entity, db.Model):
     def __repr__(self):
         return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
     
-    def import_image(self, path, user, description):
+    def import_image(self, path, description):
         # Read image
         im = PILImage.open( path )
         
@@ -127,7 +127,6 @@ class Image(Entity, db.Model):
         self.height = im.height
         self.format = im.format
         self.mode = im.mode
-        self.user = user
         self.description = description
         
     
@@ -140,6 +139,8 @@ class Currency(Entity, db.Model):
     number = db.Column(db.Integer)
     exponent = db.Column(db.Integer)
     inCHF = db.Column(db.Float)
+    image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    image = db.relationship('Image', foreign_keys=image_id)
     description = db.Column(db.String(256))
     expenses = db.relationship('Expense', back_populates='currency', lazy='dynamic')
     settlements = db.relationship('Settlement', back_populates='currency', lazy='dynamic')
@@ -151,6 +152,7 @@ class Currency(Entity, db.Model):
         self.number = number
         self.exponent = exponent
         self.inCHF = inCHF
+        self.image = Image()
         self.description = description
     
     def __repr__(self):
@@ -183,6 +185,8 @@ class Event(Entity, db.Model):
     accountant = db.relationship('User', foreign_keys=accountant_id, back_populates='events_accountant')
     users = db.relationship('User', secondary=event_users, back_populates='events', lazy='dynamic')
     closed = db.Column(db.Boolean)
+    image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    image = db.relationship('Image', foreign_keys=image_id)
     description = db.Column(db.String(256))
     expenses = db.relationship('Expense', back_populates='event', lazy='dynamic')
     settlements = db.relationship('Settlement', back_populates='event', lazy='dynamic')
@@ -195,6 +199,7 @@ class Event(Entity, db.Model):
         self.admin = admin
         self.accountant = accountant
         self.closed = closed
+        self.image = Image()
         self.description = description
         
     def has_user(self, user):
@@ -288,6 +293,8 @@ class Expense(Entity, db.Model):
     amount = db.Column(db.Float)
     affected_users = db.relationship('User', secondary=expense_affected_users, back_populates='affected_by_expenses', lazy='dynamic')
     date = db.Column(db.DateTime, index=True)
+    image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    image = db.relationship('Image', foreign_keys=image_id)
     description = db.Column(db.String(256))
     
     def __init__(self, user, event, currency, amount, affected_users, date, description='', db_created_by=''):
@@ -298,6 +305,7 @@ class Expense(Entity, db.Model):
         self.amount = amount
         self.affected_users = affected_users
         self.date = date
+        self.image = Image()
         self.description = description
     
     def __repr__(self):
@@ -331,6 +339,8 @@ class Settlement(Entity, db.Model):
     amount = db.Column(db.Float)
     draft = db.Column(db.Boolean)
     date = db.Column(db.DateTime, index=True)
+    image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    image = db.relationship('Image', foreign_keys=image_id)
     description = db.Column(db.String(256))
     
     def __init__(self, sender, recipient, event, currency, amount, draft, date, description='', db_created_by=''):
@@ -342,6 +352,7 @@ class Settlement(Entity, db.Model):
         self.amount = amount
         self.draft = draft
         self.date = date
+        self.image = Image()
         self.description = description
     
     def __repr__(self):

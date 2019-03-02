@@ -243,19 +243,18 @@ def edit_profile():
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
     form.timezone.choices = [(x, x) for x in current_app.config['TIMEZONES']]
     if form.validate_on_submit():
-        if 'image' in request.files:
-            image_filename = images.save(request.files['image'])
-            image_path = images.path(image_filename)
-            image = Image()
-            image.import_image(image_path, current_user, '')
-            db.session.add(image)
-            db.session.commit()
-            current_user.profile_picture = image
-            flash(_('File %(filename)s has been successfully uploaded.', filename=image_filename))
         current_user.username = form.username.data
         current_user.about_me = form.about_me.data
         current_user.locale = form.locale.data
         current_user.timezone = form.timezone.data
+        if 'image' in request.files:
+            image_filename = images.save(request.files['image'])
+            image_path = images.path(image_filename)
+            image = Image()
+            image.import_image(image_path, '')
+            db.session.add(image)
+            current_user.profile_picture = image
+            flash(_('File %(filename)s has been successfully uploaded.', filename=image_filename))
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.edit_profile'))
@@ -382,7 +381,14 @@ def new_event():
                       closed=False,
                       description=form.description.data, 
                       db_created_by=current_user.username)
-        
+        if 'image' in request.files:
+            image_filename = images.save(request.files['image'])
+            image_path = images.path(image_filename)
+            image = Image()
+            image.import_image(image_path, '')
+            db.session.add(image)
+            event.image = image
+            flash(_('File %(filename)s has been successfully uploaded.', filename=image_filename))
         db.session.add(event)
         event.add_user(admin)
         event.add_user(accountant)
@@ -405,6 +411,14 @@ def edit_event(event_id):
         event.description = form.description.data
         event.admin = User.query.get(form.admin_id.data)
         event.accountant = User.query.get(form.accountant_id.data)
+        if 'image' in request.files:
+            image_filename = images.save(request.files['image'])
+            image_path = images.path(image_filename)
+            image = Image()
+            image.import_image(image_path, '')
+            db.session.add(image)
+            event.image = image
+            flash(_('File %(filename)s has been successfully uploaded.', filename=image_filename))
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.event', event_id=event_id))
