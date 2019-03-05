@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from hashlib import md5
 from time import time
-from PIL import Image as PILImage
+from PIL import Image as ImagePIL
 import jwt
 import json
 import redis
@@ -59,25 +59,41 @@ class Thumbnail(Entity, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     name = db.Column(db.String(64))
-    extension = db.Column(db.String(8))
-    path = db.Column(db.String(128))
-    url = db.Column(db.String(128))
     size = db.Column(db.Integer)
     format = db.Column(db.String(8))
+    mode = db.Column(db.String(8))
     image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
     image = db.relationship('Image', foreign_keys=image_id, back_populates='thumbnails')
     
-    def __init__(self, name, extension, path, url, size, image, db_created_by=''):
-        Entity.__init__(self, db_created_by)
-        self.name = name
-        self.extension = extension
-        self.path = path
-        self.url = url
+    def __init__(self, image, size):
+        Entity.__init__(self, '')
+        im_filename, im_extension = os.path.splitext(image.name)
+        self.name = im_filename + '_' + str(size) + im_extension
         self.size = size
+        self.format = image.format
+        self.mode = image.mode
         self.image = image
+        
+        # Read image
+        im = ImagePIL.open(image.get_path())
+        
+        # Saving the thumbnail to a new file
+        max_size = max((image.width, image.height))
+        if size < max_size:
+            im.thumbnail((size, size))
+        im.save(self.get_path(), current_app.config['IMAGE_DEFAULT_FORMAT'])
     
     def __repr__(self):
-        return '<Thumbnail {}x{}px>'.format(self.name, self.size, self.size)
+        return '<Thumbnail {}px>'.format(self.name, self.size)
+    
+    def get_path(self):
+        return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
+                            current_app.config['IMAGE_TIMG_PATH'], 
+                            self.name)
+        
+    def get_url(self):
+        return os.path.join('/', current_app.config['IMAGE_TIMG_PATH'], 
+                            self.name)
     
 
 class Image(Entity, db.Model):
@@ -85,8 +101,6 @@ class Image(Entity, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     name = db.Column(db.String(64))
-    path = db.Column(db.String(128))
-    url = db.Column(db.String(128))
     width = db.Column(db.Integer)
     height = db.Column(db.Integer)
     format = db.Column(db.String(8))
@@ -98,8 +112,6 @@ class Image(Entity, db.Model):
     def __init__(self):
         Entity.__init__(self, '')
         self.name = ''
-        self.path = ''
-        self.url = ''
         self.width = 0
         self.height = 0
         self.format = ''
@@ -109,27 +121,60 @@ class Image(Entity, db.Model):
         
     def __repr__(self):
         return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
-    
-    def import_image(self, path, description):
+         
+    def import_image(self, path, description=''):
         # Read image
-        im = PILImage.open( path )
+        im = ImagePIL.open(path)
         
         # Saving the image to a new file
         original_path, original_filename = os.path.split(path)
         self.name = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.' + current_app.config['IMAGE_DEFAULT_FORMAT']
-        self.path = os.path.join(current_app.config['IMAGE_IMG_PATH'], self.name)
-        im.save(self.path, current_app.config['IMAGE_DEFAULT_FORMAT'])
+        im.save(self.get_path(), current_app.config['IMAGE_DEFAULT_FORMAT'])
         os.remove(path)
         
         self.original_filename = original_filename
-        self.url = ''
         self.width = im.width
         self.height = im.height
         self.format = im.format
         self.mode = im.mode
         self.description = description
         
-    
+        # Create thumbnails
+        self.create_thumbnails()
+        db.session.add(self)
+        db.session.commit()
+        
+    def get_path(self):
+        return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
+                            current_app.config['IMAGE_IMG_PATH'], 
+                            self.name)
+        
+    def get_url(self):
+        return os.path.join('/', current_app.config['IMAGE_IMG_PATH'], 
+                            self.name)
+        
+    def create_thumbnail(self, size):
+        thumbnail = Thumbnail(self, size)
+        db.session.add(thumbnail)
+        
+    def create_thumbnails(self):
+        for size in current_app.config['THUMBNAIL_SIZES']:
+            self.create_thumbnail(size)
+            
+    def get_thumbnail(self, desired_size):
+        for available_size in current_app.config['THUMBNAIL_SIZES']:
+            if available_size > desired_size:
+                break
+        return self.thumbnails.filter_by(size=available_size).first()
+        
+    def get_thumbnail_url(self, desired_size):
+        thumbnail = self.get_thumbnail(desired_size)
+        if thumbnail:
+            return thumbnail.get_url()
+        else:
+            return self.get_url()
+
+
 class Currency(Entity, db.Model):
     __tablename__ = 'currencies'
     id = db.Column(db.Integer, primary_key=True)
