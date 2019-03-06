@@ -30,7 +30,7 @@ services:
      - expenseapp
 
   redis:
-    image: redis:5
+    image: redis:3-alpine
     restart: always
     container_name: expenseapp-redis
     networks:
@@ -42,9 +42,36 @@ services:
        volume:
          nocopy: true
 
+  rq-worker:
+    image: mredle/expenseapp
+    restart: always
+    entrypoint: /opt/conda/bin/rq
+    command: ['worker', '-u', 'redis://redis:6379/0', 'expenseapp-tasks']
+    container_name: expenseapp-rq-worker
+    environment:
+      SECRET_KEY: 'you-will-never-guess'
+      DATABASE_URL: 'mysql+pymysql://user:pw@db/expenseapp?charset=utf8mb4'
+      MAIL_SERVER: 'postfix'
+      MAIL_PORT: '25'
+      MAIL_USE_TLS:
+      MAIL_USERNAME: 'mailuser@mail.example.com'
+      MAIL_PASSWORD: 'mailpw'
+      ADMIN_NOREPLY_SENDER: 'no-reply@expenseapp'
+      ADMIN_USERNAME: 'admin'
+      ADMIN_PASSWORD: 'you-will-never-guess'
+      ADMIN_EMAIL: 'admin@expenseapp'
+      REDIS_URL: 'redis://redis:6379'
+    networks:
+     - expenseapp
+    depends_on:
+     - db
+     - redis
+     - postfix
+ 
   expenseapp:
     image: mredle/expenseapp
     restart: always
+    container_name: expenseapp
     ports:
       - "5000:5000"
     environment:
@@ -63,6 +90,7 @@ services:
     networks:
      - expenseapp
     depends_on:
+     - rq-worker
      - db
      - redis
      - postfix

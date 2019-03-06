@@ -1,7 +1,11 @@
 #!/bin/bash
+cd ..
+source activate flask_app_dev
 export FLASK_APP=./expenseapp.py
 export FLASK_DEBUG=1
-source activate flask_app_dev
+mkdir -p app/static/img
+mkdir -p app/static/timg
+mkdir -p app/static/tmp
 
 flask db upgrade
 flask dbinit currency
