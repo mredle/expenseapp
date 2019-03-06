@@ -14,6 +14,7 @@ from flask_mail import Mail
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_babel import Babel, lazy_gettext as _l
+from flask_uploads import UploadSet, IMAGES, configure_uploads
 
 from config import Config
 
@@ -23,6 +24,7 @@ migrate = Migrate()
 login = LoginManager()
 login.login_view = 'auth.login'
 login.login_message = _l('Please log in to access this page.')
+images = UploadSet('images', IMAGES)
 mail = Mail()
 bootstrap = Bootstrap()
 moment = Moment()
@@ -35,6 +37,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
     login.init_app(app)
+    configure_uploads(app, images)
     mail.init_app(app)
     bootstrap.init_app(app)
     moment.init_app(app)

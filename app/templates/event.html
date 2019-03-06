@@ -4,7 +4,8 @@
 {% block app_content %}
     <table class="table table-hover">
         <tr>
-            <td width="256px"><img src=""></td>
+            <td width="256px">
+                <img src="{{ event.image.get_thumbnail_url(256) }}" alt="" width="256"></td>
             <td>
                 <h1>{{ _('Event') }}: {{ event.name }}</h1>
                 {% if event.description %}

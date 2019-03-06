@@ -22,6 +22,14 @@ class Config(object):
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') or 'admin'
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or 'you-will-never-guess'
     ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'admin@expenseapp'
+    IMAGE_DEFAULT_FORMAT = os.environ.get('IMAGE_DEFAULT_FORMAT') or 'JPEG'
+    IMAGE_ROOT_PATH = os.environ.get('IMAGE_ROOT_PATH') or './app'
+    IMAGE_TMP_PATH = os.environ.get('IMAGE_TMP_PATH') or 'static/tmp/'
+    IMAGE_IMG_PATH = os.environ.get('IMAGE_IMG_PATH') or 'static/img/'
+    IMAGE_TIMG_PATH = os.environ.get('IMAGE_TIMG_PATH') or 'static/timg/'
+    UPLOADS_DEFAULT_DEST = os.path.join(IMAGE_ROOT_PATH, IMAGE_TMP_PATH)
+    UPLOADED_IMAGES_DEST = os.path.join(IMAGE_ROOT_PATH, IMAGE_TMP_PATH)
+    THUMBNAIL_SIZES = [32, 64, 128, 256, 512, 1024]
     POSTS_PER_PAGE = 10
     MESSAGES_PER_PAGE = 10
     LANGUAGES = ['en', 'de']

@@ -1,7 +1,8 @@
 version: '3.7'
 services:
   db:
-    image: mariadb
+    image: mariadb:10.4
+    container_name: expenseapp-db
     command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
     restart: always
     environment:
@@ -10,7 +11,7 @@ services:
       MYSQL_PASSWORD: pw
       MYSQL_DATABASE: expenseapp
     networks:
-     - db
+     - expenseapp
     volumes:
      - type: volume
        source: mariadb-data
@@ -21,17 +22,19 @@ services:
   postfix:
     image: catatnight/postfix
     restart: always
+    container_name: expenseapp-postfix
     environment:
       maildomain: 'mail.example.com'
       smtp_user: 'mailuser:mailpw'
     networks:
-     - db
+     - expenseapp
 
   redis:
-    image: redis
+    image: redis:5
     restart: always
+    container_name: expenseapp-redis
     networks:
-     - db
+     - expenseapp
     volumes:
      - type: volume
        source: redis-data
@@ -40,7 +43,7 @@ services:
          nocopy: true
 
   expenseapp:
-    image: expenseapp:latest
+    image: mredle/expenseapp
     restart: always
     ports:
       - "5000:5000"
@@ -58,22 +61,27 @@ services:
       ADMIN_EMAIL: 'admin@expenseapp'
       REDIS_URL: 'redis://redis:6379'
     networks:
-     - db
+     - expenseapp
     depends_on:
      - db
      - redis
      - postfix
 
 networks:
-  db:
+  expenseapp:
     driver: bridge
+    name: expenseapp
 
 volumes:
+  expenseapp-data:
+    driver: local
+    external: false
+    name: expenseapp-data
   mariadb-data:
     driver: local
     external: false
-    name: mariadb-data
+    name: expenseapp-mariadb-data
   redis-data:
     driver: local
     external: false
-    name: redis-data
+    name: expenseapp-redis-data

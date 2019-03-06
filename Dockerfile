@@ -18,4 +18,5 @@ RUN chmod +x boot.sh
 
 ENV FLASK_APP expenseapp.py
 EXPOSE 5000
+VOLUME ["/home/flask_app/static"]
 ENTRYPOINT ["./boot.sh"]

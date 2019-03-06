@@ -4,12 +4,14 @@ from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from hashlib import md5
 from time import time
+from PIL import Image as ImagePIL
 import jwt
 import json
 import redis
 import rq
 import base64
 import os
+import uuid
 
 from app import db, login
 from flask import current_app, url_for
@@ -52,6 +54,126 @@ class Entity():
         self.db_created_by = db_created_by
         self.db_updated_by = db_created_by
 
+class Thumbnail(Entity, db.Model):
+    __tablename__ = 'thumbnails'
+    id = db.Column(db.Integer, primary_key=True)
+    
+    name = db.Column(db.String(64))
+    size = db.Column(db.Integer)
+    format = db.Column(db.String(8))
+    mode = db.Column(db.String(8))
+    image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    image = db.relationship('Image', foreign_keys=image_id, back_populates='thumbnails')
+    
+    def __init__(self, image, size):
+        Entity.__init__(self, '')
+        im_filename, im_extension = os.path.splitext(image.name)
+        self.name = im_filename + '_' + str(size) + im_extension
+        self.size = size
+        self.format = image.format
+        self.mode = image.mode
+        self.image = image
+        
+        # Read image
+        im = ImagePIL.open(image.get_path())
+        
+        # Saving the thumbnail to a new file
+        max_size = max((image.width, image.height))
+        if size < max_size:
+            im.thumbnail((size, size))
+        im.save(self.get_path(), current_app.config['IMAGE_DEFAULT_FORMAT'])
+    
+    def __repr__(self):
+        return '<Thumbnail {}px>'.format(self.name, self.size)
+    
+    def get_path(self):
+        return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
+                            current_app.config['IMAGE_TIMG_PATH'], 
+                            self.name)
+        
+    def get_url(self):
+        return os.path.join('/', current_app.config['IMAGE_TIMG_PATH'], 
+                            self.name)
+    
+
+class Image(Entity, db.Model):
+    __tablename__ = 'images'
+    id = db.Column(db.Integer, primary_key=True)
+    
+    name = db.Column(db.String(64))
+    width = db.Column(db.Integer)
+    height = db.Column(db.Integer)
+    format = db.Column(db.String(8))
+    mode = db.Column(db.String(8))
+    original_filename = db.Column(db.String(128))
+    description = db.Column(db.String(256))
+    thumbnails = db.relationship('Thumbnail', foreign_keys='Thumbnail.image_id', back_populates='image', lazy='dynamic')
+    
+    def __init__(self):
+        Entity.__init__(self, '')
+        self.name = ''
+        self.width = 0
+        self.height = 0
+        self.format = ''
+        self.mode = ''
+        self.original_filename = ''
+        self.description = ''
+        
+    def __repr__(self):
+        return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
+         
+    def import_image(self, path, description=''):
+        # Read image
+        im = ImagePIL.open(path)
+        
+        # Saving the image to a new file
+        original_path, original_filename = os.path.split(path)
+        self.name = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.' + current_app.config['IMAGE_DEFAULT_FORMAT']
+        im.save(self.get_path(), current_app.config['IMAGE_DEFAULT_FORMAT'])
+        os.remove(path)
+        
+        self.original_filename = original_filename
+        self.width = im.width
+        self.height = im.height
+        self.format = im.format
+        self.mode = im.mode
+        self.description = description
+        
+        # Create thumbnails
+        self.create_thumbnails()
+        db.session.add(self)
+        db.session.commit()
+        
+    def get_path(self):
+        return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
+                            current_app.config['IMAGE_IMG_PATH'], 
+                            self.name)
+        
+    def get_url(self):
+        return os.path.join('/', current_app.config['IMAGE_IMG_PATH'], 
+                            self.name)
+        
+    def create_thumbnail(self, size):
+        thumbnail = Thumbnail(self, size)
+        db.session.add(thumbnail)
+        
+    def create_thumbnails(self):
+        for size in current_app.config['THUMBNAIL_SIZES']:
+            self.create_thumbnail(size)
+            
+    def get_thumbnail(self, desired_size):
+        for available_size in current_app.config['THUMBNAIL_SIZES']:
+            if available_size > desired_size:
+                break
+        return self.thumbnails.filter_by(size=available_size).first()
+        
+    def get_thumbnail_url(self, desired_size):
+        thumbnail = self.get_thumbnail(desired_size)
+        if thumbnail:
+            return thumbnail.get_url()
+        else:
+            return self.get_url()
+
 
 class Currency(Entity, db.Model):
     __tablename__ = 'currencies'
@@ -62,6 +184,8 @@ class Currency(Entity, db.Model):
     number = db.Column(db.Integer)
     exponent = db.Column(db.Integer)
     inCHF = db.Column(db.Float)
+    image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    image = db.relationship('Image', foreign_keys=image_id)
     description = db.Column(db.String(256))
     expenses = db.relationship('Expense', back_populates='currency', lazy='dynamic')
     settlements = db.relationship('Settlement', back_populates='currency', lazy='dynamic')
@@ -73,6 +197,7 @@ class Currency(Entity, db.Model):
         self.number = number
         self.exponent = exponent
         self.inCHF = inCHF
+        self.image = Image()
         self.description = description
     
     def __repr__(self):
@@ -105,6 +230,8 @@ class Event(Entity, db.Model):
     accountant = db.relationship('User', foreign_keys=accountant_id, back_populates='events_accountant')
     users = db.relationship('User', secondary=event_users, back_populates='events', lazy='dynamic')
     closed = db.Column(db.Boolean)
+    image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    image = db.relationship('Image', foreign_keys=image_id)
     description = db.Column(db.String(256))
     expenses = db.relationship('Expense', back_populates='event', lazy='dynamic')
     settlements = db.relationship('Settlement', back_populates='event', lazy='dynamic')
@@ -117,6 +244,7 @@ class Event(Entity, db.Model):
         self.admin = admin
         self.accountant = accountant
         self.closed = closed
+        self.image = Image()
         self.description = description
         
     def has_user(self, user):
@@ -210,6 +338,8 @@ class Expense(Entity, db.Model):
     amount = db.Column(db.Float)
     affected_users = db.relationship('User', secondary=expense_affected_users, back_populates='affected_by_expenses', lazy='dynamic')
     date = db.Column(db.DateTime, index=True)
+    image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    image = db.relationship('Image', foreign_keys=image_id)
     description = db.Column(db.String(256))
     
     def __init__(self, user, event, currency, amount, affected_users, date, description='', db_created_by=''):
@@ -220,6 +350,7 @@ class Expense(Entity, db.Model):
         self.amount = amount
         self.affected_users = affected_users
         self.date = date
+        self.image = Image()
         self.description = description
     
     def __repr__(self):
@@ -253,6 +384,8 @@ class Settlement(Entity, db.Model):
     amount = db.Column(db.Float)
     draft = db.Column(db.Boolean)
     date = db.Column(db.DateTime, index=True)
+    image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    image = db.relationship('Image', foreign_keys=image_id)
     description = db.Column(db.String(256))
     
     def __init__(self, sender, recipient, event, currency, amount, draft, date, description='', db_created_by=''):
@@ -264,6 +397,7 @@ class Settlement(Entity, db.Model):
         self.amount = amount
         self.draft = draft
         self.date = date
+        self.image = Image()
         self.description = description
     
     def __repr__(self):
@@ -392,6 +526,8 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     password_hash = db.Column(db.String(128))
     token = db.Column(db.String(32), index=True, unique=True)
     token_expiration = db.Column(db.DateTime)
+    profile_picture_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    profile_picture = db.relationship('Image', foreign_keys=profile_picture_id)
     events = db.relationship('Event', secondary=event_users, back_populates='users', lazy='dynamic')
     events_admin = db.relationship('Event', foreign_keys='Event.admin_id', back_populates='admin', lazy='dynamic')
     events_accountant = db.relationship('Event', foreign_keys='Event.accountant_id', back_populates='accountant', lazy='dynamic')
@@ -418,6 +554,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         self.password_hash = ''
         self.token = ''
         self.token_expiration = datetime.utcnow() - timedelta(seconds=1)
+        self.profile_picture = Image()
         self.last_message_read_time = datetime.utcnow()
         self.about_me = about_me
         self.last_seen = datetime.utcnow()
@@ -473,7 +610,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         return User.query.get(id)
     
     def avatar(self, size):
-        return self.gravatar(size)
+        return ''
     
     def gravatar(self, size):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()

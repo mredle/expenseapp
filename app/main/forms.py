@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed, FileRequired
 from flask_babel import _, lazy_gettext as _l
 from wtforms import StringField, SubmitField, TextAreaField, SelectField, SelectMultipleField, IntegerField, FloatField
 from wtforms.validators import ValidationError, DataRequired, Length
 from wtforms.fields.html5 import DateField
 
+from app import images
 from app.models import User
+
     
 class EditProfileForm(FlaskForm):
     username = StringField(_l('Username'), 
@@ -15,6 +18,7 @@ class EditProfileForm(FlaskForm):
                              validators=[Length(min=0, max=256)])
     locale = SelectField(_l('Language'), validators=[DataRequired()])
     timezone = SelectField(_l('Timezone'), validators=[DataRequired()])
+    image = FileField(_l('Profile picture'), validators=[FileAllowed(images, 'Images only!')])
     submit = SubmitField(_l('Submit'))
     
     def __init__(self, original_username, *args, **kwargs):
@@ -59,6 +63,7 @@ class EventForm(FlaskForm):
     date = DateField(_l('Date in Y-m-d'), 
                         format='%Y-%m-%d', 
                         validators=[DataRequired()])
+    image = FileField(_l('Event picture'), validators=[FileAllowed(images, 'Images only!')])
     description = TextAreaField(_l('Description'), 
                                 validators=[Length(min=0, max=256)])
     admin_id = SelectField(_l('Change admin user'), coerce=int,
