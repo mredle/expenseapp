@@ -111,7 +111,7 @@ class Image(Entity, db.Model):
     
     def __init__(self):
         Entity.__init__(self, '')
-        self.name = ''
+        self.name = None
         self.width = 0
         self.height = 0
         self.format = ''
@@ -145,13 +145,19 @@ class Image(Entity, db.Model):
         db.session.commit()
         
     def get_path(self):
-        return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
-                            current_app.config['IMAGE_IMG_PATH'], 
-                            self.name)
+        if self.name:
+            return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
+                                current_app.config['IMAGE_IMG_PATH'], 
+                                self.name)
+        else:
+            return ''
         
     def get_url(self):
-        return os.path.join('/', current_app.config['IMAGE_IMG_PATH'], 
-                            self.name)
+        if self.name:
+            return os.path.join('/', current_app.config['IMAGE_IMG_PATH'], 
+                                self.name)
+        else:
+            return ''
         
     def create_thumbnail(self, size):
         thumbnail = Thumbnail(self, size)

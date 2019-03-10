@@ -24,6 +24,26 @@ def _set_task_progress(progress):
             task.complete = True
         db.session.commit()
 
+def consume_time(user_id):
+    amount=10
+    try:
+        user = User.query.get(user_id)
+        _set_task_progress(0)
+        for i in range(amount):
+            time.sleep(1)
+            _set_task_progress(100*(1+i)//amount)
+
+        send_email('Time has been consumed',
+                sender=app.config['ADMIN_NOREPLY_SENDER'], recipients=[user.email],
+                text_body=render_template('email/consume_time.txt', user=user, amount=amount),
+                html_body=render_template('email/consume_time.html', user=user, amount=amount),
+                attachments=[],
+                sync=True)
+    
+    except:
+        _set_task_progress(100)
+        app.logger.error('Unhandled exception', exc_info=sys.exc_info())
+
 def export_posts(user_id):
     try:
         user = User.query.get(user_id)

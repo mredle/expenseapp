@@ -4,6 +4,20 @@
                 <img src="{{ expense.image.get_thumbnail_url(64) }}" alt="" width="64">
             </td>
             <td>
+                {% set edit_link %}
+                    <span>
+                        <a href="{{ url_for('main.event_edit_expense', event_id=event.id, expense_id=expense.id) }}">
+                            {{ _('Edit') }}
+                        </a>
+                    </span>
+                {% endset %}
+                {% set remove_link %}
+                    <span>
+                        <a href="{{ url_for('main.event_remove_expense', event_id=event.id, expense_id=expense.id) }}">
+                            {{ _('Remove') }}
+                        </a>
+                    </span>
+                {% endset %}
                 {% set user_link %}
                     <span class="expense_popup">
                         <a href="{{ url_for('main.user', username=expense.user.username) }}">
@@ -18,6 +32,10 @@
                     affected_users=expense.get_affected_users_str()) }}
                 <br>
                 {{ expense.description }}
+                <br>
+                {{ _('%(edit)s, %(remove)s',
+                    edit=edit_link,
+                    remove=remove_link) }}
             </td>
         </tr>
     </table>

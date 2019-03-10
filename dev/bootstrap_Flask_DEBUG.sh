@@ -10,5 +10,6 @@ mkdir -p app/static/tmp
 flask db upgrade
 flask dbinit currency
 flask dbinit admin
+flask dbinit dummyusers --count 3
 flask translate compile
 flask run -h localhost

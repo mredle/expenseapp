@@ -16,6 +16,9 @@
                 {% if not current_user.get_task_in_progress('export_posts') %}
                 <p><a href="{{ url_for('main.export_posts') }}">{{ _('Export your posts') }}</a></p>
                 {% endif %}
+                {% if not current_user.get_task_in_progress('consume_time') %}
+                <p><a href="{{ url_for('main.consume_time', amount=10) }}">{{ _('Consume 10s') }}</a></p>
+                {% endif %}
                 {% endif %}
                 {% if user != current_user %}
                 <p><a href="{{ url_for('main.send_message', recipient=user.username) }}">{{ _('Send private message') }}</a></p>

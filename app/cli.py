@@ -140,5 +140,28 @@ def register(app):
             db.session.add(admin_user)
             db.session.commit()
         
-        
+    @dbinit.command()
+    @click.option('--count', default=3, help='Number of dummy users to create.')
+    def dummyusers(count):
+        """Create dummy users for development."""
+        created_by = 'flask dummy --count {}'.format(count) 
+            
+        # Fill users with dummy values
+        n_users = count
+        users = []
+        existing_usernames = [user.username for user in  User.query.all()]
+        existing_emails = [user.email for user in  User.query.all()]
+        for i_user in range(0, n_users):
+            user = User(username = 'User'+str(i_user), 
+                        email = 'user'+str(i_user)+'@email', 
+                        locale = 'en', 
+                        timezone = 'Etc/UTC',
+                        about_me = 'blablablabla from the life of User'+str(i_user), 
+                        db_created_by = created_by)
+            user.set_password(user.username)
+            if (user.username not in existing_usernames) and (user.email not in existing_emails):
+                user.get_token()
+                users.append(user)
+                db.session.add(user)
+        db.session.commit()
         

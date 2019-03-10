@@ -20,7 +20,7 @@ class Config(object):
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     ADMIN_NOREPLY_SENDER = os.environ.get('ADMIN_NOREPLY_SENDER') or 'no-reply@expenseapp'
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') or 'admin'
-    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or 'you-will-never-guess'
+    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or 'pw'
     ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'admin@expenseapp'
     IMAGE_DEFAULT_FORMAT = os.environ.get('IMAGE_DEFAULT_FORMAT') or 'JPEG'
     IMAGE_ROOT_PATH = os.environ.get('IMAGE_ROOT_PATH') or './app'

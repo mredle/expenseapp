@@ -218,6 +218,90 @@ def event_remove_user(event_id, username):
     flash(_('User %(username)s has been removed from event %(event_name)s.', username=user.username, event_name=event.name))
     return redirect(url_for('main.event_users', event_id=event_id))
 
+@bp.route('/event_edit_expense/<event_id>/<expense_id>', methods=['GET', 'POST'])
+@login_required
+def event_edit_expense(event_id, expense_id):
+    event = Event.query.get_or_404(event_id)
+    expense = Expense.query.get_or_404(expense_id)
+    if current_user not in [event.admin, expense.user]:
+        flash(_('Your are only allowed to edit your own expenses!'))
+        return redirect(url_for('main.event_expenses', event_id=event.id))
+    form = ExpenseForm()
+    form.currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
+    form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
+    if form.validate_on_submit():
+        expense.currency = Currency.query.get(form.currency_id.data)
+        expense.amount = form.amount.data
+        expense.affected_users = [User.query.get(user_id) for user_id in form.affected_users_id.data]
+        expense.date = form.date.data
+        expense.description = form.description.data
+        db.session.commit()
+        flash(_('Your changes have been saved.'))
+        return redirect(url_for('main.event_expenses', event_id=event_id))
+    elif request.method == 'GET':
+        form.currency_id.data = expense.currency.id
+        form.amount.data = expense.amount
+        form.affected_users_id.data = [u.id for u in expense.affected_users]
+        form.date.data = expense.date
+        form.description.data = expense.description
+    return render_template('edit_expense.html', title=_('Edit Expense'),
+                           form=form)
+
+@bp.route('/event_edit_settlement/<event_id>/<settlement_id>', methods=['GET', 'POST'])
+@login_required
+def event_edit_settlement(event_id, settlement_id):
+    event = Event.query.get_or_404(event_id)
+    settlement = Settlement.query.get_or_404(settlement_id)
+    if current_user not in [event.admin, settlement.sender]:
+        flash(_('Your are only allowed to edit your own settlements!'))
+        return redirect(url_for('main.event_settlements', event_id=event.id))
+    form = SettlementForm()
+    form.currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
+    form.recipient_id.choices = [(u.id, u.username) for u in event.users if u!=current_user]
+    if form.validate_on_submit():
+        settlement.currency = Currency.query.get(form.currency_id.data)
+        settlement.amount = form.amount.data
+        settlement.recipient = User.query.get(form.recipient_id.data)
+        settlement.description = form.description.data
+        db.session.commit()
+        flash(_('Your changes have been saved.'))
+        return redirect(url_for('main.event_settlements', event_id=event_id))
+    elif request.method == 'GET':
+        form.currency_id.data = settlement.currency.id
+        form.amount.data = settlement.amount
+        form.recipient_id.data = settlement.recipient.id
+        form.description.data = settlement.description
+    return render_template('edit_settlement.html', title=_('Edit Settlement'),
+                           form=form)
+
+@bp.route('/event_remove_expense/<event_id>/<expense_id>')
+@login_required
+def event_remove_expense(event_id, expense_id):
+    event = Event.query.get_or_404(event_id)
+    expense = Expense.query.get_or_404(expense_id)
+    if current_user not in [event.admin, expense.user]:
+        flash(_('Your are only allowed to remove your own expenses!'))
+        return redirect(url_for('main.event_expenses', event_id=event.id))
+    if expense in event.expenses:
+        event.expenses.remove(expense)
+    db.session.commit()
+    flash(_('Expense over %(amount_str)s has been removed from event %(event_name)s.', amount_str=expense.get_amount_str(), event_name=event.name))
+    return redirect(url_for('main.event_expenses', event_id=event_id))
+
+@bp.route('/event_remove_settlement/<event_id>/<settlement_id>')
+@login_required
+def event_remove_settlement(event_id, settlement_id):
+    event = Event.query.get_or_404(event_id)
+    settlement = Settlement.query.get_or_404(settlement_id)
+    if current_user not in [event.admin, settlement.sender]:
+        flash(_('Your are only allowed to remove your own settlements!'))
+        return redirect(url_for('main.event_settlements', settlement_id=settlement.id))
+    if settlement in event.settlements:
+        event.settlements.remove(settlement)
+    db.session.commit()
+    flash(_('Settlement over %(amount_str)s has been removed from event %(event_name)s.', amount_str=settlement.get_amount_str(), event_name=event.name))
+    return redirect(url_for('main.event_settlements', event_id=event_id))
+
 @bp.route('/user/<username>')
 @login_required
 def user(username):
@@ -318,6 +402,16 @@ def export_posts():
         flash(_('An export task is currently in progress'))
     else:
         current_user.launch_task('export_posts', _('Exporting posts...'))
+        db.session.commit()
+    return redirect(url_for('main.user', username=current_user.username))
+
+@bp.route('/consume_time/<amount>')
+@login_required
+def consume_time(amount):
+    if current_user.get_task_in_progress('consume_time'):
+        flash(_('A time consuming task is currently in progress'))
+    else:
+        current_user.launch_task('consume_time', _('Consuming time...'))
         db.session.commit()
     return redirect(url_for('main.user', username=current_user.username))
 

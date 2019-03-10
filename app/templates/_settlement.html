@@ -4,6 +4,20 @@
                 <img src="{{ url_for('static', filename = 'img/'+settlement.image.name) }}" alt="" width="64">
             </td>
             <td>
+                {% set edit_link %}
+                    <span>
+                        <a href="{{ url_for('main.event_edit_settlement', event_id=event.id, settlement_id=settlement.id) }}">
+                            {{ _('Edit') }}
+                        </a>
+                    </span>
+                {% endset %}
+                {% set remove_link %}
+                    <span>
+                        <a href="{{ url_for('main.event_remove_settlement', event_id=event.id, settlement_id=settlement.id) }}">
+                            {{ _('Remove') }}
+                        </a>
+                    </span>
+                {% endset %}
                 {% set sender_link %}
                     <span class="settlement_popup">
                         <a href="{{ url_for('main.user', username=settlement.sender.username) }}">
@@ -25,6 +39,10 @@
                     recipient=recipient_link, ) }}
                 <br>
                 {{ settlement.description }}
+                <br>
+                {{ _('%(edit)s, %(remove)s',
+                    edit=edit_link,
+                    remove=remove_link) }}
             </td>
         </tr>
     </table>
