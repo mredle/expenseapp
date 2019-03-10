@@ -1,10 +1,5 @@
 #!/bin/bash
-
 source activate
-mkdir -p app/static/img
-mkdir -p app/static/timg
-mkdir -p app/static/tmp
-chown -R flask_app:flask_app app/static/
 
 while true; do
     sleep 5

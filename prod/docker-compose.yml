@@ -67,7 +67,13 @@ services:
      - db
      - redis
      - postfix
- 
+    volumes:
+     - type: volume
+       source: expenseapp-data
+       target: /home/flask_app/app/static
+       volume:
+         nocopy: false
+         
   expenseapp:
     image: mredle/expenseapp
     restart: always
@@ -94,7 +100,14 @@ services:
      - db
      - redis
      - postfix
-
+    volumes:
+     - type: volume
+       source: expenseapp-data
+       target: /home/flask_app/app/static
+       volume:
+         nocopy: false
+         
+         
 networks:
   expenseapp:
     driver: bridge

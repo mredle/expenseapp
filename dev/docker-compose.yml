@@ -62,6 +62,7 @@ services:
          nocopy: true
 
   rq-worker:
+    image: expenseapp:latest
     build:
       context: ..
       dockerfile: Dockerfile
@@ -90,13 +91,15 @@ services:
      - db
      - redis
      - mailhog
-
+    volumes:
+     - type: volume
+       source: expenseapp-data
+       target: /home/flask_app/app/static
+       volume:
+         nocopy: false
+         
   expenseapp:
-    build:
-      context: ..
-      dockerfile: Dockerfile
-      args:
-        DUMMY: 'date:${DUMMY}'
+    image: expenseapp:latest
     restart: on-failure
     container_name: expenseapp-dev
     ports:
@@ -121,6 +124,12 @@ services:
      - db
      - redis
      - mailhog
+    volumes:
+     - type: volume
+       source: expenseapp-data
+       target: /home/flask_app/app/static
+       volume:
+         nocopy: false
 
 networks:
   expenseapp:

@@ -6,7 +6,7 @@ import json
 from flask import render_template
 from rq import get_current_job
 from app import db, create_app
-from app.models import Task, User, Post
+from app.models import Expense, Settlement, Currency, Task, User, Event, Post, Image, Thumbnail
 from app.email import send_email
 
 app = create_app()
@@ -32,7 +32,8 @@ def consume_time(user_id):
         for i in range(amount):
             time.sleep(1)
             _set_task_progress(100*(1+i)//amount)
-
+        
+        _set_task_progress(100)
         send_email('Time has been consumed',
                 sender=app.config['ADMIN_NOREPLY_SENDER'], recipients=[user.email],
                 text_body=render_template('email/consume_time.txt', user=user, amount=amount),
@@ -44,6 +45,51 @@ def consume_time(user_id):
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
+def import_image(user_id, path, add_to_class, add_to_id):
+    try:
+        i = 0;
+        total = len(app.config['THUMBNAIL_SIZES'])+1
+        _set_task_progress(100*(1+i)//total)
+        
+        # Saving the image to a new file
+        user = User.query.get(user_id)
+        image = Image(path)
+        image.description = 'Image uploaded by {}'.format(user.username)
+        
+        db.session.add(image)
+        if add_to_class == 'User':
+            add_to_user = User.query.get(add_to_id)
+            add_to_user.profile_picture = image  
+        elif add_to_class == 'Event':
+            add_to_event = Event.query.get(add_to_id)
+            add_to_event.image = image 
+        elif add_to_class == 'Currency':
+            add_to_currency = Currency.query.get(add_to_id)
+            add_to_currency.image = image 
+        elif add_to_class == 'Expense':
+            add_to_expense = Expense.query.get(add_to_id)
+            add_to_expense.image = image
+        elif add_to_class == 'Settlement':
+            add_to_settlement = Settlement.query.get(add_to_id)
+            add_to_settlement.image = image 
+        db.session.commit()
+        
+        # Create thumbnails
+        sizes = list(app.config['THUMBNAIL_SIZES'])
+        sizes.append(max((image.width, image.height)))
+        for size in sizes:
+            i = i+1;
+            thumbnail = Thumbnail(image, size)
+            db.session.add(thumbnail)
+            _set_task_progress(100*(1+i)//total)
+        
+        _set_task_progress(100)
+        db.session.commit()
+        
+    except:
+        _set_task_progress(100)
+        app.logger.error('Unhandled exception', exc_info=sys.exc_info())
+        
 def export_posts(user_id):
     try:
         user = User.query.get(user_id)
@@ -54,10 +100,10 @@ def export_posts(user_id):
         for post in user.posts.order_by(Post.timestamp.asc()):
             data.append({'body': post.body,
                          'timestamp': post.timestamp.isoformat() + 'Z'})
-            time.sleep(2)
             i += 1
-            _set_task_progress(100 * i // total_posts)
-
+            _set_task_progress(100*i//total_posts)
+        
+        _set_task_progress(100)
         send_email('Your posts',
                 sender=app.config['ADMIN_NOREPLY_SENDER'], recipients=[user.email],
                 text_body=render_template('email/export_posts.txt', user=user),

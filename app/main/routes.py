@@ -8,7 +8,7 @@ from flask_babel import get_locale, _
 from app import db, images
 from app.main import bp
 from app.main.forms import EditProfileForm, PostForm, MessageForm, CurrencyForm, EventForm, EventAddUserForm, ExpenseForm, SettlementForm
-from app.models import Image, Currency, Event, Expense, Settlement, Post, User, Message, Notification
+from app.models import Currency, Event, Expense, Settlement, Post, User, Message, Notification
 
 @bp.before_app_request
 def before_request():
@@ -334,11 +334,7 @@ def edit_profile():
         if 'image' in request.files:
             image_filename = images.save(request.files['image'])
             image_path = images.path(image_filename)
-            image = Image()
-            image.import_image(image_path, '')
-            db.session.add(image)
-            current_user.profile_picture = image
-            flash(_('File %(filename)s has been successfully uploaded.', filename=image_filename))
+            current_user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='User', add_to_id=current_user.id)
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.user', username=current_user.username))
@@ -475,17 +471,13 @@ def new_event():
                       closed=False,
                       description=form.description.data, 
                       db_created_by=current_user.username)
+        event.add_user(admin)
+        event.add_user(accountant)
+        db.session.add(event)
         if 'image' in request.files:
             image_filename = images.save(request.files['image'])
             image_path = images.path(image_filename)
-            image = Image()
-            image.import_image(image_path, '')
-            db.session.add(image)
-            event.image = image
-            flash(_('File %(filename)s has been successfully uploaded.', filename=image_filename))
-        db.session.add(event)
-        event.add_user(admin)
-        event.add_user(accountant)
+            current_user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='Event', add_to_id=event.id)
         db.session.commit()
         flash(_('Your new event has been added.'))
         return redirect(url_for('main.event', event_id=event.id))
@@ -508,11 +500,7 @@ def edit_event(event_id):
         if 'image' in request.files:
             image_filename = images.save(request.files['image'])
             image_path = images.path(image_filename)
-            image = Image()
-            image.import_image(image_path, '')
-            db.session.add(image)
-            event.image = image
-            flash(_('File %(filename)s has been successfully uploaded.', filename=image_filename))
+            current_user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='Event', add_to_id=event.id)
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.event', event_id=event_id))

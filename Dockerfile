@@ -15,9 +15,12 @@ USER flask_app
 COPY --chown=flask_app:flask_app app app
 COPY --chown=flask_app:flask_app migrations migrations
 COPY --chown=flask_app:flask_app expenseapp.py config.py entrypoint.sh ./
-RUN chmod +x entrypoint.sh
+RUN chmod +x entrypoint.sh \
+    && mkdir -p app/static/img \
+    && mkdir -p app/static/timg \
+    && mkdir -p app/static/tmp
 
 ENV FLASK_APP expenseapp.py
 EXPOSE 5000
-VOLUME ["/home/flask_app/static"]
+VOLUME ["/home/flask_app/app/static"]
 ENTRYPOINT ["./entrypoint.sh"]

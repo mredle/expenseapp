@@ -67,21 +67,21 @@ class Thumbnail(Entity, db.Model):
     
     def __init__(self, image, size):
         Entity.__init__(self, '')
-        im_filename, im_extension = os.path.splitext(image.name)
-        self.name = im_filename + '_' + str(size) + im_extension
-        self.size = size
-        self.format = image.format
-        self.mode = image.mode
-        self.image = image
         
         # Read image
         im = ImagePIL.open(image.get_path())
+        im_filename, im_extension = os.path.splitext(image.name)
+        self.name = im_filename + '_' + str(size) +  '.'  + current_app.config['IMAGE_DEFAULT_FORMAT']
+        self.size = size
+        self.format = current_app.config['IMAGE_DEFAULT_FORMAT']
+        self.mode = im.mode
+        self.image = image
         
         # Saving the thumbnail to a new file
         max_size = max((image.width, image.height))
         if size < max_size:
             im.thumbnail((size, size))
-        im.save(self.get_path(), current_app.config['IMAGE_DEFAULT_FORMAT'])
+        im.save(self.get_path(), format=current_app.config['IMAGE_DEFAULT_FORMAT'])
     
     def __repr__(self):
         return '<Thumbnail {}px>'.format(self.name, self.size)
@@ -109,40 +109,26 @@ class Image(Entity, db.Model):
     description = db.Column(db.String(256))
     thumbnails = db.relationship('Thumbnail', foreign_keys='Thumbnail.image_id', back_populates='image', lazy='dynamic')
     
-    def __init__(self):
+    def __init__(self, path):
         Entity.__init__(self, '')
-        self.name = None
-        self.width = 0
-        self.height = 0
-        self.format = ''
-        self.mode = ''
-        self.original_filename = ''
-        self.description = ''
         
-    def __repr__(self):
-        return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
-         
-    def import_image(self, path, description=''):
         # Read image
         im = ImagePIL.open(path)
-        
-        # Saving the image to a new file
         original_path, original_filename = os.path.split(path)
-        self.name = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.' + current_app.config['IMAGE_DEFAULT_FORMAT']
-        im.save(self.get_path(), current_app.config['IMAGE_DEFAULT_FORMAT'])
-        os.remove(path)
-        
+        self.name = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.' + im.format
         self.original_filename = original_filename
         self.width = im.width
         self.height = im.height
         self.format = im.format
         self.mode = im.mode
-        self.description = description
+        self.description = ''
         
-        # Create thumbnails
-        self.create_thumbnails()
-        db.session.add(self)
-        db.session.commit()
+        # Moving the image to a new file
+        os.rename(path, self.get_path())
+        
+        
+    def __repr__(self):
+        return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
         
     def get_path(self):
         if self.name:
@@ -158,20 +144,13 @@ class Image(Entity, db.Model):
                                 self.name)
         else:
             return ''
-        
-    def create_thumbnail(self, size):
-        thumbnail = Thumbnail(self, size)
-        db.session.add(thumbnail)
-        
-    def create_thumbnails(self):
-        for size in current_app.config['THUMBNAIL_SIZES']:
-            self.create_thumbnail(size)
-            
+           
     def get_thumbnail(self, desired_size):
-        for available_size in current_app.config['THUMBNAIL_SIZES']:
-            if available_size > desired_size:
-                break
-        return self.thumbnails.filter_by(size=available_size).first()
+        thumbnails = self.thumbnails.order_by(Thumbnail.size.asc()).all()
+        for thumbnail in thumbnails:
+            if thumbnail.size > desired_size:
+                return thumbnail
+        return None
         
     def get_thumbnail_url(self, desired_size):
         thumbnail = self.get_thumbnail(desired_size)
@@ -203,11 +182,16 @@ class Currency(Entity, db.Model):
         self.number = number
         self.exponent = exponent
         self.inCHF = inCHF
-        self.image = Image()
         self.description = description
     
     def __repr__(self):
         return '<Currency {}>'.format(self.code)
+    
+    def avatar(self, size):
+        if self.image:
+            return self.image.get_thumbnail_url(size)
+        else:
+            return ''
     
     def get_amount_as_str(self, amount):
         amount_str = ('{} {:.'+'{}'.format(self.exponent)+'f}').format(self.code, amount)
@@ -250,9 +234,17 @@ class Event(Entity, db.Model):
         self.admin = admin
         self.accountant = accountant
         self.closed = closed
-        self.image = Image()
         self.description = description
+    
+    def __repr__(self):
+        return '<Event {}>'.format(self.name)
         
+    def avatar(self, size):
+        if self.image:
+            return self.image.get_thumbnail_url(size)
+        else:
+            return ''
+    
     def has_user(self, user):
         return (user in self.users)
         
@@ -321,9 +313,6 @@ class Event(Entity, db.Model):
                 continue
             
         return settlements
-    
-    def __repr__(self):
-        return '<Event {}>'.format(self.name)
 
 expense_affected_users = db.Table('expense_affected_users',
     db.Column('expense_id', db.Integer, db.ForeignKey('expenses.id')),
@@ -356,11 +345,16 @@ class Expense(Entity, db.Model):
         self.amount = amount
         self.affected_users = affected_users
         self.date = date
-        self.image = Image()
         self.description = description
     
     def __repr__(self):
         return '<Expense {}{}>'.format(self.amount, self.currency.code)
+    
+    def avatar(self, size):
+        if self.image:
+            return self.image.get_thumbnail_url(size)
+        else:
+            return '0'
     
     def get_amount_str(self):
         CHF = Currency.query.filter_by(code='CHF').first_or_404()
@@ -403,11 +397,16 @@ class Settlement(Entity, db.Model):
         self.amount = amount
         self.draft = draft
         self.date = date
-        self.image = Image()
         self.description = description
     
     def __repr__(self):
         return '<Settlement {}{}>'.format(self.amount, self.currency.code)
+    
+    def avatar(self, size):
+        if self.image:
+            return self.image.get_thumbnail_url(size)
+        else:
+            return ''
     
     def get_amount_str(self):
         CHF = Currency.query.filter_by(code='CHF').first_or_404()
@@ -560,7 +559,6 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         self.password_hash = ''
         self.token = ''
         self.token_expiration = datetime.utcnow() - timedelta(seconds=1)
-        self.profile_picture = Image()
         self.last_message_read_time = datetime.utcnow()
         self.about_me = about_me
         self.last_seen = datetime.utcnow()
@@ -616,7 +614,10 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         return User.query.get(id)
     
     def avatar(self, size):
-        return ''
+        if self.profile_picture:
+            return self.profile_picture.get_thumbnail_url(size)
+        else:
+            return self.gravatar(size)
     
     def gravatar(self, size):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
