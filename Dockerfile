@@ -1,11 +1,11 @@
 # Use an official Python runtime as a parent image
-FROM continuumio/miniconda3
+FROM python:3.6-slim
 SHELL ["/bin/bash", "-c"]
 
 # Setup python environment with conda
-COPY prod/environment_flask_app.yml /tmp/environment.yml
-RUN conda env update -n root --file /tmp/environment.yml \
-    && conda clean --all
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --ignore-installed -r /tmp/requirements.txt
 
 # Install app
 ARG DUMMY=unknown
@@ -15,10 +15,10 @@ USER flask_app
 COPY --chown=flask_app:flask_app app app
 COPY --chown=flask_app:flask_app migrations migrations
 COPY --chown=flask_app:flask_app expenseapp.py config.py entrypoint.sh ./
-RUN chmod +x entrypoint.sh \
-    && mkdir -p app/static/img \
-    && mkdir -p app/static/timg \
-    && mkdir -p app/static/tmp
+RUN chmod +x entrypoint.sh && \
+    mkdir -p app/static/img && \
+    mkdir -p app/static/timg && \
+    mkdir -p app/static/tmp
 
 ENV FLASK_APP expenseapp.py
 EXPOSE 5000

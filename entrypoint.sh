@@ -1,13 +1,11 @@
 #!/bin/bash
-source activate
-
 while true; do
-    sleep 5
+    sleep 10
     flask db upgrade
     if [[ "$?" == "0" ]]; then
         break
     fi
-    echo Upgrade command failed, retrying in 5 secs...
+    echo Upgrade command failed, retrying in 10 secs...
 done
 
 flask dbinit currency --overwrite

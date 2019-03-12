@@ -14,4 +14,5 @@ conda install  -n $ENVNAME Pillow ipython redis-py=2.10.6 rq python-dotenv pyjwt
 pip install flask-bootstrap flask-shell-ipython flask-uploads
 
 # export conda environment file
-conda env export > environment_$ENVNAME.yml
+conda env export > environment.yml
+pip freeze > requirements.txt

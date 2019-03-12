@@ -47,7 +47,7 @@ services:
      - expenseapp
 
   redis:
-    image: redis:3-alpine
+    image: redis:5
     restart: on-failure
     container_name: expenseapp-redis-dev
     ports:
@@ -69,7 +69,7 @@ services:
       args:
         DUMMY: 'date:${DUMMY}'
     restart: on-failure
-    entrypoint: /opt/conda/bin/rq
+    entrypoint: rq
     command: ['worker', '-u', 'redis://redis:6379/0', 'expenseapp-tasks']
     container_name: expenseapp-rq-worker-dev
     environment:

@@ -30,7 +30,7 @@ services:
      - expenseapp
 
   redis:
-    image: redis:3-alpine
+    image: redis:5
     restart: always
     container_name: expenseapp-redis
     networks:
@@ -45,7 +45,7 @@ services:
   rq-worker:
     image: mredle/expenseapp
     restart: always
-    entrypoint: /opt/conda/bin/rq
+    entrypoint: rq
     command: ['worker', '-u', 'redis://redis:6379/0', 'expenseapp-tasks']
     container_name: expenseapp-rq-worker
     environment:
@@ -58,7 +58,7 @@ services:
       MAIL_PASSWORD: 'mailpw'
       ADMIN_NOREPLY_SENDER: 'no-reply@expenseapp'
       ADMIN_USERNAME: 'admin'
-      ADMIN_PASSWORD: 'you-will-never-guess'
+      ADMIN_PASSWORD: 'pw'
       ADMIN_EMAIL: 'admin@expenseapp'
       REDIS_URL: 'redis://redis:6379'
     networks:
@@ -90,7 +90,7 @@ services:
       MAIL_PASSWORD: 'mailpw'
       ADMIN_NOREPLY_SENDER: 'no-reply@expenseapp'
       ADMIN_USERNAME: 'admin'
-      ADMIN_PASSWORD: 'you-will-never-guess'
+      ADMIN_PASSWORD: 'pw'
       ADMIN_EMAIL: 'admin@expenseapp'
       REDIS_URL: 'redis://redis:6379'
     networks:
