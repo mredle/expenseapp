@@ -1,28 +1,27 @@
 version: '3.7'
 services:
   db:
-    image: mariadb:10.4
-    container_name: expenseapp-db-dev
-    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
-    restart: on-failure
+    image: linuxserver/mariadb
+    container_name: expenseapp-db
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: pw
+      MYSQL_ROOT_PASSWORD: password
       MYSQL_USER: user
-      MYSQL_PASSWORD: pw
+      MYSQL_PASSWORD: password
       MYSQL_DATABASE: expenseapp
     networks:
      - expenseapp
     volumes:
      - type: volume
        source: mariadb-data
-       target: /var/lib/mysql
+       target: /config
        volume:
          nocopy: true
 
   adminer:
     image: adminer
-    restart: on-failure
-    container_name: expenseapp-adminer-dev
+    restart: always
+    container_name: expenseapp-adminer
     environment:
       ADMINER_DEFAULT_SERVER: db
     depends_on:
@@ -32,23 +31,10 @@ services:
     networks:
      - expenseapp
 
-  mailhog:
-    image: mailhog/mailhog
-    restart: on-failure
-    container_name: expenseapp-mailhog-dev
-    ports:
-     - "8025:8025"
-    environment:
-      MH_UI_BIND_ADDR: 0.0.0.0:8025
-      MH_SMTP_BIND_ADDR: 0.0.0.0:1025
-      MH_STORAGE: memory
-    networks:
-     - expenseapp
-
   redis:
     image: redis:5
-    restart: on-failure
-    container_name: expenseapp-redis-dev
+    restart: always
+    container_name: expenseapp-redis
     networks:
      - expenseapp
     volumes:
@@ -60,18 +46,13 @@ services:
 
   rq-worker:
     image: expenseapp:latest
-    build:
-      context: ..
-      dockerfile: Dockerfile
-      args:
-        DUMMY: 'date:${DUMMY}'
-    restart: on-failure
+    restart: always
     entrypoint: rq
     command: ['worker', '-u', 'redis://redis:6379/0', 'expenseapp-tasks']
-    container_name: expenseapp-rq-worker-dev
+    container_name: expenseapp-rq-worker
     environment:
       SECRET_KEY: 'you-will-never-guess'
-      DATABASE_URL: 'mysql+pymysql://user:pw@db/expenseapp?charset=utf8mb4'
+      DATABASE_URL: 'mysql+pymysql://user:password@db/expenseapp?charset=utf8mb4'
       MAIL_SERVER: 'mailhog'
       MAIL_PORT: '1025'
       MAIL_USE_TLS:
@@ -87,7 +68,6 @@ services:
     depends_on:
      - db
      - redis
-     - mailhog
     volumes:
      - type: volume
        source: expenseapp-data
@@ -97,13 +77,13 @@ services:
          
   expenseapp:
     image: expenseapp:latest
-    restart: on-failure
-    container_name: expenseapp-dev
+    restart: always
+    container_name: expenseapp
     ports:
       - "5000:5000"
     environment:
       SECRET_KEY: 'you-will-never-guess'
-      DATABASE_URL: 'mysql+pymysql://user:pw@db/expenseapp?charset=utf8mb4'
+      DATABASE_URL: 'mysql+pymysql://user:password@db/expenseapp?charset=utf8mb4'
       MAIL_SERVER: 'mailhog'
       MAIL_PORT: '1025'
       MAIL_USE_TLS:
@@ -120,7 +100,6 @@ services:
      - rq-worker
      - db
      - redis
-     - mailhog
     volumes:
      - type: volume
        source: expenseapp-data
@@ -132,18 +111,18 @@ services:
 networks:
   expenseapp:
     driver: bridge
-    name: expenseapp-dev
+    name: expenseapp
 
 volumes:
   expenseapp-data:
     driver: local
     external: false
-    name: expenseapp-data-dev
+    name: expenseapp-data
   mariadb-data:
     driver: local
     external: false
-    name: expenseapp-mariadb-data-dev
+    name: expenseapp-mariadb-data
   redis-data:
     driver: local
     external: false
-    name: expenseapp-redis-data-dev
+    name: expenseapp-redis-data

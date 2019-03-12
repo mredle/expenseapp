@@ -60,7 +60,7 @@ services:
       ADMIN_USERNAME: 'admin'
       ADMIN_PASSWORD: 'pw'
       ADMIN_EMAIL: 'admin@expenseapp'
-      REDIS_URL: 'redis://redis:6379'
+      REDIS_URL: 'redis://redis:6379/0'
     networks:
      - expenseapp
     depends_on:
@@ -92,7 +92,7 @@ services:
       ADMIN_USERNAME: 'admin'
       ADMIN_PASSWORD: 'pw'
       ADMIN_EMAIL: 'admin@expenseapp'
-      REDIS_URL: 'redis://redis:6379'
+      REDIS_URL: 'redis://redis:6379/0'
     networks:
      - expenseapp
     depends_on:
