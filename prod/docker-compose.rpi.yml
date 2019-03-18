@@ -45,7 +45,7 @@ services:
          nocopy: true
 
   rq-worker:
-    image: expenseapp:latest
+    image: mredle/eexpenseapp:rpi
     restart: always
     entrypoint: rq
     command: ['worker', '-u', 'redis://redis:6379/0', 'expenseapp-tasks']
@@ -76,7 +76,7 @@ services:
          nocopy: false
          
   expenseapp:
-    image: expenseapp:latest
+    image: mredle/eexpenseapp:rpi
     restart: always
     container_name: expenseapp
     ports:

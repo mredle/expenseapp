@@ -30,7 +30,7 @@ services:
      - expenseapp
 
   redis:
-    image: redis:5
+    image: redis:5-alpine
     restart: always
     container_name: expenseapp-redis
     networks:
@@ -43,7 +43,7 @@ services:
          nocopy: true
 
   rq-worker:
-    image: mredle/expenseapp
+    image: mredle/eexpenseapp:latest
     restart: always
     entrypoint: rq
     command: ['worker', '-u', 'redis://redis:6379/0', 'expenseapp-tasks']
@@ -75,7 +75,7 @@ services:
          nocopy: false
          
   expenseapp:
-    image: mredle/expenseapp
+    image: mredle/eexpenseapp:latest
     restart: always
     container_name: expenseapp
     ports:

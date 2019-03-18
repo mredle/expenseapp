@@ -46,7 +46,7 @@ services:
      - expenseapp
 
   redis:
-    image: redis:5
+    image: redis:5-alpine
     restart: on-failure
     container_name: expenseapp-redis-dev
     networks:

@@ -1,11 +1,14 @@
 # Use an official Python runtime as a parent image
-FROM python:3.6-slim
-SHELL ["/bin/bash", "-c"]
+FROM python:3.7-alpine
+SHELL ["/bin/sh", "-c"]
 
-# Setup python environment with conda
+# Setup python environment with pip
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --ignore-installed -r /tmp/requirements.txt
+RUN apk add --no-cache jpeg-dev zlib-dev && \
+    apk add --no-cache --virtual .build-deps build-base linux-headers && \
+    pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --ignore-installed -r /tmp/requirements.txt && \
+    apk del .build-deps
 
 # Install app
 ARG DUMMY=unknown
@@ -23,4 +26,4 @@ RUN chmod +x entrypoint.sh && \
 ENV FLASK_APP expenseapp.py
 EXPOSE 5000
 VOLUME ["/home/flask_app/app/static"]
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["sh", "./entrypoint.sh"]
