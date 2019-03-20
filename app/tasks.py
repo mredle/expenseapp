@@ -34,10 +34,15 @@ def consume_time(user_id):
             _set_task_progress(100*(1+i)//amount)
         
         _set_task_progress(100)
+        message = '{}s of my valuable time have been consumed'.format(amount)
         send_email('Time has been consumed',
                 sender=app.config['ADMIN_NOREPLY_SENDER'], recipients=[user.email],
-                text_body=render_template('email/consume_time.txt', user=user, amount=amount),
-                html_body=render_template('email/consume_time.html', user=user, amount=amount),
+                text_body=render_template('email/simple_email.txt', 
+                                          username=user.username, 
+                                          message=message),
+                html_body=render_template('email/simple_email.html', 
+                                          username=user.username, 
+                                          message=message),
                 attachments=[],
                 sync=True)
     
@@ -104,10 +109,15 @@ def export_posts(user_id):
             _set_task_progress(100*i//total_posts)
         
         _set_task_progress(100)
+        message = 'Please find attached the archive of your posts that you requested'
         send_email('Your posts',
                 sender=app.config['ADMIN_NOREPLY_SENDER'], recipients=[user.email],
-                text_body=render_template('email/export_posts.txt', user=user),
-                html_body=render_template('email/export_posts.html', user=user),
+                text_body=render_template('email/simple_email.txt', 
+                                          username=user.username, 
+                                          message=message),
+                html_body=render_template('email/simple_email.html', 
+                                          username=user.username, 
+                                          message=message),
                 attachments=[('posts.json', 'application/json',
                               json.dumps({'posts': data}, indent=4))],
                 sync=True)

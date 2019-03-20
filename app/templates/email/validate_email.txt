@@ -1,7 +1,7 @@
-Dear {{ user.username }},
+Dear {{ username }},
 
 To validate your email and set your password click on the following link:
-
-{{ url_for('auth.reset_password', token=token, _external=True) }}
+{{ url }}
 
 If you have not registered simply ignore this message.
+Sincerely

@@ -31,7 +31,9 @@ def index():
         page, current_app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('main.my_events', page=events.next_num) if events.has_next else None
     prev_url = url_for('main.my_events', page=events.prev_num) if events.has_prev else None
-    return render_template("index.html", title=_('Home'), events=events.items, 
+    return render_template('index.html', 
+                           title=_('Hi, %(username)s!', username=current_user.username), 
+                           events=events.items, 
                            next_url=next_url, prev_url=prev_url)
 
 @bp.route('/my_events')
@@ -42,7 +44,9 @@ def my_events():
         page, current_app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('main.my_events', page=events.next_num) if events.has_next else None
     prev_url = url_for('main.my_events', page=events.prev_num) if events.has_prev else None
-    return render_template("index.html", title=_('My created events'), events=events.items, 
+    return render_template('index.html', 
+                           title=_('My created events'), 
+                           events=events.items, 
                            next_url=next_url, prev_url=prev_url)
 
 @bp.route('/currencies')
@@ -53,7 +57,9 @@ def currencies():
         page, current_app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('main.my_events', page=currencies.next_num) if currencies.has_next else None
     prev_url = url_for('main.my_events', page=currencies.prev_num) if currencies.has_prev else None
-    return render_template("currencies.html", title=_('Current currencies'), currencies=currencies.items, 
+    return render_template('currencies.html', 
+                           title=_('Current currencies'), 
+                           currencies=currencies.items, 
                            next_url=next_url, prev_url=prev_url)
     
 @bp.route('/event/<event_id>', methods=['GET', 'POST'])
@@ -73,7 +79,10 @@ def event(event_id):
         page, current_app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('main.event', event_id=event.id, page=posts.next_num) if posts.has_next else None
     prev_url = url_for('main.event', event_id=event.id, page=posts.prev_num) if posts.has_prev else None
-    return render_template('event.html', form=form, event=event, posts=posts.items,
+    return render_template('event.html', 
+                           form=form, 
+                           event=event, 
+                           posts=posts.items,
                            next_url=next_url, prev_url=prev_url)
 
 @bp.route('/event_users/<event_id>', methods=['GET', 'POST'])
@@ -94,7 +103,10 @@ def event_users(event_id):
         page, current_app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('main.event_users', event_id=event.id, page=users.next_num) if users.has_next else None
     prev_url = url_for('main.event_users', event_id=event.id, page=users.prev_num) if users.has_prev else None
-    return render_template('event_users.html', form=form, event=event, users=users.items,
+    return render_template('event_users.html', 
+                           form=form, 
+                           event=event, 
+                           users=users.items,
                            next_url=next_url, prev_url=prev_url)
 
 @bp.route('/event_expenses/<event_id>', methods=['GET', 'POST'])
@@ -124,7 +136,10 @@ def event_expenses(event_id):
         page, current_app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('main.event_expenses', event_id=event.id, page=expenses.next_num) if expenses.has_next else None
     prev_url = url_for('main.event_expenses', event_id=event.id, page=expenses.prev_num) if expenses.has_prev else None
-    return render_template('event_expenses.html', form=form, event=event, expenses=expenses.items,
+    return render_template('event_expenses.html', 
+                           form=form, 
+                           event=event, 
+                           expenses=expenses.items,
                            next_url=next_url, prev_url=prev_url)
     
 @bp.route('/event_settlements/<event_id>', methods=['GET', 'POST'])
@@ -155,7 +170,10 @@ def event_settlements(event_id):
         page, current_app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('main.event_settlements', event_id=event.id, page=settlements.next_num) if settlements.has_next else None
     prev_url = url_for('main.event_settlements', event_id=event.id, page=settlements.prev_num) if settlements.has_prev else None
-    return render_template('event_settlements.html', form=form, event=event, settlements=settlements.items,
+    return render_template('event_settlements.html', 
+                           form=form, 
+                           event=event, 
+                           settlements=settlements.items,
                            next_url=next_url, prev_url=prev_url)
 
 @bp.route('/event_balance/<event_id>', methods=['GET'])
@@ -181,8 +199,11 @@ def event_balance(event_id):
     db.session.add_all(draft_settlements)
     db.session.commit()
     
-    return render_template('event_balance.html', event=event, draft_settlements=draft_settlements,
-                           balances_str=balances_str, total_expenses_str=total_expenses_str)
+    return render_template('event_balance.html', 
+                           event=event, 
+                           draft_settlements=draft_settlements,
+                           balances_str=balances_str, 
+                           total_expenses_str=total_expenses_str)
 
 @bp.route('/event_balance/pay/<settlement_id>', methods=['GET'])
 @login_required
@@ -244,7 +265,8 @@ def event_edit_expense(event_id, expense_id):
         form.affected_users_id.data = [u.id for u in expense.affected_users]
         form.date.data = expense.date
         form.description.data = expense.description
-    return render_template('edit_expense.html', title=_('Edit Expense'),
+    return render_template('edit_form.html', 
+                           title=_('Edit Expense'), 
                            form=form)
 
 @bp.route('/event_edit_settlement/<event_id>/<settlement_id>', methods=['GET', 'POST'])
@@ -271,7 +293,8 @@ def event_edit_settlement(event_id, settlement_id):
         form.amount.data = settlement.amount
         form.recipient_id.data = settlement.recipient.id
         form.description.data = settlement.description
-    return render_template('edit_settlement.html', title=_('Edit Settlement'),
+    return render_template('edit_form.html', 
+                           title=_('Edit Settlement'), 
                            form=form)
 
 @bp.route('/event_remove_expense/<event_id>/<expense_id>')
@@ -311,7 +334,9 @@ def user(username):
         page, current_app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('main.user', username=user.username, page=posts.next_num) if posts.has_next else None
     prev_url = url_for('main.user', username=user.username, page=posts.prev_num) if posts.has_prev else None
-    return render_template('user.html', user=user, posts=posts.items,
+    return render_template('user.html', 
+                           user=user, 
+                           posts=posts.items,
                            next_url=next_url, prev_url=prev_url)
 
 @bp.route('/user/<username>/popup')
@@ -343,7 +368,8 @@ def edit_profile():
         form.about_me.data = current_user.about_me
         form.locale.data = current_user.locale
         form.timezone.data = current_user.timezone
-    return render_template('edit_profile.html', title=_('Edit Profile'),
+    return render_template('edit_form.html', 
+                           title=_('Edit Profile'), 
                            form=form)
 
 @bp.route('/send_message/<recipient>', methods=['GET', 'POST'])
@@ -359,8 +385,9 @@ def send_message(recipient):
         db.session.commit()
         flash(_('Your message has been sent.'))
         return redirect(url_for('main.user', username=recipient))
-    return render_template('send_message.html', title=_('Send Message'),
-                           form=form, recipient=recipient)
+    return render_template('edit_form.html', 
+                           title=_('Send Message to %(recipient)s', recipient=recipient), 
+                           form=form)
 
 @bp.route('/messages')
 @login_required
@@ -376,7 +403,9 @@ def messages():
         if messages.has_next else None
     prev_url = url_for('main.messages', page=messages.prev_num) \
         if messages.has_prev else None
-    return render_template('messages.html', messages=messages.items,
+    return render_template('messages.html', 
+                           title=_('Messages'),
+                           messages=messages.items,
                            next_url=next_url, prev_url=prev_url)
 
 @bp.route('/notifications')
@@ -425,7 +454,8 @@ def new_currency():
         db.session.commit()
         flash(_('Your new currency has been added.'))
         return redirect(url_for('main.currencies'))
-    return render_template('new_currency.html', title=_('New Currency'),
+    return render_template('edit_form.html', 
+                           title=_('New Currency'), 
                            form=form)
 
 @bp.route('/edit_currency/<currency_id>', methods=['GET', 'POST'])
@@ -450,7 +480,8 @@ def edit_currency(currency_id):
         form.exponent.data = currency.exponent
         form.inCHF.data = currency.inCHF
         form.description.data = currency.description
-    return render_template('edit_currency.html', title=_('Edit Currency'),
+    return render_template('edit_form.html', 
+                           title=_('Edit Currency'), 
                            form=form)
 
 @bp.route('/new_event', methods=['GET', 'POST'])
@@ -481,7 +512,8 @@ def new_event():
         db.session.commit()
         flash(_('Your new event has been added.'))
         return redirect(url_for('main.event', event_id=event.id))
-    return render_template('new_event.html', title=_('New Event'),
+    return render_template('edit_form.html', 
+                           title=_('New Event'), 
                            form=form)
 
 @bp.route('/edit_event/<event_id>', methods=['GET', 'POST'])
@@ -510,6 +542,6 @@ def edit_event(event_id):
         form.description.data = event.description
         form.admin_id.data = event.admin_id
         form.accountant_id.data = event.accountant_id
-    return render_template('edit_event.html', title=_('Edit Event'),
+    return render_template('edit_form.html', 
+                           title=_('Edit Event'), 
                            form=form)
-

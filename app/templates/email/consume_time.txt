@@ -1,5 +1,0 @@
-Dear {{ user.username }},
-
-{{ amount }}s have been consumed.
-
-Sincerely

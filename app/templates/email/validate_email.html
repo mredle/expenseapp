@@ -1,10 +1,11 @@
-<p>Dear {{ user.username }},</p>
+<p>Dear {{ username }},</p>
 <p>
     To validate your email and set your password
-    <a href="{{ url_for('auth.reset_password', token=token, _external=True) }}">
+    <a href="{{ url }}">
         click here
     </a>.
 </p>
 <p>Alternatively, you can paste the following link in your browser's address bar:</p>
-<p>{{ url_for('auth.reset_password', token=token, _external=True) }}</p>
+<p>{{ url }}</p>
 <p>If you have not registered simply ignore this message.</p>
+<p>Sincerely</p>

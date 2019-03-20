@@ -56,7 +56,7 @@ def register():
         send_validate_email(user)
         flash(_('Congratulations, you are now a registered user! Please check your email to activate your account.'))
         return redirect(url_for('auth.login'))
-    return render_template('auth/register.html', title=_('Register'), form=form)
+    return render_template('edit_form.html', title=_('Register'), form=form)
 
 @bp.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
@@ -69,8 +69,7 @@ def reset_password_request():
             send_password_reset_email(user)
         flash(_('Check your email for the instructions to reset your password'))
         return redirect(url_for('auth.login'))
-    return render_template('auth/reset_password_request.html',
-                           title=_('Reset Password'), form=form)
+    return render_template('edit_form.html', title=_('Reset Password'), form=form)
 
 
 @bp.route('/reset_password/<token>', methods=['GET', 'POST'])
@@ -86,4 +85,4 @@ def reset_password(token):
         db.session.commit()
         flash(_('Your password has been reset.'))
         return redirect(url_for('auth.login'))
-    return render_template('auth/reset_password.html', form=form)
+    return render_template('edit_form.html', title=_('Reset Your Password'), form=form)
