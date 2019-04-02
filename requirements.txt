@@ -1,5 +1,4 @@
 Pillow
-ipython
 redis
 rq
 python-dotenv 
@@ -16,5 +15,4 @@ flask-babel
 flask-httpauth 
 flask-wtf
 flask-bootstrap 
-flask-shell-ipython 
 flask-uploads
