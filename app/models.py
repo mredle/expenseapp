@@ -174,6 +174,7 @@ class Currency(Entity, db.Model):
     description = db.Column(db.String(256))
     expenses = db.relationship('Expense', back_populates='currency', lazy='dynamic')
     settlements = db.relationship('Settlement', back_populates='currency', lazy='dynamic')
+    events_base_currency = db.relationship('Event', foreign_keys='Event.base_currency_id', back_populates='base_currency', lazy='dynamic')
     
     def __init__(self, code, name, number, exponent, inCHF, description='', db_created_by=''):
         Entity.__init__(self, db_created_by)
@@ -197,8 +198,8 @@ class Currency(Entity, db.Model):
         amount_str = ('{} {:.'+'{}'.format(self.exponent)+'f}').format(self.code, amount)
         return amount_str
     
-    def get_amount_inCHF_as_str(self, amount):
-        amount_str = ('CHF {:.'+'{}'.format(self.exponent)+'f}').format(amount*self.inCHF)
+    def get_amount_as_str_in(self, amount, currency):
+        amount_str = ('{} {:.'+'{}'.format(self.exponent)+'f}').format(currency.code, amount*self.inCHF/currency.inCHF)
         return amount_str
 
 
@@ -218,6 +219,9 @@ class Event(Entity, db.Model):
     admin = db.relationship('User', foreign_keys=admin_id, back_populates='events_admin')
     accountant_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     accountant = db.relationship('User', foreign_keys=accountant_id, back_populates='events_accountant')
+    base_currency_id = db.Column(db.Integer, db.ForeignKey('currencies.id'))
+    base_currency = db.relationship('Currency', foreign_keys=base_currency_id, back_populates='events_base_currency')
+    exchange_fee = db.Column(db.Float)
     users = db.relationship('User', secondary=event_users, back_populates='events', lazy='dynamic')
     closed = db.Column(db.Boolean)
     image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
@@ -227,12 +231,14 @@ class Event(Entity, db.Model):
     settlements = db.relationship('Settlement', back_populates='event', lazy='dynamic')
     posts = db.relationship('Post', back_populates='event', lazy='dynamic')
     
-    def __init__(self, name, date, admin, accountant, closed=False, description='', db_created_by=''):
+    def __init__(self, name, date, admin, accountant, base_currency, exchange_fee, closed=False, description='', db_created_by=''):
         Entity.__init__(self, db_created_by)
         self.name = name
         self.date = date
         self.admin = admin
         self.accountant = accountant
+        self.base_currency = base_currency
+        self.exchange_fee = exchange_fee
         self.closed = closed
         self.description = description
     
@@ -256,63 +262,60 @@ class Event(Entity, db.Model):
         if self.has_user(user):
             self.users.remove(user)
             
-    def get_total_expenses_inCHF(self):
+    def get_total_expenses(self):
         expenses = self.expenses.all()
-        expenses_num = [x.amount*x.currency.inCHF for x in expenses]
+        expenses_num = [x.get_amount() for x in expenses]
         return sum(expenses_num)
             
-    def get_amount_paid_inCHF(self, user):
+    def get_amount_paid(self, user):
         expenses = self.expenses.filter_by(user=user).all()
-        expenses_num = [x.amount*x.currency.inCHF for x in expenses]
+        expenses_num = [x.get_amount() for x in expenses]
         return sum(expenses_num)
     
-    def get_amount_spent_inCHF(self, user):
-        expenses = []
-        for expense in self.expenses:
-            n_affected_users =  expense.affected_users.count()
-            if user in expense.affected_users:
-                expenses.append(expense.amount*expense.currency.inCHF/n_affected_users)
-        return sum(expenses)
+    def get_amount_spent(self, user):
+        expenses = self.expenses.all()
+        expenses_num = [x.get_amount()/x.affected_users.count() for x in expenses if user in x.affected_users]
+        return sum(expenses_num)
     
-    def get_amount_sent_inCHF(self, user):
+    def get_amount_sent(self, user):
         settlements = self.settlements.filter_by(sender=user, draft=False).all()
-        settlements_num = [s.amount*s.currency.inCHF for s in settlements]
+        settlements_num = [x.get_amount() for x in settlements]
         return sum(settlements_num)
     
-    def get_amount_received_inCHF(self, user):
+    def get_amount_received(self, user):
         settlements = self.settlements.filter_by(recipient=user, draft=False).all()
-        settlements_num = [s.amount*s.currency.inCHF for s in settlements]
+        settlements_num = [x.get_amount() for x in settlements]
         return sum(settlements_num)
     
-    def get_user_balance_inCHF(self, user):
-        amount_paid = self.get_amount_paid_inCHF(user)
-        amount_spent = self.get_amount_spent_inCHF(user)
-        amount_sent = self.get_amount_sent_inCHF(user)
-        amount_received = self.get_amount_received_inCHF(user)
+    def get_user_balance(self, user):
+        amount_paid = self.get_amount_paid(user)
+        amount_spent = self.get_amount_spent(user)
+        amount_sent = self.get_amount_sent(user)
+        amount_received = self.get_amount_received(user)
         balance = amount_paid - amount_spent + amount_sent - amount_received
         return (user, amount_paid, amount_spent, amount_sent, amount_received, balance)
     
     def get_compensation_settlements_accountant(self):
-        CHF = Currency.query.filter_by(code='CHF').first_or_404()
         users = [u for u in self.users if u != self.accountant]
         settlements = []
-        tolerance = 10**-CHF.exponent
+        tolerance = 10**-self.base_currency.exponent
         
         for user in users:
-            balance_item = self.get_user_balance_inCHF(user)
+            balance_item = self.get_user_balance(user)
             balance = balance_item[5]
             if balance<-tolerance:
                 settlements.append(Settlement(sender=user, recipient=self.accountant, event=self, 
-                                              currency=CHF, amount=-balance, draft=True, date=datetime.utcnow(), 
+                                              currency=self.base_currency, amount=-balance, draft=True, date=datetime.utcnow(), 
                                               description='Settlement to service depts', db_created_by='ExpenseApp'))
             elif balance>tolerance:
                 settlements.append(Settlement(sender=self.accountant, recipient=user, event=self, 
-                                              currency=CHF, amount=balance, draft=True, date=datetime.utcnow(), 
+                                              currency=self.base_currency, amount=balance, draft=True, date=datetime.utcnow(), 
                                               description='Settlement to service depts', db_created_by='ExpenseApp'))
             else:
                 continue
             
         return settlements
+
 
 expense_affected_users = db.Table('expense_affected_users',
     db.Column('expense_id', db.Integer, db.ForeignKey('expenses.id')),
@@ -355,16 +358,21 @@ class Expense(Entity, db.Model):
             return self.image.get_thumbnail_url(size)
         else:
             return '0'
+        
+    def get_amount(self):
+        if self.currency == self.event.base_currency:
+            return self.amount
+        else:
+            return self.amount*self.currency.inCHF/self.event.base_currency.inCHF
     
     def get_amount_str(self):
-        CHF = Currency.query.filter_by(code='CHF').first_or_404()
         amount_str = self.currency.get_amount_as_str(self.amount)
         
-        if self.currency.id == CHF.id:
+        if self.currency == self.event.base_currency:
             return amount_str
         else:
-            inCHF_str = self.currency.get_amount_inCHF_as_str(self.amount)
-            return '{} ({})'.format(amount_str, inCHF_str)
+            amount_str_in = self.currency.get_amount_as_str_in(self.amount, self.event.base_currency)
+            return '{} ({})'.format(amount_str, amount_str_in)
     
     def get_affected_users_str(self):
         return ', '.join([u.username for u in self.affected_users])
@@ -406,17 +414,22 @@ class Settlement(Entity, db.Model):
         if self.image:
             return self.image.get_thumbnail_url(size)
         else:
-            return ''
+            return '0'
+        
+    def get_amount(self):
+        if self.currency == self.event.base_currency:
+            return self.amount
+        else:
+            return self.amount*self.currency.inCHF/self.event.base_currency.inCHF
     
     def get_amount_str(self):
-        CHF = Currency.query.filter_by(code='CHF').first_or_404()
         amount_str = self.currency.get_amount_as_str(self.amount)
         
-        if self.currency.id == CHF.id:
+        if self.currency == self.event.base_currency:
             return amount_str
         else:
-            inCHF_str = self.currency.get_amount_inCHF_as_str(self.amount)
-            return '{} ({})'.format(amount_str, inCHF_str)
+            amount_str_in = self.currency.get_amount_as_str_in(self.amount, self.event.base_currency)
+            return '{} ({})'.format(amount_str, amount_str_in)
 
 
 class Post(Entity, db.Model):

@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import request, render_template, flash, redirect, url_for, jsonify, g, current_app
 from flask_login import current_user, login_required
 from flask_babel import get_locale, _
+from flask_uploads import UploadNotAllowed
 
 from app import db, images
 from app.main import bp
@@ -166,7 +167,7 @@ def event_settlements(event_id):
         return redirect(url_for('main.event_settlements', event_id=event_id))
     
     page = request.args.get('page', 1, type=int)
-    settlements = event.settlements.order_by(Settlement.date.desc()).paginate(
+    settlements = event.settlements.filter_by(draft=False).order_by(Settlement.date.desc()).paginate(
         page, current_app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('main.event_settlements', event_id=event.id, page=settlements.next_num) if settlements.has_next else None
     prev_url = url_for('main.event_settlements', event_id=event.id, page=settlements.prev_num) if settlements.has_prev else None
@@ -180,19 +181,18 @@ def event_settlements(event_id):
 @login_required
 def event_balance(event_id):
     event = Event.query.get_or_404(event_id)
-    CHF = Currency.query.filter_by(code='CHF').first_or_404()
     
-    balances = [event.get_user_balance_inCHF(u) for u in event.users]
+    balances = [event.get_user_balance(u) for u in event.users]
     balances_str = list(map(lambda x: (x[0], 
-                                       CHF.get_amount_as_str(x[1]), 
-                                       CHF.get_amount_as_str(x[2]), 
-                                       CHF.get_amount_as_str(x[3]), 
-                                       CHF.get_amount_as_str(x[4]), 
-                                       CHF.get_amount_as_str(x[5])) 
+                                       event.base_currency.get_amount_as_str(x[1]), 
+                                       event.base_currency.get_amount_as_str(x[2]), 
+                                       event.base_currency.get_amount_as_str(x[3]), 
+                                       event.base_currency.get_amount_as_str(x[4]), 
+                                       event.base_currency.get_amount_as_str(x[5])) 
                                        , balances))
     
-    total_expenses = event.get_total_expenses_inCHF()
-    total_expenses_str = CHF.get_amount_as_str(total_expenses)
+    total_expenses = event.get_total_expenses()
+    total_expenses_str = event.base_currency.get_amount_as_str(total_expenses)
     
     event.settlements.filter_by(draft=True).delete()
     draft_settlements = event.get_compensation_settlements_accountant()
@@ -492,23 +492,30 @@ def new_event():
     form.admin_id.data = current_user.id
     form.accountant_id.choices = [(u.id, u.username) for u in User.query.order_by('username')]
     form.accountant_id.data = current_user.id
+    form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
     if form.validate_on_submit():
         admin = User.query.get(form.admin_id.data)
         accountant = User.query.get(form.accountant_id.data)
+        base_currency = Currency.query.get(form.base_currency_id.data)
         event = Event(name=form.name.data, 
                       date=form.date.data,
                       admin=admin,
                       accountant=accountant,
+                      base_currency=base_currency,
+                      exchange_fee=form.exchange_fee.data,
                       closed=False,
                       description=form.description.data, 
                       db_created_by=current_user.username)
         event.add_user(admin)
         event.add_user(accountant)
         db.session.add(event)
-        if 'image' in request.files:
+        try:
             image_filename = images.save(request.files['image'])
             image_path = images.path(image_filename)
             current_user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='Event', add_to_id=event.id)
+        except UploadNotAllowed:
+            flash(_('Invalid or empty image.'))
+        
         db.session.commit()
         flash(_('Your new event has been added.'))
         return redirect(url_for('main.event', event_id=event.id))
@@ -523,16 +530,22 @@ def edit_event(event_id):
     form = EventForm()
     form.admin_id.choices = [(u.id, u.username) for u in event.users.order_by('username')]
     form.accountant_id.choices = [(u.id, u.username) for u in event.users.order_by('username')]
+    form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
     if form.validate_on_submit():
         event.name = form.name.data
         event.date = form.date.data
         event.description = form.description.data
         event.admin = User.query.get(form.admin_id.data)
         event.accountant = User.query.get(form.accountant_id.data)
-        if 'image' in request.files:
+        event.base_currency = Currency.query.get(form.base_currency_id.data)
+        event.exchange_fee = form.exchange_fee.data
+        try:
             image_filename = images.save(request.files['image'])
             image_path = images.path(image_filename)
             current_user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='Event', add_to_id=event.id)
+        except UploadNotAllowed:
+            flash(_('Invalid or empty image.'))
+        
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.event', event_id=event_id))
@@ -542,6 +555,8 @@ def edit_event(event_id):
         form.description.data = event.description
         form.admin_id.data = event.admin_id
         form.accountant_id.data = event.accountant_id
+        form.base_currency_id.data = event.base_currency_id
+        form.exchange_fee.data = event.exchange_fee
     return render_template('edit_form.html', 
                            title=_('Edit Event'), 
                            form=form)
