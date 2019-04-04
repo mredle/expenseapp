@@ -24,8 +24,14 @@
                 <p><a href="{{ url_for('main.event_settlements', event_id=event.id) }}">{{ _('Settlements') }}</a></p>
                 <p><a href="{{ url_for('main.event_balance', event_id=event.id) }}">{{ _('Balance sheet') }}</a></p>
                 {% if event.admin == current_user %}
+                {% if event.closed %}
+                <p><a href="{{ url_for('main.reopen_event', event_id=event.id) }}">{{ _('Reopen this event') }}</a></p>
+                {% else %}
+                <p><a href="{{ url_for('main.event_convert_currencies', event_id=event.id) }}">{{ _('Convert all transactions of this event to the base currency') }}</a></p>
+                <p><a href="{{ url_for('main.close_event', event_id=event.id) }}">{{ _('Close this event') }}</a></p>
                 <p><a href="{{ url_for('main.edit_event', event_id=event.id) }}">{{ _('Edit this event') }}</a></p>
                 <p><a href="{{ url_for('main.event_users', event_id=event.id) }}">{{ _('Manage users') }}</a></p>
+                {% endif %}
                 {% endif %}
             </td>
         </tr>

@@ -39,10 +39,12 @@
                     recipient=recipient_link, ) }}
                 <br>
                 {{ settlement.description }}
+                {% if not event.closed %}
                 <br>
                 {{ _('%(edit)s, %(remove)s',
                     edit=edit_link,
                     remove=remove_link) }}
+                {% endif %}
             </td>
         </tr>
     </table>

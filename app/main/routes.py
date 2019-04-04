@@ -93,6 +93,9 @@ def event_users(event_id):
     form = EventAddUserForm()
     form.user_id.choices = [(u.id, u.username) for u in User.query.order_by('username') if not u==event.admin]
     if form.validate_on_submit():
+        if event.closed:
+            flash(_('Your are only allowed to edit an open event!'))
+            return redirect(url_for('main.event', event_id=event.id))
         user = User.query.get(form.user_id.data)
         event.add_user(user)
         db.session.commit()
@@ -118,6 +121,9 @@ def event_expenses(event_id):
     form.currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
+        if event.closed:
+            flash(_('Your are only allowed to edit an open event!'))
+            return redirect(url_for('main.event', event_id=event.id))
         expense = Expense(user=current_user, 
                           event=event, 
                           currency=Currency.query.get(form.currency_id.data), 
@@ -151,6 +157,9 @@ def event_settlements(event_id):
     form.currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users if u!=current_user]
     if form.validate_on_submit():
+        if event.closed:
+            flash(_('Your are only allowed to edit an open event!'))
+            return redirect(url_for('main.event', event_id=event.id))
         settlement = Settlement(sender=current_user, 
                                 recipient=User.query.get(form.recipient_id.data), 
                                 event=event, 
@@ -217,6 +226,9 @@ def event_settlement_execute(settlement_id):
 @login_required
 def event_add_user(event_id, username):
     event = Event.query.get_or_404(event_id)
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('main.event', event_id=event.id))
     user = User.query.filter_by(username=username).first_or_404()
     if user == event.admin:
         flash(_('You cannot add the admin as user!'))
@@ -230,6 +242,9 @@ def event_add_user(event_id, username):
 @login_required
 def event_remove_user(event_id, username):
     event = Event.query.get_or_404(event_id)
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('main.event', event_id=event.id))
     user = User.query.filter_by(username=username).first_or_404()
     if user == event.admin:
         flash(_('You cannot remove the admin!'))
@@ -243,6 +258,9 @@ def event_remove_user(event_id, username):
 @login_required
 def event_edit_expense(event_id, expense_id):
     event = Event.query.get_or_404(event_id)
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('main.event', event_id=event.id))
     expense = Expense.query.get_or_404(expense_id)
     if current_user not in [event.admin, expense.user]:
         flash(_('Your are only allowed to edit your own expenses!'))
@@ -273,6 +291,9 @@ def event_edit_expense(event_id, expense_id):
 @login_required
 def event_edit_settlement(event_id, settlement_id):
     event = Event.query.get_or_404(event_id)
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('main.event', event_id=event.id))
     settlement = Settlement.query.get_or_404(settlement_id)
     if current_user not in [event.admin, settlement.sender]:
         flash(_('Your are only allowed to edit your own settlements!'))
@@ -301,6 +322,9 @@ def event_edit_settlement(event_id, settlement_id):
 @login_required
 def event_remove_expense(event_id, expense_id):
     event = Event.query.get_or_404(event_id)
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('main.event', event_id=event.id))
     expense = Expense.query.get_or_404(expense_id)
     if current_user not in [event.admin, expense.user]:
         flash(_('Your are only allowed to remove your own expenses!'))
@@ -315,6 +339,9 @@ def event_remove_expense(event_id, expense_id):
 @login_required
 def event_remove_settlement(event_id, settlement_id):
     event = Event.query.get_or_404(event_id)
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('main.event', event_id=event.id))
     settlement = Settlement.query.get_or_404(settlement_id)
     if current_user not in [event.admin, settlement.sender]:
         flash(_('Your are only allowed to remove your own settlements!'))
@@ -527,6 +554,12 @@ def new_event():
 @login_required
 def edit_event(event_id):
     event = Event.query.get_or_404(event_id)
+    if current_user != event.admin:
+        flash(_('Your are only allowed to edit your own event!'))
+        return redirect(url_for('main.event', event_id=event.id))
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('main.event', event_id=event.id))
     form = EventForm()
     form.admin_id.choices = [(u.id, u.username) for u in event.users.order_by('username')]
     form.accountant_id.choices = [(u.id, u.username) for u in event.users.order_by('username')]
@@ -560,3 +593,42 @@ def edit_event(event_id):
     return render_template('edit_form.html', 
                            title=_('Edit Event'), 
                            form=form)
+
+@bp.route('/event_convert_currencies/<event_id>')
+@login_required
+def event_convert_currencies(event_id):
+    event = Event.query.get_or_404(event_id)
+    if current_user != event.admin:
+        flash(_('Your are only allowed to convert currencies of your own event!'))
+        return redirect(url_for('main.event', event_id=event.id))
+    event.convert_currencies()
+    db.session.commit()
+    flash(_('All transaction of this event have been converted to %(code)s.', code=event.base_currency.code))
+    return redirect(url_for('main.event', event_id=event.id))
+
+@bp.route('/reopen_event/<event_id>')
+@login_required
+def reopen_event(event_id):
+    event = Event.query.get_or_404(event_id)
+    if current_user != event.admin:
+        flash(_('Your are only allowed to reopen your own event!'))
+        return redirect(url_for('main.event', event_id=event.id))
+    event.closed = False
+    db.session.commit()
+    flash(_('Event has been reopened.'))
+    return redirect(url_for('main.event', event_id=event.id))
+
+@bp.route('/close_event/<event_id>')
+@login_required
+def close_event(event_id):
+    event = Event.query.get_or_404(event_id)
+    if current_user != event.admin:
+        flash(_('Your are only allowed to close your own event!'))
+        return redirect(url_for('main.event', event_id=event.id))
+    if event.settlements.filter_by(draft=True).all():
+        flash(_('Your are only allowed to close an event with no open liabilities!'))
+        return redirect(url_for('main.event', event_id=event.id))
+    event.closed = True
+    db.session.commit()
+    flash(_('Event has been closed.'))
+    return redirect(url_for('main.event', event_id=event.id))

@@ -268,6 +268,18 @@ class Event(Entity, db.Model):
         if self.has_user(user):
             self.users.remove(user)
             
+    def convert_currencies(self):
+        expenses = self.expenses.all()
+        settlements = self.settlements.all()
+        
+        for x in expenses:
+            x.amount = x.currency.get_amount_in(x.amount, self.base_currency, self.exchange_fee)
+            x.currency = self.base_currency
+            
+        for x in settlements:
+            x.amount = x.currency.get_amount_in(x.amount, self.base_currency, self.exchange_fee)
+            x.currency = self.base_currency
+            
     def get_total_expenses(self):
         expenses = self.expenses.all()
         expenses_num = [x.get_amount() for x in expenses]

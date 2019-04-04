@@ -32,10 +32,12 @@
                     affected_users=expense.get_affected_users_str()) }}
                 <br>
                 {{ expense.description }}
+                {% if not event.closed %}
                 <br>
                 {{ _('%(edit)s, %(remove)s',
                     edit=edit_link,
                     remove=remove_link) }}
+                {% endif %}
             </td>
         </tr>
     </table>
