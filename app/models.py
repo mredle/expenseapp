@@ -193,13 +193,19 @@ class Currency(Entity, db.Model):
             return self.image.get_thumbnail_url(size)
         else:
             return ''
+        
+    def get_amount_in(self, amount, currency, exchange_fee):
+        if self == currency:
+            return amount
+        else:
+            return (1+exchange_fee/100)*amount*self.inCHF/currency.inCHF
     
     def get_amount_as_str(self, amount):
         amount_str = ('{} {:.'+'{}'.format(self.exponent)+'f}').format(self.code, amount)
         return amount_str
     
-    def get_amount_as_str_in(self, amount, currency):
-        amount_str = ('{} {:.'+'{}'.format(self.exponent)+'f}').format(currency.code, amount*self.inCHF/currency.inCHF)
+    def get_amount_as_str_in(self, amount, currency, exchange_fee):
+        amount_str = ('{} {:.'+'{}'.format(self.exponent)+'f}').format(currency.code, self.get_amount_in(amount, currency, exchange_fee))
         return amount_str
 
 
@@ -360,10 +366,7 @@ class Expense(Entity, db.Model):
             return '0'
         
     def get_amount(self):
-        if self.currency == self.event.base_currency:
-            return self.amount
-        else:
-            return self.amount*self.currency.inCHF/self.event.base_currency.inCHF
+        return self.currency.get_amount_in(self.amount, self.event.base_currency, self.event.exchange_fee)
     
     def get_amount_str(self):
         amount_str = self.currency.get_amount_as_str(self.amount)
@@ -371,7 +374,7 @@ class Expense(Entity, db.Model):
         if self.currency == self.event.base_currency:
             return amount_str
         else:
-            amount_str_in = self.currency.get_amount_as_str_in(self.amount, self.event.base_currency)
+            amount_str_in = self.currency.get_amount_as_str_in(self.amount, self.event.base_currency, self.event.exchange_fee)
             return '{} ({})'.format(amount_str, amount_str_in)
     
     def get_affected_users_str(self):
@@ -417,10 +420,7 @@ class Settlement(Entity, db.Model):
             return '0'
         
     def get_amount(self):
-        if self.currency == self.event.base_currency:
-            return self.amount
-        else:
-            return self.amount*self.currency.inCHF/self.event.base_currency.inCHF
+        return self.currency.get_amount_in(self.amount, self.event.base_currency, self.event.exchange_fee)
     
     def get_amount_str(self):
         amount_str = self.currency.get_amount_as_str(self.amount)
@@ -428,7 +428,7 @@ class Settlement(Entity, db.Model):
         if self.currency == self.event.base_currency:
             return amount_str
         else:
-            amount_str_in = self.currency.get_amount_as_str_in(self.amount, self.event.base_currency)
+            amount_str_in = self.currency.get_amount_as_str_in(self.amount, self.event.base_currency, self.event.exchange_fee)
             return '{} ({})'.format(amount_str, amount_str_in)
 
 
