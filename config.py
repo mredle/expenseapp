@@ -30,7 +30,7 @@ class Config(object):
     UPLOADS_DEFAULT_DEST = os.path.join(IMAGE_ROOT_PATH, IMAGE_TMP_PATH)
     UPLOADED_IMAGES_DEST = os.path.join(IMAGE_ROOT_PATH, IMAGE_TMP_PATH)
     THUMBNAIL_SIZES = [32, 64, 128, 256, 512, 1024]
-    POSTS_PER_PAGE = 10
+    ITEMS_PER_PAGE = 10
     MESSAGES_PER_PAGE = 10
     LANGUAGES = ['en', 'de']
     TIMEZONES = ['Etc/UTC', 'Europe/Zurich']

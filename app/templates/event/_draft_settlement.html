@@ -9,7 +9,7 @@
                 {{ settlement.get_amount_str() }}
                 <br>
                 <span class="settlement_popup">
-                    <a href="{{ url_for('main.event_settlement_execute', settlement_id=settlement.id) }}">
+                    <a href="{{ url_for('event.settlement_execute', settlement_id=settlement.id) }}">
                         {{ _('Amount has been paid') }}
                     </a>
                 </span>

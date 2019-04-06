@@ -54,6 +54,9 @@ def create_app(config_class=Config):
     from app.api import bp as api_bp
     app.register_blueprint(api_bp, url_prefix='/api')
     
+    from app.event import bp as event_bp
+    app.register_blueprint(event_bp, url_prefix='/event')
+    
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)
     

@@ -11,7 +11,7 @@
                         {% if user==event.admin %}
                         {{ _('Administrator') }}
                         {% else %}
-                        <a href="{{ url_for('main.event_remove_user', username=user.username, event_id=event.id) }}">
+                        <a href="{{ url_for('event.remove_user', username=user.username, event_id=event.id) }}">
                             {{ _('Remove') }}
                         </a>
                         {% endif %}

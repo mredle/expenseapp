@@ -6,14 +6,14 @@
             <td>
                 {% set edit_link %}
                     <span>
-                        <a href="{{ url_for('main.event_edit_expense', event_id=event.id, expense_id=expense.id) }}">
+                        <a href="{{ url_for('event.edit_expense', event_id=event.id, expense_id=expense.id) }}">
                             {{ _('Edit') }}
                         </a>
                     </span>
                 {% endset %}
                 {% set remove_link %}
                     <span>
-                        <a href="{{ url_for('main.event_remove_expense', event_id=event.id, expense_id=expense.id) }}">
+                        <a href="{{ url_for('event.remove_expense', event_id=event.id, expense_id=expense.id) }}">
                             {{ _('Remove') }}
                         </a>
                     </span>

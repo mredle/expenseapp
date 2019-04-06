@@ -2,22 +2,24 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    <h1>{{ title }}</h1>
-    <a href="{{ url_for('main.new_event') }}">{{ _('New Event') }}</a>
-    <br><br>
-    {% for event in events %}
-        {% include '_event.html' %}
+    <p><a href="{{ url_for('event.main', event_id=event.id) }}">{{ _('Back to event') }}</a></p>
+    {% if form %}
+    {{ wtf.quick_form(form) }}
+    <br>
+    {% endif %}
+    {% for user in users %}
+        {% include 'event/_user.html' %}
     {% endfor %}
     <nav aria-label="...">
         <ul class="pager">
             <li class="previous{% if not prev_url %} disabled{% endif %}">
                 <a href="{{ prev_url or '#' }}">
-                    <span aria-hidden="true">&larr;</span> {{ _('Newer events') }}
+                    <span aria-hidden="true">&larr;</span> {{ _('Previous users') }}
                 </a>
             </li>
             <li class="next{% if not next_url %} disabled{% endif %}">
                 <a href="{{ next_url or '#' }}">
-                    {{ _('Older events') }} <span aria-hidden="true">&rarr;</span>
+                    {{ _('More users') }} <span aria-hidden="true">&rarr;</span>
                 </a>
             </li>
         </ul>
