@@ -8,7 +8,7 @@ while true; do
     echo Upgrade command failed, retrying in 10 secs...
 done
 
-flask dbinit currency --overwrite
 flask dbinit admin --overwrite
+flask dbinit currency --overwrite
 flask translate compile
 exec gunicorn -b :5000 --access-logfile - --error-logfile - expenseapp:app

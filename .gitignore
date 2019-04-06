@@ -1,10 +1,7 @@
 # expenseapp temp files
 app.db
 dump.rdb
-logs
-
-# static files
-static/
+logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
