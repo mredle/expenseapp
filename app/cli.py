@@ -5,7 +5,8 @@ import sys
 import click
 import time
 from app import create_app, db
-from app.models import Currency, User
+from app.models import Currency, User, Image
+from app.tasks import create_thumbnails
 from config import Config
 
 def register(app):
@@ -106,10 +107,25 @@ def register(app):
                     existing_currency.db_created_by = currency.db_created_by
                     db.session.commit()
             else:
-                currencies.append(currency)
                 db.session.add(currency)
                 db.session.commit()
-            
+                
+        # Update flags
+        path = os.path.join(app.config['IMAGE_ROOT_PATH'], 'resources', 'flags')
+        currencies = Currency.query.all()
+        for currency in currencies:
+            if not currency.image:
+                country_code = currency.code[0:2].upper()
+                url = os.path.join(path, country_code + '.svg')
+#                try:
+                image = Image(url, delete=False, name=country_code)
+                image.description = 'Static image'
+                create_thumbnails(image)
+                currency.image = image
+                db.session.commit()
+#                except:
+#                    db.session.rollback()
+        
     @dbinit.command()
     @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing admin.')
     def admin(overwrite):

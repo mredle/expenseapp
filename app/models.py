@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from hashlib import md5
 from time import time
 from PIL import Image as ImagePIL
+import cairosvg
 import jwt
 import json
 import redis
@@ -12,6 +13,7 @@ import rq
 import base64
 import os
 import uuid
+import mimetypes
 
 from app import db, login
 from flask import current_app, url_for
@@ -109,13 +111,28 @@ class Image(Entity, db.Model):
     description = db.Column(db.String(256))
     thumbnails = db.relationship('Thumbnail', foreign_keys='Thumbnail.image_id', back_populates='image', lazy='dynamic')
     
-    def __init__(self, path):
+    def __init__(self, path, delete=True, name=None):
         Entity.__init__(self, '')
         
         # Read image
-        im = ImagePIL.open(path)
-        original_path, original_filename = os.path.split(path)
-        self.name = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.' + im.format
+        mime_type = mimetypes.guess_type(path)[0]
+        if mime_type=='image/svg+xml':
+            size = max(current_app.config['THUMBNAIL_SIZES'])
+            impath = os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
+                                  current_app.config['IMAGE_TMP_PATH'], 
+                                  base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.png')
+            cairosvg.svg2png(url=path, write_to=impath, output_width=size)
+            if delete:
+                os.remove(path)
+        else:
+            impath = path
+        
+        im = ImagePIL.open(impath)
+        original_path, original_filename = os.path.split(impath)
+        if name is None:
+            self.name = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.' + im.format
+        else:
+            self.name = name +  '.' + im.format
         self.original_filename = original_filename
         self.width = im.width
         self.height = im.height
@@ -124,7 +141,7 @@ class Image(Entity, db.Model):
         self.description = ''
         
         # Moving the image to a new file
-        os.rename(path, self.get_path())
+        os.rename(impath, self.get_path())
         
         
     def __repr__(self):

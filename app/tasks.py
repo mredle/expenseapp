@@ -3,6 +3,8 @@
 import sys
 import time
 import json
+import cairosvg
+import os
 from flask import render_template
 from rq import get_current_job
 from app import db, create_app
@@ -50,12 +52,26 @@ def consume_time(user_id):
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
+def create_thumbnails(image, update_progress=False):
+    sizes = list(app.config['THUMBNAIL_SIZES'])
+    total = len(app.config['THUMBNAIL_SIZES'])+1
+    sizes.append(max((image.width, image.height)))
+    i = 0;
+    if update_progress:
+        _set_task_progress(100*(1+i)//total)
+    for size in sizes:
+        i = i+1;
+        thumbnail = Thumbnail(image, size)
+        db.session.add(thumbnail)
+        if update_progress:
+            _set_task_progress(100*(1+i)//total)
+    
+    if update_progress:
+        _set_task_progress(100)
+    db.session.commit()
+
 def import_image(user_id, path, add_to_class, add_to_id):
     try:
-        i = 0;
-        total = len(app.config['THUMBNAIL_SIZES'])+1
-        _set_task_progress(100*(1+i)//total)
-        
         # Saving the image to a new file
         user = User.query.get(user_id)
         image = Image(path)
@@ -67,10 +83,7 @@ def import_image(user_id, path, add_to_class, add_to_id):
             add_to_user.profile_picture = image  
         elif add_to_class == 'Event':
             add_to_event = Event.query.get(add_to_id)
-            add_to_event.image = image 
-        elif add_to_class == 'Currency':
-            add_to_currency = Currency.query.get(add_to_id)
-            add_to_currency.image = image 
+            add_to_event.image = image
         elif add_to_class == 'Expense':
             add_to_expense = Expense.query.get(add_to_id)
             add_to_expense.image = image
@@ -80,16 +93,7 @@ def import_image(user_id, path, add_to_class, add_to_id):
         db.session.commit()
         
         # Create thumbnails
-        sizes = list(app.config['THUMBNAIL_SIZES'])
-        sizes.append(max((image.width, image.height)))
-        for size in sizes:
-            i = i+1;
-            thumbnail = Thumbnail(image, size)
-            db.session.add(thumbnail)
-            _set_task_progress(100*(1+i)//total)
-        
-        _set_task_progress(100)
-        db.session.commit()
+        create_thumbnails(image, update_progress=True)
         
     except:
         _set_task_progress(100)
