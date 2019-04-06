@@ -38,6 +38,8 @@ class PostForm(FlaskForm):
     submit = SubmitField(_l('Submit'))
 
 class MessageForm(FlaskForm):
+    recipient_id = SelectField(_l('Recipient'), coerce=int,
+                          validators=[DataRequired()])
     message = TextAreaField(_l('Message'), 
                             validators=[DataRequired(), Length(min=0, max=256)])
     submit = SubmitField(_l('Submit'))

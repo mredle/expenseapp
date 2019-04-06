@@ -29,24 +29,11 @@ def root():
 def index():
     page = request.args.get('page', 1, type=int)
     events = current_user.events.order_by(Event.date.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
-    next_url = url_for('main.my_events', page=events.next_num) if events.has_next else None
-    prev_url = url_for('main.my_events', page=events.prev_num) if events.has_prev else None
+        page, current_app.config['ITEMS_PER_PAGE'], False)
+    next_url = url_for('main.index', page=events.next_num) if events.has_next else None
+    prev_url = url_for('main.index', page=events.prev_num) if events.has_prev else None
     return render_template('index.html', 
-                           title=_('Hi, %(username)s!', username=current_user.username), 
-                           events=events.items, 
-                           next_url=next_url, prev_url=prev_url)
-
-@bp.route('/my_events')
-@login_required
-def my_events():
-    page = request.args.get('page', 1, type=int)
-    events = current_user.events_admin.order_by(Event.date.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
-    next_url = url_for('main.my_events', page=events.next_num) if events.has_next else None
-    prev_url = url_for('main.my_events', page=events.prev_num) if events.has_prev else None
-    return render_template('index.html', 
-                           title=_('My created events'), 
+                           title=_('Hi %(username)s, your events:', username=current_user.username), 
                            events=events.items, 
                            next_url=next_url, prev_url=prev_url)
 
@@ -55,12 +42,25 @@ def my_events():
 def currencies():
     page = request.args.get('page', 1, type=int)
     currencies = Currency.query.order_by(Currency.code.asc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+        page, current_app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('main.my_events', page=currencies.next_num) if currencies.has_next else None
     prev_url = url_for('main.my_events', page=currencies.prev_num) if currencies.has_prev else None
     return render_template('currencies.html', 
                            title=_('Current currencies'), 
                            currencies=currencies.items, 
+                           next_url=next_url, prev_url=prev_url)
+    
+@bp.route('/users')
+@login_required
+def users():
+    page = request.args.get('page', 1, type=int)
+    users = User.query.order_by(User.username.asc()).paginate(
+        page, current_app.config['ITEMS_PER_PAGE'], False)
+    next_url = url_for('main.users', page=users.next_num) if users.has_next else None
+    prev_url = url_for('main.users', page=users.prev_num) if users.has_prev else None
+    return render_template('users.html', 
+                           title=_('Current users'), 
+                           users=users.items, 
                            next_url=next_url, prev_url=prev_url)
     
 @bp.route('/event/<event_id>', methods=['GET', 'POST'])
@@ -77,7 +77,7 @@ def event(event_id):
     
     page = request.args.get('page', 1, type=int)
     posts = event.posts.order_by(Post.timestamp.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+        page, current_app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('main.event', event_id=event.id, page=posts.next_num) if posts.has_next else None
     prev_url = url_for('main.event', event_id=event.id, page=posts.prev_num) if posts.has_prev else None
     return render_template('event.html', 
@@ -106,7 +106,7 @@ def event_users(event_id):
     
     page = request.args.get('page', 1, type=int)
     users = event.users.order_by(User.username.asc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+        page, current_app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('main.event_users', event_id=event.id, page=users.next_num) if users.has_next else None
     prev_url = url_for('main.event_users', event_id=event.id, page=users.prev_num) if users.has_prev else None
     return render_template('event_users.html', 
@@ -142,7 +142,7 @@ def event_expenses(event_id):
     
     page = request.args.get('page', 1, type=int)
     expenses = event.expenses.order_by(Expense.date.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+        page, current_app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('main.event_expenses', event_id=event.id, page=expenses.next_num) if expenses.has_next else None
     prev_url = url_for('main.event_expenses', event_id=event.id, page=expenses.prev_num) if expenses.has_prev else None
     return render_template('event_expenses.html', 
@@ -179,7 +179,7 @@ def event_settlements(event_id):
     
     page = request.args.get('page', 1, type=int)
     settlements = event.settlements.filter_by(draft=False).order_by(Settlement.date.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+        page, current_app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('main.event_settlements', event_id=event.id, page=settlements.next_num) if settlements.has_next else None
     prev_url = url_for('main.event_settlements', event_id=event.id, page=settlements.prev_num) if settlements.has_prev else None
     return render_template('event_settlements.html', 
@@ -360,7 +360,7 @@ def user(username):
     user = User.query.filter_by(username=username).first_or_404()
     page = request.args.get('page', 1, type=int)
     posts = user.posts.order_by(Post.timestamp.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
+        page, current_app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('main.user', username=user.username, page=posts.next_num) if posts.has_next else None
     prev_url = url_for('main.user', username=user.username, page=posts.prev_num) if posts.has_prev else None
     return render_template('user.html', 
@@ -401,29 +401,29 @@ def edit_profile():
                            title=_('Edit Profile'), 
                            form=form)
 
-@bp.route('/send_message/<recipient>', methods=['GET', 'POST'])
-@login_required
-def send_message(recipient):
-    user = User.query.filter_by(username=recipient).first_or_404()
-    form = MessageForm()
-    if form.validate_on_submit():
-        msg = Message(author=current_user, recipient=user,
-                      body=form.message.data)
-        db.session.add(msg)
-        user.add_notification('unread_message_count', user.new_messages())
-        db.session.commit()
-        flash(_('Your message has been sent.'))
-        return redirect(url_for('main.user', username=recipient))
-    return render_template('edit_form.html', 
-                           title=_('Send Message to %(recipient)s', recipient=recipient), 
-                           form=form)
-
-@bp.route('/messages')
+@bp.route('/messages', methods=['GET', 'POST'])
 @login_required
 def messages():
     current_user.last_message_read_time = datetime.utcnow()
     current_user.add_notification('unread_message_count', 0)
     db.session.commit()
+    users = [(u.id, u.username) for u in User.query.order_by('username') if u != current_user]
+    form = MessageForm()
+    form.recipient_id.choices = users
+    recipient_username = request.args.get('recipient')
+    if recipient_username:
+        recipient = User.query.filter_by(username=recipient_username).first_or_404()
+        form.recipient_id.data = recipient.id
+    if form.validate_on_submit():
+        recipient = User.query.get(form.recipient_id.data)
+        msg = Message(author=current_user, 
+                      recipient=recipient,
+                      body=form.message.data)
+        db.session.add(msg)
+        recipient.add_notification('unread_message_count', recipient.new_messages())
+        db.session.commit()
+        flash(_('Your message has been sent.'))
+        return redirect(url_for('main.messages'))
     page = request.args.get('page', 1, type=int)
     messages = current_user.messages_received.order_by(
         Message.timestamp.desc()).paginate(
@@ -434,6 +434,7 @@ def messages():
         if messages.has_prev else None
     return render_template('messages.html', 
                            title=_('Messages'),
+                           form=form,
                            messages=messages.items,
                            next_url=next_url, prev_url=prev_url)
 

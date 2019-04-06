@@ -18,10 +18,8 @@
             </div>
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav">
-                    <li><a href="{{ url_for('main.my_events') }}">{{ _('My Events') }}</a></li>
                     <li><a href="{{ url_for('main.currencies') }}">{{ _('Currencies') }}</a></li>
-                    <li><a href="{{ url_for('main.new_currency') }}">{{ _('New Currency') }}</a></li>
-                    <li><a href="{{ url_for('main.new_event') }}">{{ _('New Event') }}</a></li>
+                    <li><a href="{{ url_for('main.users') }}">{{ _('Users') }}</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     {% if current_user.is_anonymous %}
