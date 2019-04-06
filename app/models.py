@@ -265,8 +265,15 @@ class Event(Entity, db.Model):
             self.users.append(user)
 
     def remove_user(self, user):
-        if self.has_user(user):
+        blocked_users = set([x.user for x in self.expenses] +
+                            [x.sender for x in self.settlements] +
+                            [x.recipient for x in self.settlements])
+        
+        if self.has_user(user) and user not in blocked_users:
             self.users.remove(user)
+            return 0
+        else:
+            return 1
             
     def convert_currencies(self):
         expenses = self.expenses.all()

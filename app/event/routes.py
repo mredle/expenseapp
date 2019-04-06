@@ -140,7 +140,7 @@ def users(event_id):
     admins = User.query.filter_by(username='admin').all()
     admins.append(event.admin)
     form = EventAddUserForm()
-    form.user_id.choices = [(u.id, u.username) for u in User.query.order_by('username') if u not in admins]
+    form.user_id.choices = [(u.id, u.username) for u in User.query.order_by('username') if u not in admins and u not in event.users]
     if form.validate_on_submit():
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))
@@ -297,7 +297,9 @@ def remove_user(event_id, username):
     if user == event.admin:
         flash(_('You cannot remove the event admin!'))
         return redirect(url_for('event.users', event_id=event.id))
-    event.remove_user(user)
+    if event.remove_user(user):
+        flash(_('User %(username)s cannot be removed from event %(event_name)s.', username=user.username, event_name=event.name))
+        return redirect(url_for('event.users', event_id=event_id))
     db.session.commit()
     flash(_('User %(username)s has been removed from event %(event_name)s.', username=user.username, event_name=event.name))
     return redirect(url_for('event.users', event_id=event_id))
