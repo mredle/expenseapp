@@ -66,11 +66,11 @@ class EventForm(FlaskForm):
     image = FileField(_l('Event picture'), validators=[FileAllowed(images, _l('Images only!'))])
     description = TextAreaField(_l('Description'), 
                                 validators=[Length(min=0, max=256)])
-    admin_id = SelectField(_l('Change admin user'), coerce=int,
+    admin_id = SelectField(_l('Admin user'), coerce=int,
                           validators=[DataRequired()])
-    accountant_id = SelectField(_l('Change accountant user'), coerce=int,
+    accountant_id = SelectField(_l('Accountant user'), coerce=int,
                           validators=[DataRequired()])
-    base_currency_id = SelectField(_l('Change base currency'), coerce=int,
+    base_currency_id = SelectField(_l('Base currency'), coerce=int,
                           validators=[DataRequired()])
     exchange_fee = FloatField(_l('Exchange fee (%)'), 
                        validators=[DataRequired()])

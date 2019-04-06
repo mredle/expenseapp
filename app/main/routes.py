@@ -90,8 +90,10 @@ def event(event_id):
 @login_required
 def event_users(event_id):
     event = Event.query.get_or_404(event_id)
+    admins = User.query.filter_by(username='admin').all()
+    admins.append(event.admin)
     form = EventAddUserForm()
-    form.user_id.choices = [(u.id, u.username) for u in User.query.order_by('username') if not u==event.admin]
+    form.user_id.choices = [(u.id, u.username) for u in User.query.order_by('username') if u not in admins]
     if form.validate_on_submit():
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))
@@ -231,7 +233,7 @@ def event_add_user(event_id, username):
         return redirect(url_for('main.event', event_id=event.id))
     user = User.query.filter_by(username=username).first_or_404()
     if user == event.admin:
-        flash(_('You cannot add the admin as user!'))
+        flash(_('You cannot add the event admin as user!'))
         return redirect(url_for('main.event_users', event_id=event.id))
     event.add_user(user)
     db.session.commit()
@@ -247,7 +249,7 @@ def event_remove_user(event_id, username):
         return redirect(url_for('main.event', event_id=event.id))
     user = User.query.filter_by(username=username).first_or_404()
     if user == event.admin:
-        flash(_('You cannot remove the admin!'))
+        flash(_('You cannot remove the event admin!'))
         return redirect(url_for('main.event_users', event_id=event.id))
     event.remove_user(user)
     db.session.commit()
@@ -514,10 +516,12 @@ def edit_currency(currency_id):
 @bp.route('/new_event', methods=['GET', 'POST'])
 @login_required
 def new_event():
+    admins = User.query.filter_by(username='admin').all()
+    users = [(u.id, u.username) for u in User.query.order_by('username') if u not in admins]
     form = EventForm()
-    form.admin_id.choices = [(u.id, u.username) for u in User.query.order_by('username')]
+    form.admin_id.choices = users
     form.admin_id.data = current_user.id
-    form.accountant_id.choices = [(u.id, u.username) for u in User.query.order_by('username')]
+    form.accountant_id.choices = users
     form.accountant_id.data = current_user.id
     form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
     if form.validate_on_submit():
