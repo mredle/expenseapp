@@ -9,6 +9,7 @@ while true; do
 done
 
 flask dbinit admin --overwrite
+flask dbinit icons --overwrite --subfolder icons
 flask dbinit currencies --overwrite
 flask dbinit currency_flags --overwrite
 flask translate compile

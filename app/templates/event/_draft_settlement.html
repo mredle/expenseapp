@@ -8,7 +8,7 @@
             <td>
                 {{ settlement.get_amount_str() }}
                 <br>
-                <span class="settlement_popup">
+                <span>
                     <a href="{{ url_for('event.settlement_execute', settlement_id=settlement.id) }}">
                         {{ _('Amount has been paid') }}
                     </a>

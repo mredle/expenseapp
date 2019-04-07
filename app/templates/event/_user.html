@@ -6,17 +6,6 @@
                 </a>
             </td>
             <td>
-                {% set remove_link %}
-                    <span>
-                        {% if user==event.admin %}
-                        {{ _('Administrator') }}
-                        {% else %}
-                        <a href="{{ url_for('event.remove_user', username=user.username, event_id=event.id) }}">
-                            {{ _('Remove') }}
-                        </a>
-                        {% endif %}
-                    </span>
-                {% endset %}
                 {% set user_link %}
                     <span class="user_popup">
                         <a href="{{ url_for('main.user', username=user.username) }}">
@@ -24,9 +13,20 @@
                         </a>
                     </span>
                 {% endset %}
-                {{ _('%(user_name)s: %(remove)s',
-                    user_name=user_link, remove=remove_link) }}
+                {% set remove_link %}
+                    <span>
+                        {% if user==event.admin %}
+                        {{ _('Administrator') }}
+                        {% else %}
+                        <a href="{{ url_for('event.remove_user', username=user.username, event_id=event.id) }}">
+                            {{ _('remove') }}
+                        </a>
+                        {% endif %}
+                    </span>
+                {% endset %}
+                {{ _('%(link)s', link=user_link) }}
                 <br>
+                {{ _('%(link)s', link=remove_link) }}
             </td>
         </tr>
     </table>

@@ -7,19 +7,19 @@
                 {% set edit_link %}
                     <span>
                         <a href="{{ url_for('event.edit_expense', event_id=event.id, expense_id=expense.id) }}">
-                            {{ _('Edit') }}
+                            {{ _('edit') }}
                         </a>
                     </span>
                 {% endset %}
                 {% set remove_link %}
                     <span>
                         <a href="{{ url_for('event.remove_expense', event_id=event.id, expense_id=expense.id) }}">
-                            {{ _('Remove') }}
+                            {{ _('remove') }}
                         </a>
                     </span>
                 {% endset %}
                 {% set user_link %}
-                    <span class="expense_popup">
+                    <span class="user_popup">
                         <a href="{{ url_for('main.user', username=expense.user.username) }}">
                             {{ expense.user.username }}
                         </a>
@@ -34,9 +34,9 @@
                 {{ expense.description }}
                 {% if not event.closed %}
                 <br>
-                {{ _('%(edit)s, %(remove)s',
-                    edit=edit_link,
-                    remove=remove_link) }}
+                {{ _('%(link)s', link=edit_link) }}
+                <br>
+                {{ _('%(link)s', link=remove_link) }}
                 {% endif %}
             </td>
         </tr>

@@ -61,6 +61,7 @@ class Thumbnail(Entity, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     name = db.Column(db.String(64))
+    extension = db.Column(db.String(8))
     size = db.Column(db.Integer)
     format = db.Column(db.String(8))
     mode = db.Column(db.String(8))
@@ -72,8 +73,13 @@ class Thumbnail(Entity, db.Model):
         
         # Read image
         im = ImagePIL.open(image.get_path())
-        im_filename, im_extension = os.path.splitext(image.name)
-        self.name = im_filename + '_' + str(size) +  '.'  + current_app.config['IMAGE_DEFAULT_FORMAT']
+        if im.mode=='RGBA':
+            background = ImagePIL.new('RGB', im.size, (255, 255, 255))
+            background.paste(im, mask=im.split()[3]) # 3 is the alpha channel
+            im = background
+            
+        self.name = image.name + '_' + str(size)
+        self.extension = '.' + current_app.config['IMAGE_DEFAULT_FORMAT']
         self.size = size
         self.format = current_app.config['IMAGE_DEFAULT_FORMAT']
         self.mode = im.mode
@@ -91,11 +97,11 @@ class Thumbnail(Entity, db.Model):
     def get_path(self):
         return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
                             current_app.config['IMAGE_TIMG_PATH'], 
-                            self.name)
+                            self.name + self.extension)
         
     def get_url(self):
         return os.path.join('/', current_app.config['IMAGE_TIMG_PATH'], 
-                            self.name)
+                            self.name + self.extension)
     
 
 class Image(Entity, db.Model):
@@ -103,6 +109,7 @@ class Image(Entity, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     name = db.Column(db.String(64))
+    extension = db.Column(db.String(8))
     width = db.Column(db.Integer)
     height = db.Column(db.Integer)
     format = db.Column(db.String(8))
@@ -130,9 +137,10 @@ class Image(Entity, db.Model):
         im = ImagePIL.open(impath)
         original_path, original_filename = os.path.split(impath)
         if name is None:
-            self.name = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.' + im.format
+            self.name = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '')
         else:
-            self.name = name +  '.' + im.format
+            self.name = name
+        self.extension = '.' + im.format
         self.original_filename = original_filename
         self.width = im.width
         self.height = im.height
@@ -143,6 +151,35 @@ class Image(Entity, db.Model):
         # Moving the image to a new file
         os.rename(impath, self.get_path())
         
+    def update(self, path, delete=True):
+        # Read image
+        mime_type = mimetypes.guess_type(path)[0]
+        if mime_type=='image/svg+xml':
+            size = max(current_app.config['THUMBNAIL_SIZES'])
+            impath = os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
+                                  current_app.config['IMAGE_TMP_PATH'], 
+                                  base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.png')
+            cairosvg.svg2png(url=path, write_to=impath, output_width=size)
+            if delete:
+                os.remove(path)
+        else:
+            impath = path
+        
+        # Remove old file
+        os.remove(self.get_path())
+        
+        im = ImagePIL.open(impath)
+        original_path, original_filename = os.path.split(impath)
+        self.extension = '.' + im.format
+        self.original_filename = original_filename
+        self.width = im.width
+        self.height = im.height
+        self.format = im.format
+        self.mode = im.mode
+        self.description = ''
+        
+        # Moving the image to a new file
+        os.rename(impath, self.get_path())
         
     def __repr__(self):
         return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
@@ -151,14 +188,14 @@ class Image(Entity, db.Model):
         if self.name:
             return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
                                 current_app.config['IMAGE_IMG_PATH'], 
-                                self.name)
+                                self.name + self.extension)
         else:
             return ''
         
     def get_url(self):
         if self.name:
             return os.path.join('/', current_app.config['IMAGE_IMG_PATH'], 
-                                self.name)
+                                self.name + self.extension)
         else:
             return ''
            
@@ -399,7 +436,7 @@ class Expense(Entity, db.Model):
         if self.image:
             return self.image.get_thumbnail_url(size)
         else:
-            return '0'
+            return ''
         
     def get_amount(self):
         return self.currency.get_amount_in(self.amount, self.event.base_currency, self.event.exchange_fee)
@@ -453,7 +490,7 @@ class Settlement(Entity, db.Model):
         if self.image:
             return self.image.get_thumbnail_url(size)
         else:
-            return '0'
+            return ''
         
     def get_amount(self):
         return self.currency.get_amount_in(self.amount, self.event.base_currency, self.event.exchange_fee)
@@ -596,6 +633,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     notifications = db.relationship('Notification', back_populates='user', lazy='dynamic')
     tasks = db.relationship('Task', back_populates='user', lazy='dynamic')
     
+    is_admin = db.Column(db.Boolean)
     about_me = db.Column(db.String(256))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -609,6 +647,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         self.token = ''
         self.token_expiration = datetime.utcnow() - timedelta(seconds=1)
         self.last_message_read_time = datetime.utcnow()
+        self.is_admin = False
         self.about_me = about_me
         self.last_seen = datetime.utcnow()
         
