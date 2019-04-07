@@ -9,6 +9,7 @@ while true; do
 done
 
 flask dbinit admin --overwrite
-flask dbinit currency --overwrite
+flask dbinit currencies --overwrite
+flask dbinit currency_flags --overwrite
 flask translate compile
 exec gunicorn -b :5000 --access-logfile - --error-logfile - expenseapp:app

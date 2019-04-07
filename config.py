@@ -9,7 +9,7 @@ load_dotenv(os.path.join(basedir, '.env'))
 class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'app.db')
+        'mysql+pymysql://user:pw@localhost/expenseapp?charset=utf8mb4'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_POOL_RECYCLE = 480
     MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'localhost'
@@ -34,4 +34,4 @@ class Config(object):
     MESSAGES_PER_PAGE = 10
     LANGUAGES = ['en', 'de']
     TIMEZONES = ['Etc/UTC', 'Europe/Zurich']
-    REDIS_URL = os.environ.get('REDIS_URL') or 'redis://'
+    REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
