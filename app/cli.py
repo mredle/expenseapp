@@ -122,7 +122,7 @@ def register(app):
     @dbinit.command()
     @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing flags.')
     def currency_flags(overwrite):
-        """Initialize currencies with predefined values."""
+        """Initialize currency flags."""
         
         # Update flags
         flag_path = os.path.join(app.config['IMAGE_ROOT_PATH'], 'resources', 'flags')

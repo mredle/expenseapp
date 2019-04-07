@@ -55,9 +55,11 @@ def new():
     users = [(u.id, u.username) for u in User.query.order_by('username') if u not in admins]
     form = EventForm()
     form.admin_id.choices = users
-    form.admin_id.data = current_user.id
+    if current_user.username != 'admin':
+        form.admin_id.data = current_user.id
     form.accountant_id.choices = users
-    form.accountant_id.data = current_user.id
+    if current_user.username != 'admin':
+        form.accountant_id.data = current_user.id
     form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
     if form.validate_on_submit():
         admin = User.query.get(form.admin_id.data)
@@ -93,7 +95,7 @@ def new():
 @login_required
 def edit(event_id):
     event = Event.query.get_or_404(event_id)
-    if current_user != event.admin:
+    if current_user != event.admin and not current_user.is_admin:
         flash(_('Your are only allowed to edit your own event!'))
         return redirect(url_for('event.main', event_id=event.id))
     if event.closed:
@@ -139,6 +141,9 @@ def users(event_id):
     event = Event.query.get_or_404(event_id)
     admins = User.query.filter_by(username='admin').all()
     admins.append(event.admin)
+    if current_user != event.admin and not current_user.is_admin:
+        flash(_('Your are only allowed to edit your own event!'))
+        return redirect(url_for('event.users', event_id=event.id))
     form = EventAddUserForm()
     form.user_id.choices = [(u.id, u.username) for u in User.query.order_by('username') if u not in admins and u not in event.users]
     if form.validate_on_submit():
@@ -166,6 +171,9 @@ def users(event_id):
 @login_required
 def add_user(event_id, username):
     event = Event.query.get_or_404(event_id)
+    if current_user != event.admin and not current_user.is_admin:
+        flash(_('Your are only allowed to edit your own event!'))
+        return redirect(url_for('event.users', event_id=event.id))
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('main.event', event_id=event.id))
@@ -182,6 +190,9 @@ def add_user(event_id, username):
 @login_required
 def remove_user(event_id, username):
     event = Event.query.get_or_404(event_id)
+    if current_user != event.admin and not current_user.is_admin:
+        flash(_('Your are only allowed to edit your own event!'))
+        return redirect(url_for('event.users', event_id=event.id))
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
@@ -270,7 +281,7 @@ def edit_expense(event_id, expense_id):
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
     expense = Expense.query.get_or_404(expense_id)
-    if current_user not in [event.admin, expense.user]:
+    if current_user not in [event.admin, expense.user] and not current_user.is_admin:
         flash(_('Your are only allowed to edit your own expenses!'))
         return redirect(url_for('event.expenses', event_id=event.id))
     form = ExpenseForm()
@@ -303,7 +314,7 @@ def remove_expense(event_id, expense_id):
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
     expense = Expense.query.get_or_404(expense_id)
-    if current_user not in [event.admin, expense.user]:
+    if current_user not in [event.admin, expense.user] and not current_user.is_admin:
         flash(_('Your are only allowed to remove your own expenses!'))
         return redirect(url_for('event.expenses', event_id=event.id))
     if expense in event.expenses:
@@ -360,7 +371,7 @@ def edit_settlement(event_id, settlement_id):
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
     settlement = Settlement.query.get_or_404(settlement_id)
-    if current_user not in [event.admin, settlement.sender]:
+    if current_user not in [event.admin, settlement.sender] and not current_user.is_admin:
         flash(_('Your are only allowed to edit your own settlements!'))
         return redirect(url_for('event.settlements', event_id=event.id))
     form = SettlementForm()
@@ -399,7 +410,7 @@ def remove_settlement(event_id, settlement_id):
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
     settlement = Settlement.query.get_or_404(settlement_id)
-    if current_user not in [event.admin, settlement.sender]:
+    if current_user not in [event.admin, settlement.sender] and not current_user.is_admin:
         flash(_('Your are only allowed to remove your own settlements!'))
         return redirect(url_for('event.settlements', settlement_id=settlement.id))
     if settlement in event.settlements:
@@ -412,7 +423,7 @@ def remove_settlement(event_id, settlement_id):
 @login_required
 def convert_currencies(event_id):
     event = Event.query.get_or_404(event_id)
-    if current_user != event.admin:
+    if current_user != event.admin and not current_user.is_admin:
         flash(_('Your are only allowed to convert currencies of your own event!'))
         return redirect(url_for('event.main', event_id=event.id))
     event.convert_currencies()
@@ -424,7 +435,7 @@ def convert_currencies(event_id):
 @login_required
 def reopen(event_id):
     event = Event.query.get_or_404(event_id)
-    if current_user != event.admin:
+    if current_user != event.admin and not current_user.is_admin:
         flash(_('Your are only allowed to reopen your own event!'))
         return redirect(url_for('event.main', event_id=event.id))
     event.closed = False
@@ -436,7 +447,7 @@ def reopen(event_id):
 @login_required
 def close(event_id):
     event = Event.query.get_or_404(event_id)
-    if current_user != event.admin:
+    if current_user != event.admin and not current_user.is_admin:
         flash(_('Your are only allowed to close your own event!'))
         return redirect(url_for('event.main', event_id=event.id))
     if event.settlements.filter_by(draft=True).all():

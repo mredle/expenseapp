@@ -97,11 +97,11 @@ class Thumbnail(Entity, db.Model):
     def get_path(self):
         return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
                             current_app.config['IMAGE_TIMG_PATH'], 
-                            self.name + self.extension)
+                            self.name + (self.extension if self.extension is not None else ''))
         
     def get_url(self):
         return os.path.join('/', current_app.config['IMAGE_TIMG_PATH'], 
-                            self.name + self.extension)
+                            self.name + (self.extension if self.extension is not None else ''))
     
 
 class Image(Entity, db.Model):
@@ -188,14 +188,14 @@ class Image(Entity, db.Model):
         if self.name:
             return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
                                 current_app.config['IMAGE_IMG_PATH'], 
-                                self.name + self.extension)
+                                self.name + (self.extension if self.extension is not None else ''))
         else:
             return ''
         
     def get_url(self):
         if self.name:
             return os.path.join('/', current_app.config['IMAGE_IMG_PATH'], 
-                                self.name + self.extension)
+                                self.name + (self.extension if self.extension is not None else ''))
         else:
             return ''
            

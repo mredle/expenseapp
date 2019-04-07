@@ -16,7 +16,7 @@ while true; do
 done
 
 flask db upgrade
-flask dbinit admin
+flask dbinit admin --overwrite
 flask dbinit icons --overwrite --subfolder icons
 flask dbinit currencies --overwrite
 flask dbinit dummyusers --count 3
