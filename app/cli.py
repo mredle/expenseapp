@@ -4,6 +4,7 @@ import os
 import sys
 import click
 import time
+import csv
 from app import create_app, db
 from app.models import Currency, User, Image
 from app.tasks import create_thumbnails
@@ -66,35 +67,44 @@ def register(app):
     
     @dbinit.command()
     @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing currencies.')
-    def currency(overwrite):
+    def currencies(overwrite):
         """Initialize currencies with predefined values."""
-        created_by = 'flask dbinit currency' 
         
-        # Fill currencies with example values
+        # Fill currencies from CSV file
         currencies = []
-        currency1 = Currency(code = 'CHF', 
-                             name = 'Schweizer Franken', 
-                             number = 756, 
-                             exponent = 2, 
-                             inCHF = 1, 
-                             description = 'Schweiz, Liechtenstein', 
-                             db_created_by = created_by)
-        currency2 = Currency(code = 'EUR', 
-                             name = 'Euro', 
-                             number = 978, 
-                             exponent = 2, 
-                             inCHF = 1.15, 
-                             description = 'Europäische Währungsunion', 
-                             db_created_by = created_by)
-        currency3 = Currency(code = 'USD', 
-                             name = 'US-Dollar', 
-                             number = 840, 
-                             exponent = 2, 
-                             inCHF = 0.99, 
-                             description = 'Vereinigte Staaten', 
-                             db_created_by = created_by)
+        with open('app/resources/currencies.csv') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=';')
+            line_count = 0
+            for row in csv_reader:
+                if line_count == 0:
+                    line_count += 1
+                else:
+                    line_count += 1
+                    if row[2] and not row[5]:
+                        if len(row[1])>64:
+                            na = row[1][0:64]
+                        else:
+                            na = row[1]
+                        try:
+                            e = int(row[4])
+                        except ValueError:
+                            e = 0
+                        
+                        try:
+                            nu = int(row[3])
+                        except ValueError:
+                            nu = 0
+                         
+                        c = Currency(code = row[2].upper(), 
+                                     name = na, 
+                                     number = nu, 
+                                     exponent = e, 
+                                     inCHF = 1, 
+                                     description = row[0], 
+                                     db_created_by = 'flask dbinit currency')
+                        currencies.append(c)
         
-        for currency in [currency1, currency2, currency3]:
+        for currency in currencies:
             existing_currency = Currency.query.filter_by(code=currency.code).first()
             if existing_currency:
                 if overwrite:
@@ -102,30 +112,35 @@ def register(app):
                     existing_currency.name = currency.name
                     existing_currency.number = currency.number
                     existing_currency.exponent = currency.exponent
-                    existing_currency.inCHF = currency.inCHF 
                     existing_currency.description = currency.description
                     existing_currency.db_created_by = currency.db_created_by
                     db.session.commit()
             else:
                 db.session.add(currency)
                 db.session.commit()
-                
+    
+    @dbinit.command()
+    @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing flags.')
+    def currency_flags(overwrite):
+        """Initialize currencies with predefined values."""
+        
         # Update flags
-        path = os.path.join(app.config['IMAGE_ROOT_PATH'], 'resources', 'flags')
-        currencies = Currency.query.all()
-        for currency in currencies:
+        flag_path = os.path.join(app.config['IMAGE_ROOT_PATH'], 'resources', 'flags')
+        existing_currencies = Currency.query.all()
+        for currency in existing_currencies:
             if not currency.image:
                 country_code = currency.code[0:2].upper()
-                url = os.path.join(path, country_code + '.svg')
-#                try:
-                image = Image(url, delete=False, name=country_code)
-                image.description = 'Static image'
-                create_thumbnails(image)
-                currency.image = image
-                db.session.commit()
-#                except:
-#                    db.session.rollback()
-        
+                url = os.path.join(flag_path, country_code + '.svg')
+                try:
+                    image = Image(url, delete=False, name=country_code)
+                    image.description = 'Static image'
+                    create_thumbnails(image)
+                    currency.image = image
+                    db.session.commit()
+                except:
+                    print('Adding flag for {} failed'.format(country_code))
+                    db.session.rollback()
+    
     @dbinit.command()
     @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing admin.')
     def admin(overwrite):
@@ -151,6 +166,7 @@ def register(app):
                               timezone = app.config['TIMEZONES'][0],
                               about_me = 'I am the mighty admin!', 
                               db_created_by = created_by)
+            admin_user.is_admin = True
             admin_user.set_password(app.config['ADMIN_PASSWORD'])
             admin_user.get_token()
             db.session.add(admin_user)
@@ -169,7 +185,7 @@ def register(app):
         existing_emails = [user.email for user in  User.query.all()]
         for i_user in range(0, n_users):
             user = User(username = 'User'+str(i_user), 
-                        email = 'user'+str(i_user)+'@email', 
+                        email = 'user'+str(i_user)+'@email.net', 
                         locale = 'en', 
                         timezone = 'Etc/UTC',
                         about_me = 'blablablabla from the life of User'+str(i_user), 

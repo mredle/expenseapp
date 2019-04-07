@@ -3,11 +3,12 @@
 from datetime import datetime
 from flask import request, render_template, flash, redirect, url_for, jsonify, g, current_app
 from flask_login import current_user, login_required
+from flask_uploads import UploadNotAllowed
 from flask_babel import get_locale, _
 
 from app import db, images
 from app.main import bp
-from app.main.forms import EditProfileForm, MessageForm, CurrencyForm
+from app.main.forms import EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm
 from app.models import Currency, User, Message, Notification, Event
 
 @bp.before_app_request
@@ -17,7 +18,7 @@ def before_request():
         db.session.commit()
     g.locale = str(get_locale())
 
-      
+
 # routes for rendered pages
 @bp.route('/')
 def root():
@@ -33,8 +34,8 @@ def currencies():
     page = request.args.get('page', 1, type=int)
     currencies = Currency.query.order_by(Currency.code.asc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
-    next_url = url_for('main.my_events', page=currencies.next_num) if currencies.has_next else None
-    prev_url = url_for('main.my_events', page=currencies.prev_num) if currencies.has_prev else None
+    next_url = url_for('main.currencies', page=currencies.next_num) if currencies.has_next else None
+    prev_url = url_for('main.currencies', page=currencies.prev_num) if currencies.has_prev else None
     return render_template('currencies.html', 
                            title=_('Current currencies'), 
                            currencies=currencies.items, 
@@ -112,6 +113,108 @@ def user(username):
                            events=events.items,
                            next_url=next_url, prev_url=prev_url)
 
+@bp.route('/new_user', methods=['GET', 'POST'])
+def new_user():
+    if not current_user.is_admin:
+        flash(_('Only an admin can create new users!'))
+        return redirect(url_for('main.users'))
+    form = NewUserForm()
+    form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
+    form.timezone.choices = [(x, x) for x in current_app.config['TIMEZONES']]
+    if form.validate_on_submit():
+        user = User(username=form.username.data, 
+                    email=form.email.data,
+                    locale=form.locale.data,
+                    timezone=form.timezone.data,
+                    about_me = form.about_me.data)
+        user.is_admin = form.is_admin.data
+        user.set_password(form.password.data)
+        user.get_token()
+        db.session.add(user)
+        db.session.commit()
+        try:
+            image_filename = images.save(request.files['image'])
+            image_path = images.path(image_filename)
+            user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='User', add_to_id=user.id)
+        except UploadNotAllowed:
+            flash(_('Invalid or empty image.'))
+        flash(_('New user %(username)s created', username = user.username))
+        return redirect(url_for('main.users'))
+    return render_template('edit_form.html', title=_('New User'), form=form)
+
+@bp.route('/edit_user/<username>', methods=['GET', 'POST'])
+def edit_user(username):
+    if not current_user.is_admin:
+        flash(_('Only an admin can edit users!'))
+        return redirect(url_for('main.users'))
+    user = User.query.filter_by(username=username).first_or_404()
+    admin = User.query.filter_by(username='admin').first()
+    if user==admin:
+        flash(_('You cannot change the master admin!'))
+        return redirect(url_for('main.users'))
+    form = EditUserForm(user.username, user.email)
+    form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
+    form.timezone.choices = [(x, x) for x in current_app.config['TIMEZONES']]
+    if form.validate_on_submit():
+        user.username=form.username.data, 
+        user.email=form.email.data,
+        user.locale=form.locale.data,
+        user.timezone=form.timezone.data,
+        user.about_me = form.about_me.data
+        user.is_admin = form.is_admin.data
+        if form.password.data:
+            user.set_password(form.password.data)
+        user.get_token()
+        db.session.commit()
+        try:
+            image_filename = images.save(request.files['image'])
+            image_path = images.path(image_filename)
+            user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='User', add_to_id=user.id)
+        except UploadNotAllowed:
+            flash(_('Invalid or empty image.'))
+        flash(_('Your changes have been saved.'))
+        return redirect(url_for('main.users'))
+    elif request.method == 'GET':
+        form.username.data = user.username
+        form.email.data = user.email
+        form.locale.data = user.locale
+        form.timezone.data = user.timezone
+        form.about_me.data = user.about_me
+        form.is_admin.data = user.is_admin
+    return render_template('edit_form.html', title=_('Edit User'), form=form)
+
+@bp.route('/set_admin/<username>')
+@login_required
+def set_admin(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if not current_user.is_admin:
+        flash(_('Only an admin can set the admin rights!'))
+        return redirect(url_for('main.user', username=user.username))
+    user.is_admin = True
+    db.session.commit()
+    return redirect(url_for('main.user', username=user.username))
+
+@bp.route('/revoke_admin/<username>')
+@login_required
+def revoke_admin(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    admin = User.query.filter_by(username='admin').first()
+    if user==admin:
+        flash(_('You cannot change the master admin!'))
+        return redirect(url_for('main.user', username=user.username))
+    if not current_user.is_admin:
+        flash(_('Only an admin can revoke the admin rights!'))
+        return redirect(url_for('main.user', username=user.username))
+    user.is_admin = True
+    db.session.commit()
+    return redirect(url_for('main.user', username=user.username))
+
+@bp.route('/administration')
+@login_required
+def administration():
+    return render_template('administration.html',
+                           title= _('Administration'))
+
 @bp.route('/user/<username>/popup')
 @login_required
 def user_popup(username):
@@ -129,10 +232,12 @@ def edit_profile():
         current_user.about_me = form.about_me.data
         current_user.locale = form.locale.data
         current_user.timezone = form.timezone.data
-        if 'image' in request.files:
+        try:
             image_filename = images.save(request.files['image'])
             image_path = images.path(image_filename)
-            current_user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='User', add_to_id=current_user.id)
+            user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='User', add_to_id=user.id)
+        except UploadNotAllowed:
+            flash(_('Invalid or empty image.'))
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.user', username=current_user.username))

@@ -13,8 +13,16 @@
                         </a>
                     </span>
                 {% endset %}
-                {{ _('%(user_name)s', user_name=user_link) }}
+                {% set edit_link %}
+                    <span>
+                        <a href="{{ url_for('main.edit_user', username=user.username) }}">
+                            {{ _('edit') }}
+                        </a>
+                    </span>
+                {% endset %}
+                {{ _('%(link)s', link=user_link) }}
                 <br>
+                {{ _('%(link)s', link=edit_link) }}
             </td>
         </tr>
     </table>

@@ -7,14 +7,14 @@
                 {% set edit_link %}
                     <span>
                         <a href="{{ url_for('event.edit_settlement', event_id=event.id, settlement_id=settlement.id) }}">
-                            {{ _('Edit') }}
+                            {{ _('edit') }}
                         </a>
                     </span>
                 {% endset %}
                 {% set remove_link %}
                     <span>
                         <a href="{{ url_for('event.remove_settlement', event_id=event.id, settlement_id=settlement.id) }}">
-                            {{ _('Remove') }}
+                            {{ _('remove') }}
                         </a>
                     </span>
                 {% endset %}
@@ -41,9 +41,10 @@
                 {{ settlement.description }}
                 {% if not event.closed %}
                 <br>
-                {{ _('%(edit)s, %(remove)s',
-                    edit=edit_link,
-                    remove=remove_link) }}
+                <br>
+                {{ _('%(link)s', link=edit_link) }}
+                <br>
+                {{ _('%(link)s', link=remove_link) }}
                 {% endif %}
             </td>
         </tr>

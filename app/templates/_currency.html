@@ -5,17 +5,19 @@
             </td>
             <td>
                 {% set edit_link %}
-                    <span class="currency_popup">
+                    <span>
                         <a href="{{ url_for('main.edit_currency', currency_id=currency.id) }}">
-                            edit
+                            {{ _('edit') }}
                         </a>
                     </span>
                 {% endset %}
-                {{ _('%(name)s: %(code)s 1 equals %(inCHF).4f: %(edit_link)s',
+                {{ _('%(name)s (%(edit_link)s)',
                     name=currency.name, 
-                    code=currency.code,
-                    inCHF=currency.inCHF,
                     edit_link=edit_link) }}
+                <br>
+                {{ _('%(code)s 1 equals %(inCHF).4f',
+                    code=currency.code,
+                    inCHF=currency.inCHF) }}
                 <br>
                 {{ currency.description }}
             </td>

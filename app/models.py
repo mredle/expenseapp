@@ -596,6 +596,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     notifications = db.relationship('Notification', back_populates='user', lazy='dynamic')
     tasks = db.relationship('Task', back_populates='user', lazy='dynamic')
     
+    is_admin = db.Column(db.Boolean)
     about_me = db.Column(db.String(256))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -609,6 +610,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         self.token = ''
         self.token_expiration = datetime.utcnow() - timedelta(seconds=1)
         self.last_message_read_time = datetime.utcnow()
+        self.is_admin = False
         self.about_me = about_me
         self.last_seen = datetime.utcnow()
         
