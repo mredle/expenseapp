@@ -9,7 +9,7 @@ from flask_babel import _
 from app import db, images
 from app.event import bp
 from app.event.forms import PostForm, EventForm, EventAddUserForm, ExpenseForm, SettlementForm
-from app.models import Currency, Event, Expense, Settlement, Post, User
+from app.models import Currency, Event, Expense, Settlement, Post, User, Image
       
 # routes for rendered pages
 @bp.route('/index')
@@ -242,7 +242,9 @@ def expenses(event_id):
                           date=form.date.data,
                           description=form.description.data, 
                           db_created_by=current_user.username)
-        
+        image = Image.query.filter_by(name='expense.png').first()
+        if image:
+            expense.image = image
         db.session.add(expense)
         db.session.commit()
         flash(_('Your new expense has been added to event %(event_name)s.', event_name=event.name))
@@ -330,7 +332,9 @@ def settlements(event_id):
                                 date=datetime.utcnow(),
                                 description=form.description.data, 
                                 db_created_by=current_user.username)
-        
+        image = Image.query.filter_by(name='settlement.png').first()
+        if image:
+            settlement.image = image
         db.session.add(settlement)
         db.session.commit()
         flash(_('Your new settlement has been added to event %(event_name)s.', event_name=event.name))

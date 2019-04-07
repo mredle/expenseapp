@@ -140,6 +140,39 @@ def register(app):
                 except:
                     print('Adding flag for {} failed'.format(country_code))
                     db.session.rollback()
+                    
+    @dbinit.command()
+    @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing flags.')
+    @click.option('--subfolder', default='', help='Subfolder for icons')
+    def icons(overwrite, subfolder):
+        """Initialize icons."""
+        
+        # Update icons
+        icon_path = os.path.join(app.config['IMAGE_ROOT_PATH'], 'resources', subfolder)
+        files = [f for f in os.listdir(icon_path) if f.endswith('.svg')]
+        for file in files:
+            url = os.path.join(icon_path, file)
+            name = os.path.splitext(file)[0]
+            existing_image = Image.query.filter_by(name=name).first()
+            if existing_image:
+                if overwrite:
+#                    try:
+                    existing_image.update(url, delete=False)
+                    existing_image.description = 'Static image'
+                    create_thumbnails(existing_image)
+                    db.session.commit()
+#                    except:
+#                        print('Updating icon {} failed'.format(file))
+#                        db.session.rollback()
+            else:
+#                try:
+                image = Image(url, delete=False, name=name)
+                image.description = 'Static image'
+                create_thumbnails(image)
+                db.session.commit()
+#                except:
+#                    print('Adding icon {} failed'.format(file))
+#                    db.session.rollback()
     
     @dbinit.command()
     @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing admin.')

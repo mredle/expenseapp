@@ -72,6 +72,11 @@ class Thumbnail(Entity, db.Model):
         
         # Read image
         im = ImagePIL.open(image.get_path())
+        if im.mode=='RGBA':
+            background = ImagePIL.new('RGB', im.size, (255, 255, 255))
+            background.paste(im, mask=im.split()[3]) # 3 is the alpha channel
+            im = background
+            
         im_filename, im_extension = os.path.splitext(image.name)
         self.name = im_filename + '_' + str(size) +  '.'  + current_app.config['IMAGE_DEFAULT_FORMAT']
         self.size = size
@@ -143,6 +148,32 @@ class Image(Entity, db.Model):
         # Moving the image to a new file
         os.rename(impath, self.get_path())
         
+    def update(self, path, delete=True):
+        # Read image
+        mime_type = mimetypes.guess_type(path)[0]
+        if mime_type=='image/svg+xml':
+            size = max(current_app.config['THUMBNAIL_SIZES'])
+            impath = os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
+                                  current_app.config['IMAGE_TMP_PATH'], 
+                                  base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.png')
+            cairosvg.svg2png(url=path, write_to=impath, output_width=size)
+            if delete:
+                os.remove(path)
+        else:
+            impath = path
+        
+        im = ImagePIL.open(impath)
+        original_path, original_filename = os.path.split(impath)
+        self.original_filename = original_filename
+        self.width = im.width
+        self.height = im.height
+        self.format = im.format
+        self.mode = im.mode
+        self.description = ''
+        
+        # Moving the image to a new file
+        os.remove(self.get_path())
+        os.rename(impath, self.get_path())
         
     def __repr__(self):
         return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
