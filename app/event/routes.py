@@ -242,7 +242,7 @@ def expenses(event_id):
                           date=form.date.data,
                           description=form.description.data, 
                           db_created_by=current_user.username)
-        image = Image.query.filter_by(name='expense.png').first()
+        image = Image.query.filter_by(name='expense').first()
         if image:
             expense.image = image
         db.session.add(expense)
@@ -332,7 +332,7 @@ def settlements(event_id):
                                 date=datetime.utcnow(),
                                 description=form.description.data, 
                                 db_created_by=current_user.username)
-        image = Image.query.filter_by(name='settlement.png').first()
+        image = Image.query.filter_by(name='settlement').first()
         if image:
             settlement.image = image
         db.session.add(settlement)

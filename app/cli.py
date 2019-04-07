@@ -156,23 +156,23 @@ def register(app):
             existing_image = Image.query.filter_by(name=name).first()
             if existing_image:
                 if overwrite:
-#                    try:
-                    existing_image.update(url, delete=False)
-                    existing_image.description = 'Static image'
-                    create_thumbnails(existing_image)
-                    db.session.commit()
-#                    except:
-#                        print('Updating icon {} failed'.format(file))
-#                        db.session.rollback()
+                    try:
+                        existing_image.update(url, delete=False)
+                        existing_image.description = 'Static image'
+                        create_thumbnails(existing_image)
+                        db.session.commit()
+                    except:
+                        print('Updating icon {} failed'.format(file))
+                        db.session.rollback()
             else:
-#                try:
-                image = Image(url, delete=False, name=name)
-                image.description = 'Static image'
-                create_thumbnails(image)
-                db.session.commit()
-#                except:
-#                    print('Adding icon {} failed'.format(file))
-#                    db.session.rollback()
+                try:
+                    image = Image(url, delete=False, name=name)
+                    image.description = 'Static image'
+                    create_thumbnails(image)
+                    db.session.commit()
+                except:
+                    print('Adding icon {} failed'.format(file))
+                    db.session.rollback()
     
     @dbinit.command()
     @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing admin.')
