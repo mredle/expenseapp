@@ -5,13 +5,9 @@ SHELL ["/bin/sh", "-c"]
 # Setup python environment with pip
 COPY requirements.txt /tmp/requirements.txt
 RUN apk add --no-cache --virtual .build-deps build-base linux-headers && \
-    apk add --no-cache cairo \
-                       cairo-dev \
-                       cairo-tools \
-                       freetype-dev \
+    apk add --no-cache freetype-dev \
                        jpeg-dev \
                        lcms2-dev \
-                       libffi-dev \
                        openjpeg-dev \
                        tcl-dev \
                        tiff-dev \

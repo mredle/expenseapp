@@ -72,7 +72,7 @@ def register(app):
         
         # Fill currencies from CSV file
         currencies = []
-        with open('app/resources/currencies.csv') as csv_file:
+        with open('app/resources/currencies.csv', 'r', encoding='utf-8') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=';')
             line_count = 0
             for row in csv_reader:
@@ -80,29 +80,28 @@ def register(app):
                     line_count += 1
                 else:
                     line_count += 1
-                    if row[2] and not row[5]:
-                        if len(row[1])>64:
-                            na = row[1][0:64]
-                        else:
-                            na = row[1]
-                        try:
-                            e = int(row[4])
-                        except ValueError:
-                            e = 0
-                        
-                        try:
-                            nu = int(row[3])
-                        except ValueError:
-                            nu = 0
-                         
-                        c = Currency(code = row[2].upper(), 
-                                     name = na, 
-                                     number = nu, 
-                                     exponent = e, 
-                                     inCHF = 1, 
-                                     description = row[0], 
-                                     db_created_by = 'flask dbinit currency')
-                        currencies.append(c)
+                    if len(row[1])>64:
+                        na = row[1][0:64]
+                    else:
+                        na = row[1]
+                    try:
+                        e = int(row[4])
+                    except ValueError:
+                        e = 0
+                    
+                    try:
+                        nu = int(row[3])
+                    except ValueError:
+                        nu = 0
+                     
+                    c = Currency(code = row[2].upper(), 
+                                 name = na, 
+                                 number = nu, 
+                                 exponent = e, 
+                                 inCHF = 1, 
+                                 description = row[0], 
+                                 db_created_by = 'flask dbinit currency')
+                    currencies.append(c)
         
         for currency in currencies:
             existing_currency = Currency.query.filter_by(code=currency.code).first()
@@ -132,9 +131,10 @@ def register(app):
                 country_code = currency.code[0:2].upper()
                 url = os.path.join(flag_path, country_code + '.svg')
                 try:
-                    image = Image(url, delete=False, name=country_code)
+                    image = Image(url, keep_original=True, name=country_code)
                     image.description = 'Static image'
-                    create_thumbnails(image)
+                    if not image.vector:
+                        create_thumbnails(image)
                     currency.image = image
                     db.session.commit()
                 except:
@@ -157,18 +157,21 @@ def register(app):
             if existing_image:
                 if overwrite:
                     try:
-                        existing_image.update(url, delete=False)
+                        existing_image.update(url, keep_original=True)
                         existing_image.description = 'Static image'
-                        create_thumbnails(existing_image)
+                        if not existing_image.vector:
+                            create_thumbnails(existing_image)
                         db.session.commit()
                     except:
                         print('Updating icon {} failed'.format(file))
                         db.session.rollback()
             else:
                 try:
-                    image = Image(url, delete=False, name=name)
+                    image = Image(url, keep_original=True, name=name)
                     image.description = 'Static image'
-                    create_thumbnails(image)
+                    if not image.vector:
+                        create_thumbnails(image)
+                    db.session.add(image)
                     db.session.commit()
                 except:
                     print('Adding icon {} failed'.format(file))

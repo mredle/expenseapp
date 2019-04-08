@@ -5,13 +5,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from hashlib import md5
 from time import time
 from PIL import Image as ImagePIL
-import cairosvg
 import jwt
 import json
 import redis
 import rq
 import base64
 import os
+import shutil
 import uuid
 import mimetypes
 
@@ -72,24 +72,25 @@ class Thumbnail(Entity, db.Model):
         Entity.__init__(self, '')
         
         # Read image
-        im = ImagePIL.open(image.get_path())
-        if im.mode=='RGBA':
-            background = ImagePIL.new('RGB', im.size, (255, 255, 255))
-            background.paste(im, mask=im.split()[3]) # 3 is the alpha channel
-            im = background
+        if not image.vector:
+            im = ImagePIL.open(image.get_path())
+            if im.mode=='RGBA':
+                background = ImagePIL.new('RGB', im.size, (255, 255, 255))
+                background.paste(im, mask=im.split()[3]) # 3 is the alpha channel
+                im = background
+                
+            self.name = image.name + '_' + str(size)
+            self.extension = '.' + current_app.config['IMAGE_DEFAULT_FORMAT']
+            self.size = size
+            self.format = current_app.config['IMAGE_DEFAULT_FORMAT']
+            self.mode = im.mode
+            self.image = image
             
-        self.name = image.name + '_' + str(size)
-        self.extension = '.' + current_app.config['IMAGE_DEFAULT_FORMAT']
-        self.size = size
-        self.format = current_app.config['IMAGE_DEFAULT_FORMAT']
-        self.mode = im.mode
-        self.image = image
-        
-        # Saving the thumbnail to a new file
-        max_size = max((image.width, image.height))
-        if size < max_size:
-            im.thumbnail((size, size))
-        im.save(self.get_path(), format=current_app.config['IMAGE_DEFAULT_FORMAT'])
+            # Saving the thumbnail to a new file
+            max_size = max((image.width, image.height))
+            if size < max_size:
+                im.thumbnail((size, size))
+            im.save(self.get_path(), format=current_app.config['IMAGE_DEFAULT_FORMAT'])
     
     def __repr__(self):
         return '<Thumbnail {}px>'.format(self.name, self.size)
@@ -110,6 +111,7 @@ class Image(Entity, db.Model):
     
     name = db.Column(db.String(64))
     extension = db.Column(db.String(8))
+    vector = db.Column(db.Boolean)
     width = db.Column(db.Integer)
     height = db.Column(db.Integer)
     format = db.Column(db.String(8))
@@ -118,68 +120,54 @@ class Image(Entity, db.Model):
     description = db.Column(db.String(256))
     thumbnails = db.relationship('Thumbnail', foreign_keys='Thumbnail.image_id', back_populates='image', lazy='dynamic')
     
-    def __init__(self, path, delete=True, name=None):
-        Entity.__init__(self, '')
-        
+    def import_properties(self, path):
         # Read image
         mime_type = mimetypes.guess_type(path)[0]
         if mime_type=='image/svg+xml':
-            size = max(current_app.config['THUMBNAIL_SIZES'])
-            impath = os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
-                                  current_app.config['IMAGE_TMP_PATH'], 
-                                  base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.png')
-            cairosvg.svg2png(url=path, write_to=impath, output_width=size)
-            if delete:
-                os.remove(path)
+            self.vector = True
+            self.width = 0
+            self.height = 0
+            self.format = 'SVG'
+            self.mode = 'RGB'
         else:
-            impath = path
+            im = ImagePIL.open(path)
+            self.vector = False
+            self.width = im.width
+            self.height = im.height
+            self.format = im.format
+            self.mode = im.mode
+            
+        original_path, original_filename = os.path.split(path)
+        self.original_filename = original_filename
+        self.extension = '.' + self.format
+        self.description = ''
+    
+    def __init__(self, path, keep_original=False, name=None):
+        Entity.__init__(self, '')
+        self.import_properties(path)
         
-        im = ImagePIL.open(impath)
-        original_path, original_filename = os.path.split(impath)
         if name is None:
             self.name = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '')
         else:
             self.name = name
-        self.extension = '.' + im.format
-        self.original_filename = original_filename
-        self.width = im.width
-        self.height = im.height
-        self.format = im.format
-        self.mode = im.mode
-        self.description = ''
         
         # Moving the image to a new file
-        os.rename(impath, self.get_path())
-        
-    def update(self, path, delete=True):
-        # Read image
-        mime_type = mimetypes.guess_type(path)[0]
-        if mime_type=='image/svg+xml':
-            size = max(current_app.config['THUMBNAIL_SIZES'])
-            impath = os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
-                                  current_app.config['IMAGE_TMP_PATH'], 
-                                  base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '') +  '.png')
-            cairosvg.svg2png(url=path, write_to=impath, output_width=size)
-            if delete:
-                os.remove(path)
+        if keep_original:
+            shutil.copy(path, self.get_path())
         else:
-            impath = path
+            shutil.move(path, self.get_path())
         
+    def update(self, path, keep_original=False):
         # Remove old file
         os.remove(self.get_path())
         
-        im = ImagePIL.open(impath)
-        original_path, original_filename = os.path.split(impath)
-        self.extension = '.' + im.format
-        self.original_filename = original_filename
-        self.width = im.width
-        self.height = im.height
-        self.format = im.format
-        self.mode = im.mode
-        self.description = ''
+        self.import_properties(path)
         
         # Moving the image to a new file
-        os.rename(impath, self.get_path())
+        if keep_original:
+            shutil.copy(path, self.get_path())
+        else:
+            shutil.move(path, self.get_path())
         
     def __repr__(self):
         return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
@@ -201,9 +189,10 @@ class Image(Entity, db.Model):
            
     def get_thumbnail(self, desired_size):
         thumbnails = self.thumbnails.order_by(Thumbnail.size.asc()).all()
-        for thumbnail in thumbnails:
-            if thumbnail.size > desired_size:
-                return thumbnail
+        if not self.vector:
+            for thumbnail in thumbnails:
+                if thumbnail.size > desired_size:
+                    return thumbnail
         return None
         
     def get_thumbnail_url(self, desired_size):

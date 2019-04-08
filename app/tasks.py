@@ -3,12 +3,10 @@
 import sys
 import time
 import json
-import cairosvg
-import os
 from flask import render_template
 from rq import get_current_job
 from app import db, create_app
-from app.models import Expense, Settlement, Currency, Task, User, Event, Post, Image, Thumbnail
+from app.models import Expense, Settlement, Task, User, Event, Post, Image, Thumbnail
 from app.email import send_email
 
 app = create_app()

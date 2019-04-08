@@ -61,6 +61,8 @@ def new():
     if current_user.username != 'admin':
         form.accountant_id.data = current_user.id
     form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
+    CHF = Currency.query.filter_by(code='CHF').first()
+    form.base_currency_id.data = CHF.id
     if form.validate_on_submit():
         admin = User.query.get(form.admin_id.data)
         accountant = User.query.get(form.accountant_id.data)
