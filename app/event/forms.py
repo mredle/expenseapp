@@ -22,12 +22,12 @@ class EventForm(FlaskForm):
     date = DateField(_l('Date in Y-m-d'), 
                         format='%Y-%m-%d', 
                         validators=[DataRequired()])
-    image = FileField(_l('Event picture'), validators=[FileAllowed(images, _l('Images only!'))])
+    image = FileField(_l('Picture'), validators=[FileAllowed(images, _l('Images only!'))])
     description = TextAreaField(_l('Description'), 
                                 validators=[Length(min=0, max=256)])
-    admin_id = SelectField(_l('Admin user'), coerce=int,
+    admin_id = SelectField(_l('Administrator'), coerce=int,
                           validators=[DataRequired()])
-    accountant_id = SelectField(_l('Accountant user'), coerce=int,
+    accountant_id = SelectField(_l('Accountant'), coerce=int,
                           validators=[DataRequired()])
     base_currency_id = SelectField(_l('Base currency'), coerce=int,
                           validators=[DataRequired()])

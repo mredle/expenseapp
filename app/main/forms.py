@@ -64,7 +64,7 @@ class NewUserForm(FlaskForm):
     timezone = SelectField(_l('Timezone'), validators=[DataRequired()])
     image = FileField(_l('Profile picture'), validators=[FileAllowed(images, 'Images only!')])
     is_admin = BooleanField(_l('Administrator'))
-    submit = SubmitField(_l('Register'))
+    submit = SubmitField(_l('Submit'))
 
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
@@ -88,7 +88,7 @@ class EditUserForm(FlaskForm):
     timezone = SelectField(_l('Timezone'), validators=[DataRequired()])
     image = FileField(_l('Profile picture'), validators=[FileAllowed(images, 'Images only!')])
     is_admin = BooleanField(_l('Administrator'))
-    submit = SubmitField(_l('Register'))
+    submit = SubmitField(_l('Submit'))
 
     def __init__(self, original_username, original_email, *args, **kwargs):
         super(EditUserForm, self).__init__(*args, **kwargs)

@@ -54,7 +54,8 @@ def register():
         db.session.commit()
         send_newuser_notification(user)
         send_validate_email(user)
-        flash(_('Congratulations, you are now a registered user! Please check your email to activate your account.'))
+        flash(_('Congratulations, you are now a registered user!'))
+        flash(_('Please check your email to activate your account'))
         return redirect(url_for('auth.login'))
     return render_template('edit_form.html', title=_('Register'), form=form)
 
