@@ -127,9 +127,20 @@ def register(app):
         flag_path = os.path.join(app.config['IMAGE_ROOT_PATH'], 'resources', 'flags')
         existing_currencies = Currency.query.all()
         for currency in existing_currencies:
-            if not currency.image:
-                country_code = currency.code[0:2].upper()
-                url = os.path.join(flag_path, country_code + '.svg')
+            country_code = currency.code[0:2].upper()
+            url = os.path.join(flag_path, country_code + '.svg')
+            if currency.image:
+                if overwrite:
+                    try:
+                        currency.image.update(url, keep_original=True, name=country_code)
+                        currency.image.description = 'Static image'
+                        if not currency.image.vector:
+                            create_thumbnails(currency.image)
+                        db.session.commit()
+                    except:
+                        print('Adding flag for {} failed'.format(country_code))
+                        db.session.rollback()
+            else:
                 try:
                     image = Image(url, keep_original=True, name=country_code)
                     image.description = 'Static image'
@@ -157,7 +168,7 @@ def register(app):
             if existing_image:
                 if overwrite:
                     try:
-                        existing_image.update(url, keep_original=True)
+                        existing_image.update(url, keep_original=True, name=name)
                         existing_image.description = 'Static image'
                         if not existing_image.vector:
                             create_thumbnails(existing_image)
@@ -192,6 +203,7 @@ def register(app):
                 existing_admin_user.username = app.config['ADMIN_USERNAME']
                 existing_admin_user.email = app.config['ADMIN_EMAIL']
                 existing_admin_user.db_created_by = created_by
+                existing_admin_user.is_admin = True
                 existing_admin_user.set_password(app.config['ADMIN_PASSWORD'])
                 existing_admin_user.get_token()
                 db.session.commit()

@@ -16,10 +16,10 @@
                 <p>{{ _('Base Currency') }}: {{ event.base_currency.code }}</p>
                 <p>{{ _('Exchange fee') }}: {{ event.exchange_fee }}%</p>
                 <p>{{ _('From') }}: {{ moment(event.date).format('LLL') }}</p>
-                <p>{{ _('%(count)d users', count=event.users.count()) }}, 
-                   {{ _('%(count)d posts', count=event.posts.count()) }}, 
-                   {{ _('%(count)d expenses', count=event.expenses.count()) }}, 
-                   {{ _('%(count)d settlements', count=event.settlements.count()) }}</p>
+                <p>{{ _('%(count)d users', count=stats['users']) }}, 
+                   {{ _('%(count)d posts', count=stats['posts']) }}, 
+                   {{ _('%(count)d expenses', count=stats['expenses']) }}, 
+                   {{ _('%(count)d settlements', count=stats['settlements']) }}</p>
                 <p><a href="{{ url_for('event.expenses', event_id=event.id) }}">{{ _('Expenses') }}</a></p>
                 <p><a href="{{ url_for('event.settlements', event_id=event.id) }}">{{ _('Settlements') }}</a></p>
                 <p><a href="{{ url_for('event.balance', event_id=event.id) }}">{{ _('Balance sheet') }}</a></p>

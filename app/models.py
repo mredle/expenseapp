@@ -157,12 +157,15 @@ class Image(Entity, db.Model):
         else:
             shutil.move(path, self.get_path())
         
-    def update(self, path, keep_original=False):
+    def update(self, path, keep_original=False, name=None):
         # Remove old file
         os.remove(self.get_path())
         
         self.import_properties(path)
         
+        if name is not None:
+            self.name = name
+            
         # Moving the image to a new file
         if keep_original:
             shutil.copy(path, self.get_path())
@@ -299,6 +302,13 @@ class Event(Entity, db.Model):
             return self.image.get_thumbnail_url(size)
         else:
             return ''
+        
+    def get_stats(self):
+        stats = {'users': self.users.count(),
+                 'posts': self.posts.count(),
+                 'expenses': self.expenses.count(),
+                 'settlements': self.settlements.filter_by(draft=False).count()}
+        return stats
     
     def has_user(self, user):
         return (user in self.users)

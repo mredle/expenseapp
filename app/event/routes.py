@@ -45,6 +45,7 @@ def main(event_id):
     return render_template('event/main.html', 
                            form=form, 
                            event=event, 
+                           stats=event.get_stats(),
                            posts=posts.items,
                            next_url=next_url, prev_url=prev_url)
 
