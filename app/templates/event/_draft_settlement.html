@@ -6,13 +6,17 @@
                     to=settlement.recipient.username) }}
             </td>
             <td>
-                {{ settlement.get_amount_str() }}
-                <br>
-                <span>
-                    <a href="{{ url_for('event.settlement_execute', settlement_id=settlement.id) }}">
-                        {{ _('Amount has been paid') }}
-                    </a>
-                </span>
+                {% set paid_link %}
+                    <span>
+                        <a href="{{ url_for('event.settlement_execute', settlement_id=settlement.id) }}">
+                            {{ _('Amount has been paid') }}
+                        </a>
+                    </span>
+                {% endset %}
+                {{ settlement.get_amount_str() }} 
+                {% if event.admin == current_user or current_user.is_admin or settlement.recipient==current_user %}
+                ({{ _('%(link)s', link=paid_link) }})
+                {% endif %}
             </td>
         </tr>
     </table>

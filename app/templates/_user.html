@@ -20,9 +20,11 @@
                         </a>
                     </span>
                 {% endset %}
-                {{ _('%(link)s', link=user_link) }}
                 <br>
-                {{ _('%(link)s', link=edit_link) }}
+                {{ _('%(link)s', link=user_link) }}
+                {% if current_user.is_admin %}
+                ({{ _('%(link)s', link=edit_link) }})
+                {% endif %}
             </td>
         </tr>
     </table>

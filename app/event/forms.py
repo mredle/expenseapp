@@ -1,19 +1,15 @@
 # -*- coding: utf-8 -*-
 
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileAllowed
 from flask_babel import _, lazy_gettext as _l
 from wtforms import StringField, SubmitField, TextAreaField, SelectField, SelectMultipleField, FloatField
 from wtforms.validators import DataRequired, Length
 from wtforms.fields.html5 import DateField
 
-from app import images
-
 
 class PostForm(FlaskForm):
     post = TextAreaField(_l('Say something'), 
-                         validators=[
-        DataRequired(), Length(min=1, max=256)])
+                         validators=[DataRequired(), Length(min=1, max=256)])
     submit = SubmitField(_l('Submit'))
 
 class EventForm(FlaskForm):
@@ -22,7 +18,7 @@ class EventForm(FlaskForm):
     date = DateField(_l('Date in Y-m-d'), 
                         format='%Y-%m-%d', 
                         validators=[DataRequired()])
-    image = FileField(_l('Picture'), validators=[FileAllowed(images, _l('Images only!'))])
+    
     description = TextAreaField(_l('Description'), 
                                 validators=[Length(min=0, max=256)])
     admin_id = SelectField(_l('Administrator'), coerce=int,

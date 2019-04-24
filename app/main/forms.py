@@ -9,7 +9,10 @@ from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Le
 from app import images
 from app.models import User
 
-    
+class ImageForm(FlaskForm): 
+    image = FileField(_l('Picture'), validators=[FileAllowed(images, _l('Images only!'))])
+    submit = SubmitField(_l('Submit'))
+
 class EditProfileForm(FlaskForm):
     username = StringField(_l('Username'), 
                            validators=[DataRequired()])
@@ -17,7 +20,6 @@ class EditProfileForm(FlaskForm):
                              validators=[Length(min=0, max=256)])
     locale = SelectField(_l('Language'), validators=[DataRequired()])
     timezone = SelectField(_l('Timezone'), validators=[DataRequired()])
-    image = FileField(_l('Profile picture'), validators=[FileAllowed(images, 'Images only!')])
     submit = SubmitField(_l('Submit'))
     
     def __init__(self, original_username, *args, **kwargs):
@@ -62,7 +64,6 @@ class NewUserForm(FlaskForm):
                              validators=[Length(min=0, max=256)])
     locale = SelectField(_l('Language'), validators=[DataRequired()])
     timezone = SelectField(_l('Timezone'), validators=[DataRequired()])
-    image = FileField(_l('Profile picture'), validators=[FileAllowed(images, 'Images only!')])
     is_admin = BooleanField(_l('Administrator'))
     submit = SubmitField(_l('Submit'))
 
@@ -72,7 +73,7 @@ class NewUserForm(FlaskForm):
             raise ValidationError(_('Please use a different username.'))
 
     def validate_email(self, email):
-        user = User.query.filter_by(email=email.data).first()
+        user = User.query.filter_by(email=email.data.lower()).first()
         if user is not None:
             raise ValidationError(_('Please use a different email address.'))
             
@@ -86,7 +87,6 @@ class EditUserForm(FlaskForm):
                              validators=[Length(min=0, max=256)])
     locale = SelectField(_l('Language'), validators=[DataRequired()])
     timezone = SelectField(_l('Timezone'), validators=[DataRequired()])
-    image = FileField(_l('Profile picture'), validators=[FileAllowed(images, 'Images only!')])
     is_admin = BooleanField(_l('Administrator'))
     submit = SubmitField(_l('Submit'))
 
@@ -102,7 +102,7 @@ class EditUserForm(FlaskForm):
                 raise ValidationError(_('Please use a different username.'))
                 
     def validate_email(self, email):
-        if email.data != self.original_email:
+        if email.data.lower() != self.original_email:
             user = User.query.filter_by(email=self.email.data).first()
             if user is not None:
                 raise ValidationError(_('Please use a different email address.'))

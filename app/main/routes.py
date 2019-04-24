@@ -8,7 +8,7 @@ from flask_babel import get_locale, _
 
 from app import db, images
 from app.main import bp
-from app.main.forms import EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm
+from app.main.forms import ImageForm, EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm
 from app.models import Currency, User, Message, Notification, Event
 
 @bp.before_app_request
@@ -132,12 +132,6 @@ def new_user():
         user.get_token()
         db.session.add(user)
         db.session.commit()
-        try:
-            image_filename = images.save(request.files['image'])
-            image_path = images.path(image_filename)
-            user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='User', add_to_id=user.id)
-        except UploadNotAllowed:
-            flash(_('Invalid or empty image.'))
         flash(_('New user %(username)s created', username = user.username))
         return redirect(url_for('main.users'))
     return render_template('edit_form.html', title=_('New User'), form=form)
@@ -166,12 +160,6 @@ def edit_user(username):
             user.set_password(form.password.data)
         user.get_token()
         db.session.commit()
-        try:
-            image_filename = images.save(request.files['image'])
-            image_path = images.path(image_filename)
-            user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='User', add_to_id=user.id)
-        except UploadNotAllowed:
-            flash(_('Invalid or empty image.'))
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.users'))
     elif request.method == 'GET':
@@ -232,12 +220,6 @@ def edit_profile():
         current_user.about_me = form.about_me.data
         current_user.locale = form.locale.data
         current_user.timezone = form.timezone.data
-        try:
-            image_filename = images.save(request.files['image'])
-            image_path = images.path(image_filename)
-            user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='User', add_to_id=user.id)
-        except UploadNotAllowed:
-            flash(_('Invalid or empty image.'))
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.user', username=current_user.username))
@@ -248,6 +230,24 @@ def edit_profile():
         form.timezone.data = current_user.timezone
     return render_template('edit_form.html', 
                            title=_('Edit Profile'), 
+                           form=form)
+
+@bp.route('/edit_profile_picture', methods=['GET', 'POST'])
+@login_required
+def edit_profile_picture():
+    form = ImageForm()
+    if form.validate_on_submit():
+        try:
+            image_filename = images.save(request.files['image'])
+            image_path = images.path(image_filename)
+            current_user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='User', add_to_id=current_user.id)
+            db.session.commit()
+            flash(_('Your changes have been saved.'))
+        except UploadNotAllowed:
+            flash(_('Invalid or empty image.'))
+        return redirect(url_for('main.user', username=current_user.username))
+    return render_template('edit_form.html', 
+                           title=_('Profile Picture'), 
                            form=form)
 
 @bp.route('/messages', methods=['GET', 'POST'])

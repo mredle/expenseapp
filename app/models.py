@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from sqlalchemy.orm import validates
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from hashlib import md5
@@ -635,6 +636,10 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     is_admin = db.Column(db.Boolean)
     about_me = db.Column(db.String(256))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    @validates('email')
+    def convert_lower(self, key, value):
+        return value.lower()
     
     def __init__(self, username, email, locale, timezone, about_me='', db_created_by=''):
         Entity.__init__(self, db_created_by)

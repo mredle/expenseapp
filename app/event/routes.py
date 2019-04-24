@@ -8,6 +8,7 @@ from flask_babel import _
 
 from app import db, images
 from app.event import bp
+from app.main.forms import ImageForm
 from app.event.forms import PostForm, EventForm, EventAddUserForm, ExpenseForm, SettlementForm
 from app.models import Currency, Event, Expense, Settlement, Post, User, Image
       
@@ -80,13 +81,6 @@ def new():
         event.add_user(admin)
         event.add_user(accountant)
         db.session.add(event)
-        try:
-            image_filename = images.save(request.files['image'])
-            image_path = images.path(image_filename)
-            current_user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='Event', add_to_id=event.id)
-        except UploadNotAllowed:
-            flash(_('Invalid or empty image.'))
-        
         db.session.commit()
         flash(_('Your new event has been added.'))
         return redirect(url_for('event.main', event_id=event.id))
@@ -116,13 +110,6 @@ def edit(event_id):
         event.accountant = User.query.get(form.accountant_id.data)
         event.base_currency = Currency.query.get(form.base_currency_id.data)
         event.exchange_fee = form.exchange_fee.data
-        try:
-            image_filename = images.save(request.files['image'])
-            image_path = images.path(image_filename)
-            current_user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='Event', add_to_id=event.id)
-        except UploadNotAllowed:
-            flash(_('Invalid or empty image.'))
-        
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('event.main', event_id=event_id))
@@ -138,6 +125,28 @@ def edit(event_id):
                            title=_('Edit Event'), 
                            form=form)
 
+@bp.route('/edit_picture/<event_id>', methods=['GET', 'POST'])
+@login_required
+def edit_picture(event_id):
+    event = Event.query.get_or_404(event_id)
+    if current_user != event.admin and not current_user.is_admin:
+        flash(_('Your are only allowed to edit your own event!'))
+        return redirect(url_for('event.main', event_id=event.id))
+    form = ImageForm()
+    if form.validate_on_submit():
+        try:
+            image_filename = images.save(request.files['image'])
+            image_path = images.path(image_filename)
+            current_user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='Event', add_to_id=event.id)
+            db.session.commit()
+            flash(_('Your changes have been saved.'))
+        except UploadNotAllowed:
+            flash(_('Invalid or empty image.'))
+        return redirect(url_for('event.main', event_id=event_id))
+    return render_template('edit_form.html', 
+                           title=_('Add Receipt'), 
+                           form=form)
+    
 @bp.route('/users/<event_id>', methods=['GET', 'POST'])
 @login_required
 def users(event_id):
@@ -276,6 +285,32 @@ def expenses(event_id):
                            expenses=expenses.items,
                            next_url=next_url, prev_url=prev_url)
 
+@bp.route('/add_receipt/<event_id>/<expense_id>', methods=['GET', 'POST'])
+@login_required
+def add_receipt(event_id, expense_id):
+    event = Event.query.get_or_404(event_id)
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('event.main', event_id=event.id))
+    expense = Expense.query.get_or_404(expense_id)
+    if current_user not in [event.admin, expense.user] and not current_user.is_admin:
+        flash(_('Your are only allowed to edit your own expenses!'))
+        return redirect(url_for('event.expenses', event_id=event.id))
+    form = ImageForm()
+    if form.validate_on_submit():
+        try:
+            image_filename = images.save(request.files['image'])
+            image_path = images.path(image_filename)
+            current_user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='Expense', add_to_id=expense.id)
+            db.session.commit()
+            flash(_('Your changes have been saved.'))
+        except UploadNotAllowed:
+            flash(_('Invalid or empty image.'))
+        return redirect(url_for('event.expenses', event_id=event_id))
+    return render_template('edit_form.html', 
+                           title=_('Event Picture'), 
+                           form=form)
+    
 @bp.route('/edit_expense/<event_id>/<expense_id>', methods=['GET', 'POST'])
 @login_required
 def edit_expense(event_id, expense_id):

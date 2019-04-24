@@ -40,10 +40,10 @@
                 <br>
                 {{ settlement.description }}
                 {% if not event.closed %}
+                {% if event.admin == current_user or current_user.is_admin or settlement.sender==current_user %}
                 <br>
-                {{ _('%(link)s', link=edit_link) }}
-                <br>
-                {{ _('%(link)s', link=remove_link) }}
+                {{ _('%(link)s', link=edit_link) }}, {{ _('%(link)s', link=remove_link) }}
+                {% endif %}
                 {% endif %}
             </td>
         </tr>
