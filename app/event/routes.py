@@ -30,6 +30,10 @@ def index():
 @login_required
 def main(event_id):
     event = Event.query.get_or_404(event_id)
+    if current_user not in event.users and not current_user.is_admin:
+        flash(_('Your are only allowed to view your events!'))
+        return redirect(url_for('event.index'))
+    
     form = PostForm()
     if form.validate_on_submit():
         post = Post(body=form.post.data, author=current_user, timestamp=datetime.utcnow(), event=event)
@@ -223,6 +227,9 @@ def remove_user(event_id, username):
 @login_required
 def balance(event_id):
     event = Event.query.get_or_404(event_id)
+    if current_user not in event.users and not current_user.is_admin:
+        flash(_('Your are only allowed to view your events!'))
+        return redirect(url_for('event.index'))
     
     balances = [event.get_user_balance(u) for u in event.users]
     balances_str = list(map(lambda x: (x[0], 
@@ -285,17 +292,17 @@ def expenses(event_id):
                            expenses=expenses.items,
                            next_url=next_url, prev_url=prev_url)
 
-@bp.route('/add_receipt/<event_id>/<expense_id>', methods=['GET', 'POST'])
+@bp.route('/add_receipt/<expense_id>', methods=['GET', 'POST'])
 @login_required
-def add_receipt(event_id, expense_id):
-    event = Event.query.get_or_404(event_id)
-    if event.closed:
-        flash(_('Your are only allowed to edit an open event!'))
-        return redirect(url_for('event.main', event_id=event.id))
+def add_receipt(expense_id):
     expense = Expense.query.get_or_404(expense_id)
-    if current_user not in [event.admin, expense.user] and not current_user.is_admin:
+    if current_user not in [expense.event.admin, expense.user] and not current_user.is_admin:
         flash(_('Your are only allowed to edit your own expenses!'))
-        return redirect(url_for('event.expenses', event_id=event.id))
+        return redirect(url_for('event.expenses', event_id=expense.event.id))
+    if expense.event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('event.main', event_id=expense.event.id))
+    
     form = ImageForm()
     if form.validate_on_submit():
         try:
@@ -306,22 +313,23 @@ def add_receipt(event_id, expense_id):
             flash(_('Your changes have been saved.'))
         except UploadNotAllowed:
             flash(_('Invalid or empty image.'))
-        return redirect(url_for('event.expenses', event_id=event_id))
+        return redirect(url_for('event.expenses', event_id=expense.event.id))
     return render_template('edit_form.html', 
                            title=_('Event Picture'), 
                            form=form)
     
-@bp.route('/edit_expense/<event_id>/<expense_id>', methods=['GET', 'POST'])
+@bp.route('/edit_expense/<expense_id>', methods=['GET', 'POST'])
 @login_required
-def edit_expense(event_id, expense_id):
-    event = Event.query.get_or_404(event_id)
-    if event.closed:
-        flash(_('Your are only allowed to edit an open event!'))
-        return redirect(url_for('event.main', event_id=event.id))
+def edit_expense(expense_id):
     expense = Expense.query.get_or_404(expense_id)
+    event = expense.event
     if current_user not in [event.admin, expense.user] and not current_user.is_admin:
         flash(_('Your are only allowed to edit your own expenses!'))
         return redirect(url_for('event.expenses', event_id=event.id))
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('event.main', event_id=event.id))
+    
     form = ExpenseForm()
     form.currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
@@ -333,7 +341,7 @@ def edit_expense(event_id, expense_id):
         expense.description = form.description.data
         db.session.commit()
         flash(_('Your changes have been saved.'))
-        return redirect(url_for('event.expenses', event_id=event_id))
+        return redirect(url_for('event.expenses', event_id=event.id))
     elif request.method == 'GET':
         form.currency_id.data = expense.currency.id
         form.amount.data = expense.amount
@@ -344,22 +352,24 @@ def edit_expense(event_id, expense_id):
                            title=_('Edit Expense'), 
                            form=form)
 
-@bp.route('/remove_expense/<event_id>/<expense_id>')
+@bp.route('/remove_expense/<expense_id>')
 @login_required
-def remove_expense(event_id, expense_id):
-    event = Event.query.get_or_404(event_id)
-    if event.closed:
-        flash(_('Your are only allowed to edit an open event!'))
-        return redirect(url_for('event.main', event_id=event.id))
+def remove_expense(expense_id):
     expense = Expense.query.get_or_404(expense_id)
+    event = expense.event
     if current_user not in [event.admin, expense.user] and not current_user.is_admin:
         flash(_('Your are only allowed to remove your own expenses!'))
         return redirect(url_for('event.expenses', event_id=event.id))
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('event.main', event_id=event.id))
+    
     if expense in event.expenses:
+        amount_str = expense.get_amount_str()
         event.expenses.remove(expense)
-    db.session.commit()
-    flash(_('Expense over %(amount_str)s has been removed from event %(event_name)s.', amount_str=expense.get_amount_str(), event_name=event.name))
-    return redirect(url_for('event.expenses', event_id=event_id))
+        db.session.commit()
+        flash(_('Expense over %(amount_str)s has been removed from event %(event_name)s.', amount_str=amount_str, event_name=event.name))
+    return redirect(url_for('event.expenses', event_id=event.id))
 
 @bp.route('/settlements/<event_id>', methods=['GET', 'POST'])
 @login_required
@@ -401,17 +411,18 @@ def settlements(event_id):
                            settlements=settlements.items,
                            next_url=next_url, prev_url=prev_url)
 
-@bp.route('/edit_settlement/<event_id>/<settlement_id>', methods=['GET', 'POST'])
+@bp.route('/edit_settlement/<settlement_id>', methods=['GET', 'POST'])
 @login_required
-def edit_settlement(event_id, settlement_id):
-    event = Event.query.get_or_404(event_id)
-    if event.closed:
-        flash(_('Your are only allowed to edit an open event!'))
-        return redirect(url_for('event.main', event_id=event.id))
+def edit_settlement(settlement_id):
     settlement = Settlement.query.get_or_404(settlement_id)
+    event = settlement.event
     if current_user not in [event.admin, settlement.sender] and not current_user.is_admin:
         flash(_('Your are only allowed to edit your own settlements!'))
         return redirect(url_for('event.settlements', event_id=event.id))
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('event.main', event_id=event.id))
+    
     form = SettlementForm()
     form.currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users if u!=current_user]
@@ -422,7 +433,7 @@ def edit_settlement(event_id, settlement_id):
         settlement.description = form.description.data
         db.session.commit()
         flash(_('Your changes have been saved.'))
-        return redirect(url_for('event.settlements', event_id=event_id))
+        return redirect(url_for('event.settlements', event_id=event.id))
     elif request.method == 'GET':
         form.currency_id.data = settlement.currency.id
         form.amount.data = settlement.amount
@@ -436,26 +447,33 @@ def edit_settlement(event_id, settlement_id):
 @login_required
 def settlement_execute(settlement_id):
     settlement = Settlement.query.get_or_404(settlement_id)
+    event = settlement.event
+    if current_user not in [event.admin, settlement.recipient] and not current_user.is_admin:
+        flash(_('Your are only allowed to add settlements directed to you!'))
+        return redirect(url_for('event.settlements', settlement_id=settlement.id))
     settlement.draft = False
+    settlement.description = _('Confirmed by user %(username)s', username = current_user.username)
     db.session.commit()
-    return redirect(url_for('event.balance', event_id=settlement.event.id))
+    return redirect(url_for('event.balance', event_id=event.id))
     
-@bp.route('/remove_settlement/<event_id>/<settlement_id>')
+@bp.route('/remove_settlement/<settlement_id>')
 @login_required
-def remove_settlement(event_id, settlement_id):
-    event = Event.query.get_or_404(event_id)
-    if event.closed:
-        flash(_('Your are only allowed to edit an open event!'))
-        return redirect(url_for('event.main', event_id=event.id))
+def remove_settlement(settlement_id):
     settlement = Settlement.query.get_or_404(settlement_id)
+    event = settlement.event
     if current_user not in [event.admin, settlement.sender] and not current_user.is_admin:
         flash(_('Your are only allowed to remove your own settlements!'))
         return redirect(url_for('event.settlements', settlement_id=settlement.id))
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('event.main', event_id=event.id))
+    
     if settlement in event.settlements:
+        amount_str = settlement.get_amount_str()
         event.settlements.remove(settlement)
-    db.session.commit()
-    flash(_('Settlement over %(amount_str)s has been removed from event %(event_name)s.', amount_str=settlement.get_amount_str(), event_name=event.name))
-    return redirect(url_for('event.settlements', event_id=event_id))
+        db.session.commit()
+        flash(_('Settlement over %(amount_str)s has been removed from event %(event_name)s.', amount_str=amount_str, event_name=event.name))
+    return redirect(url_for('event.settlements', event_id=event.id))
 
 @bp.route('/convert_currencies/<event_id>')
 @login_required

@@ -35,9 +35,9 @@ def send_password_reset_email(user):
     send_email(_('Reset Your Password'),
                sender=current_app.config['ADMIN_NOREPLY_SENDER'],
                recipients=[user.email],
-               text_body=render_template('email/simple_email.txt',
+               text_body=render_template('email/reset_password.txt',
                                          username=user.username,
                                          url=url),
-               html_body=render_template('email/simple_email.html',
+               html_body=render_template('email/reset_password.html',
                                          username=user.username,
                                          url=url))

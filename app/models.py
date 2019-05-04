@@ -384,12 +384,10 @@ class Event(Entity, db.Model):
             balance = balance_item[5]
             if balance<-tolerance:
                 settlements.append(Settlement(sender=user, recipient=self.accountant, event=self, 
-                                              currency=self.base_currency, amount=-balance, draft=True, date=datetime.utcnow(), 
-                                              description='Settlement to service depts', db_created_by='ExpenseApp'))
+                                              currency=self.base_currency, amount=-balance, draft=True, date=datetime.utcnow()))
             elif balance>tolerance:
                 settlements.append(Settlement(sender=self.accountant, recipient=user, event=self, 
-                                              currency=self.base_currency, amount=balance, draft=True, date=datetime.utcnow(), 
-                                              description='Settlement to service depts', db_created_by='ExpenseApp'))
+                                              currency=self.base_currency, amount=balance, draft=True, date=datetime.utcnow()))
             else:
                 continue
             

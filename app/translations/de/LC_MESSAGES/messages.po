@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-04-24 22:25+0200\n"
+"POT-Creation-Date: 2019-05-04 11:11+0200\n"
 "PO-Revision-Date: 2018-08-29 22:41+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -183,150 +183,171 @@ msgstr "Empfänger"
 msgid "Hi %(username)s, your events:"
 msgstr "Hallo %(username)s, deine Veranstaltungen:"
 
-#: app/event/routes.py:38
+#: app/event/routes.py:34 app/event/routes.py:231
+msgid "Your are only allowed to view your events!"
+msgstr ""
+
+#: app/event/routes.py:42
 msgid "Your post is now live!"
 msgstr "Dein Beitrag ist nun online!"
 
-#: app/event/routes.py:85
+#: app/event/routes.py:89
 msgid "Your new event has been added."
 msgstr "Deine neue Veranstaltung wurde hinzugefügt."
 
-#: app/event/routes.py:88 app/templates/event/index.html:6
+#: app/event/routes.py:92 app/templates/event/index.html:6
 msgid "New Event"
 msgstr "Neue Veranstaltung"
 
-#: app/event/routes.py:96 app/event/routes.py:133 app/event/routes.py:157
-#: app/event/routes.py:187 app/event/routes.py:206
+#: app/event/routes.py:100 app/event/routes.py:137 app/event/routes.py:161
+#: app/event/routes.py:191 app/event/routes.py:210
 msgid "Your are only allowed to edit your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung bearbeiten!"
 
-#: app/event/routes.py:99 app/event/routes.py:163 app/event/routes.py:190
-#: app/event/routes.py:209 app/event/routes.py:258 app/event/routes.py:293
-#: app/event/routes.py:319 app/event/routes.py:352 app/event/routes.py:373
-#: app/event/routes.py:409 app/event/routes.py:448
+#: app/event/routes.py:103 app/event/routes.py:167 app/event/routes.py:194
+#: app/event/routes.py:213 app/event/routes.py:265 app/event/routes.py:303
+#: app/event/routes.py:330 app/event/routes.py:364 app/event/routes.py:383
+#: app/event/routes.py:423 app/event/routes.py:468
 msgid "Your are only allowed to edit an open event!"
 msgstr "Du kannst nur eine geöffnete Veranstaltung bearbeiten!"
 
-#: app/event/routes.py:114 app/event/routes.py:142 app/event/routes.py:306
-#: app/event/routes.py:335 app/event/routes.py:424 app/main/routes.py:75
+#: app/event/routes.py:118 app/event/routes.py:146 app/event/routes.py:313
+#: app/event/routes.py:343 app/event/routes.py:435 app/main/routes.py:75
 #: app/main/routes.py:163 app/main/routes.py:224 app/main/routes.py:245
 msgid "Your changes have been saved."
 msgstr "Deine Änderungen wurden gespeichert."
 
-#: app/event/routes.py:125
+#: app/event/routes.py:129
 msgid "Edit Event"
 msgstr "Veranstaltung bearbeiten"
 
-#: app/event/routes.py:140 app/event/routes.py:304 app/main/routes.py:243
+#: app/event/routes.py:144 app/event/routes.py:311 app/main/routes.py:243
 #, python-format
 msgid "Importing %(filename)s..."
 msgstr "Importiere %(filename)s..."
 
-#: app/event/routes.py:144 app/event/routes.py:308 app/main/routes.py:247
+#: app/event/routes.py:148 app/event/routes.py:315 app/main/routes.py:247
 msgid "Invalid or empty image."
 msgstr "Ungültiges oder leeres Bild."
 
-#: app/event/routes.py:147
+#: app/event/routes.py:151
 msgid "Add Receipt"
 msgstr "Beleg hinzufügen"
 
-#: app/event/routes.py:168 app/event/routes.py:198
+#: app/event/routes.py:172 app/event/routes.py:202
 #, python-format
 msgid "User %(username)s has been added to event %(event_name)s."
 msgstr "Benutzer %(username)s wurde der Veranstaltung %(event_name)s hinzugefügt."
 
-#: app/event/routes.py:194
+#: app/event/routes.py:198
 msgid "You cannot add the event admin as user!"
 msgstr "Du kannst den Administrator nicht als Benutzer hinzufügen!"
 
-#: app/event/routes.py:213
+#: app/event/routes.py:217
 msgid "You cannot remove the event admin!"
 msgstr "Du kannst den Veranstaltungsadministrator nicht entfernen!"
 
-#: app/event/routes.py:216
+#: app/event/routes.py:220
 #, python-format
 msgid "User %(username)s cannot be removed from event %(event_name)s."
-msgstr "Benutzer %(username)s kann nicht von der Veranstaltung %(event_name)s entfernt werden."
+msgstr ""
+"Benutzer %(username)s kann nicht von der Veranstaltung %(event_name)s "
+"entfernt werden."
 
-#: app/event/routes.py:219
+#: app/event/routes.py:223
 #, python-format
 msgid "User %(username)s has been removed from event %(event_name)s."
 msgstr "Benutzer %(username)s wurde aus der Veranstaltung %(event_name)s entfernt."
 
-#: app/event/routes.py:273
+#: app/event/routes.py:280
 #, python-format
 msgid "Your new expense has been added to event %(event_name)s."
 msgstr "Deine neue Ausgabe wurde der Veranstaltung %(event_name)s hinzugefügt."
 
-#: app/event/routes.py:297 app/event/routes.py:323
+#: app/event/routes.py:300 app/event/routes.py:327
 msgid "Your are only allowed to edit your own expenses!"
 msgstr "Du kannst nur deine eigenen Ausgaben bearbeiten!"
 
-#: app/event/routes.py:311
+#: app/event/routes.py:318
 msgid "Event Picture"
 msgstr "Veranstaltungsbild"
 
-#: app/event/routes.py:344
+#: app/event/routes.py:352
 msgid "Edit Expense"
 msgstr "Ausgabe bearbeiten"
 
-#: app/event/routes.py:356
+#: app/event/routes.py:361
 msgid "Your are only allowed to remove your own expenses!"
 msgstr "Du kannst nur deine eigenen Ausgaben entfernen!"
 
-#: app/event/routes.py:361
+#: app/event/routes.py:371
 #, python-format
 msgid "Expense over %(amount_str)s has been removed from event %(event_name)s."
-msgstr "Ausgabe von %(amount_str)s wurde aus der Veranstaltung %(event_name)s entfernt."
+msgstr ""
+"Ausgabe von %(amount_str)s wurde aus der Veranstaltung %(event_name)s "
+"entfernt."
 
-#: app/event/routes.py:389
+#: app/event/routes.py:399
 #, python-format
 msgid "Your new settlement has been added to event %(event_name)s."
-msgstr "Deine neue Ausgleichszahlung wurde der Veranstaltung %(event_name)s hinzugefügt."
+msgstr ""
+"Deine neue Ausgleichszahlung wurde der Veranstaltung %(event_name)s "
+"hinzugefügt."
 
-#: app/event/routes.py:413
+#: app/event/routes.py:420
 msgid "Your are only allowed to edit your own settlements!"
 msgstr "Du kannst nur deine eigenen Ausgleichszahlung bearbeiten!"
 
-#: app/event/routes.py:432
+#: app/event/routes.py:443
 msgid "Edit Settlement"
 msgstr "Ausgleichszahlung bearbeiten"
 
 #: app/event/routes.py:452
+msgid "Your are only allowed to add settlements directed to you!"
+msgstr "Du kannst nur Zahlungen an dich bestätigen"
+
+#: app/event/routes.py:455
+#, python-format
+msgid "Confirmed by user %(username)s"
+msgstr "Bestätigt von Benutzer %(username)s"
+
+#: app/event/routes.py:465
 msgid "Your are only allowed to remove your own settlements!"
 msgstr "Du kannst nur deine eigenen Ausgleichszahlung entfernen!"
 
-#: app/event/routes.py:457
+#: app/event/routes.py:475
 #, python-format
 msgid "Settlement over %(amount_str)s has been removed from event %(event_name)s."
-msgstr "Ausgleichszahlung von %(amount_str)s wurde aus der Veranstaltung %(event_name)s entfernt."
+msgstr ""
+"Ausgleichszahlung von %(amount_str)s wurde aus der Veranstaltung "
+"%(event_name)s entfernt."
 
-#: app/event/routes.py:465
+#: app/event/routes.py:483
 msgid "Your are only allowed to convert currencies of your own event!"
 msgstr "Du kannst nur Währungen deiner eigenen Veranstaltung umwandeln!"
 
-#: app/event/routes.py:469
+#: app/event/routes.py:487
 #, python-format
 msgid "All transaction of this event have been converted to %(code)s."
 msgstr "Alle Beträge dieser Veranstaltung wurden zu %(code)s umgewandelt."
 
-#: app/event/routes.py:477
+#: app/event/routes.py:495
 msgid "Your are only allowed to reopen your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung wieder öffnen!"
 
-#: app/event/routes.py:481
+#: app/event/routes.py:499
 msgid "Event has been reopened."
 msgstr "Veranstaltung wurde wieder geöffnet"
 
-#: app/event/routes.py:489
+#: app/event/routes.py:507
 msgid "Your are only allowed to close your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung schliessen!"
 
-#: app/event/routes.py:492
+#: app/event/routes.py:510
 msgid "Your are only allowed to close an event with no open liabilities!"
 msgstr "Du kannst nur eine Veranstaltung mit ausgeglichener Bilanz schliessen!"
 
-#: app/event/routes.py:496
+#: app/event/routes.py:514
 msgid "Event has been closed."
 msgstr "Veranstaltung wurde geschlossen"
 
@@ -477,6 +498,7 @@ msgid "%(username)s wrote you %(when)s:"
 msgstr "%(username)s schrieb dir %(when)s:"
 
 #: app/templates/_user.html:24 app/templates/_user.html:26
+#: app/templates/event/_draft_settlement.html:18
 #: app/templates/event/_expense.html:45 app/templates/event/_settlement.html:45
 #: app/templates/event/_user.html:28
 #, python-format
@@ -617,7 +639,7 @@ msgstr "%(username)s: "
 msgid "%(from)s has to pay %(to)s:"
 msgstr "%(from)s muss %(to)s bezahlen:"
 
-#: app/templates/event/_draft_settlement.html:13
+#: app/templates/event/_draft_settlement.html:12
 msgid "Amount has been paid"
 msgstr "Betrag wurde bezahlt"
 
