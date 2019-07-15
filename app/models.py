@@ -636,8 +636,11 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     
     @validates('email')
-    def convert_lower(self, key, value):
-        return value.lower()
+    def convert_lower(self, field, value):
+        if isinstance(value, str):
+            return value.lower()
+        else:
+            return value[0].lower()
     
     def __init__(self, username, email, locale, timezone, about_me='', db_created_by=''):
         Entity.__init__(self, db_created_by)

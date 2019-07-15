@@ -3,7 +3,7 @@
 from flask_wtf import FlaskForm
 from flask_babel import _, lazy_gettext as _l
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField
-from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
+from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Regexp
 
 from app.models import User
 
@@ -14,7 +14,7 @@ class LoginForm(FlaskForm):
     submit = SubmitField(_l('Sign In'))
 
 class RegistrationForm(FlaskForm):
-    username = StringField(_l('Username'), validators=[DataRequired()])
+    username = StringField(_l('Username'), validators=[DataRequired(), Regexp(r'^[\w.]+$')])
     email = StringField(_l('Email'), validators=[DataRequired(), Email()])
     locale = SelectField(_l('Language'), validators=[DataRequired()])
     timezone = SelectField(_l('Timezone'), validators=[DataRequired()])

@@ -1,7 +1,9 @@
     <table class="table table-hover">
         <tr>
             <td width="64px">
-                <img src="{{ settlement.avatar(64) }}" alt="" width="64">
+                <a href="{{ url_for('main.image', image_id=settlement.image.id) }}">
+                    <img src="{{ settlement.avatar(64) }}" alt="" width="64">
+                </a>
             </td>
             <td>
                 {% set edit_link %}

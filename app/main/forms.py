@@ -4,7 +4,7 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from flask_babel import _, lazy_gettext as _l
 from wtforms import StringField, PasswordField, SubmitField, TextAreaField, SelectField, IntegerField, FloatField, BooleanField
-from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length
+from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length, Regexp
 
 from app import images
 from app.models import User
@@ -15,7 +15,7 @@ class ImageForm(FlaskForm):
 
 class EditProfileForm(FlaskForm):
     username = StringField(_l('Username'), 
-                           validators=[DataRequired()])
+                           validators=[DataRequired(), Regexp(r'^[\w.]+$')])
     about_me = TextAreaField(_l('About me'), 
                              validators=[Length(min=0, max=256)])
     locale = SelectField(_l('Language'), validators=[DataRequired()])
@@ -55,7 +55,7 @@ class CurrencyForm(FlaskForm):
     submit = SubmitField(_l('Submit'))
 
 class NewUserForm(FlaskForm):
-    username = StringField(_l('Username'), validators=[DataRequired()])
+    username = StringField(_l('Username'), validators=[DataRequired(), Regexp(r'^[\w.]+$')])
     email = StringField(_l('Email'), validators=[DataRequired(), Email()])
     password = PasswordField(_l('Password'), validators=[DataRequired()])
     password2 = PasswordField(_l('Repeat Password'), 
@@ -78,7 +78,7 @@ class NewUserForm(FlaskForm):
             raise ValidationError(_('Please use a different email address.'))
             
 class EditUserForm(FlaskForm):
-    username = StringField(_l('Username'), validators=[DataRequired()])
+    username = StringField(_l('Username'), validators=[DataRequired(), Regexp(r'^[\w.]+$')])
     email = StringField(_l('Email'), validators=[DataRequired(), Email()])
     password = PasswordField(_l('Password'), validators=[])
     password2 = PasswordField(_l('Repeat Password'), 

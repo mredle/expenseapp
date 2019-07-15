@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <table class="table table-hover">
+        <tr>
+            <td width="100%">
+                <img src="{{ image.get_thumbnail_url(1024) }}" alt="" width="100%">
+            </td>
+        </tr>
+    </table>
+{% endblock %}

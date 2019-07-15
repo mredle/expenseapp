@@ -9,7 +9,7 @@ from flask_babel import get_locale, _
 from app import db, images
 from app.main import bp
 from app.main.forms import ImageForm, EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm
-from app.models import Currency, User, Message, Notification, Event
+from app.models import Currency, User, Message, Notification, Event, Image
 
 @bp.before_app_request
 def before_request():
@@ -27,6 +27,14 @@ def root():
 @bp.route('/index')
 def index():
     return redirect(url_for('event.index'))
+
+@bp.route('/image/<image_id>')
+@login_required
+def image(image_id):
+    image = Image.query.get_or_404(image_id)
+    return render_template('image.html', 
+                           title=_('Image'), 
+                           image=image)
 
 @bp.route('/currencies')
 @login_required
