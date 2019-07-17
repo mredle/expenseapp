@@ -3,35 +3,37 @@
 {% block app_content %}
     <table class="table table-hover">
         <tr>
-            <td width="100%">
-                <h1>{{ title }}</h1>
-                {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
-                {% if user.last_seen %}
-                <p>{{ _('Last seen on') }}: {{ moment(user.last_seen).format('LLL') }}</p>
-                {% endif %}
-                <img src="{{ user.avatar(512) }}" alt="" width="100%">
-                {% if user == current_user %}
-                <p><a href="{{ url_for('main.edit_profile_picture') }}">{{ _('Edit your profile picture') }}</a></p>
-                {% endif %}
+            <h1>{{ title }}</h1>
+            {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+            {% if user.last_seen %}
+            <p>{{ _('Last seen on') }}: {{ moment(user.last_seen).format('LLL') }}</p>
+            {% endif %}
+            {% if user.profile_picture %}
+            <a href="{{ url_for('main.image', image_id=user.profile_picture.id) }}">
+                <img src="{{ user.avatar(512) }}" alt="" width="100%" style="transform:rotate({{ user.profile_picture.rotate }}deg) scale({{ user.profile_picture.get_html_scale() }});">
+            </a>
+            {% endif %}
+            {% if user == current_user %}
+            <p><a href="{{ url_for('main.edit_profile_picture') }}">{{ _('Edit your profile picture') }}</a></p>
+            {% endif %}
 
-                {% if current_user.is_admin and not user.is_admin %}
-                <p><a href="{{ url_for('main.set_admin', username=user.username) }}">{{ _('Set admin') }}</a></p>
-                {% elif current_user.is_admin and user.is_admin %}
-                <p><a href="{{ url_for('main.revoke_admin', username=user.username) }}">{{ _('Revoke admin') }}</a></p>
-                {% endif %}
-                {% if user == current_user %}
-                <p><a href="{{ url_for('main.edit_profile') }}">{{ _('Edit your profile') }}</a></p>
-                {% if not current_user.get_task_in_progress('export_posts') %}
-                <p><a href="{{ url_for('main.export_posts') }}">{{ _('Export your posts') }}</a></p>
-                {% endif %}
-                {% if not current_user.get_task_in_progress('consume_time') %}
-                <p><a href="{{ url_for('main.consume_time', amount=10) }}">{{ _('Consume 10s') }}</a></p>
-                {% endif %}
-                {% endif %}
-                {% if user != current_user %}
-                <p><a href="{{ url_for('main.messages', recipient=user.username) }}">{{ _('Send private message') }}</a></p>
-                {% endif %}
-            </td>
+            {% if current_user.is_admin and not user.is_admin %}
+            <p><a href="{{ url_for('main.set_admin', username=user.username) }}">{{ _('Set admin') }}</a></p>
+            {% elif current_user.is_admin and user.is_admin %}
+            <p><a href="{{ url_for('main.revoke_admin', username=user.username) }}">{{ _('Revoke admin') }}</a></p>
+            {% endif %}
+            {% if user == current_user %}
+            <p><a href="{{ url_for('main.edit_profile') }}">{{ _('Edit your profile') }}</a></p>
+            {% if not current_user.get_task_in_progress('export_posts') %}
+            <p><a href="{{ url_for('main.export_posts') }}">{{ _('Export your posts') }}</a></p>
+            {% endif %}
+            {% if not current_user.get_task_in_progress('consume_time') %}
+            <p><a href="{{ url_for('main.consume_time', amount=10) }}">{{ _('Consume 10s') }}</a></p>
+            {% endif %}
+            {% endif %}
+            {% if user != current_user %}
+            <p><a href="{{ url_for('main.messages', recipient=user.username) }}">{{ _('Send private message') }}</a></p>
+            {% endif %}
         </tr>
     </table>
     {% if user == current_user %}

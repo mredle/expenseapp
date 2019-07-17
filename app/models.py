@@ -115,6 +115,8 @@ class Image(Entity, db.Model):
     vector = db.Column(db.Boolean)
     width = db.Column(db.Integer)
     height = db.Column(db.Integer)
+    height = db.Column(db.Integer)
+    rotate = db.Column(db.Integer)
     format = db.Column(db.String(8))
     mode = db.Column(db.String(8))
     original_filename = db.Column(db.String(128))
@@ -128,6 +130,7 @@ class Image(Entity, db.Model):
             self.vector = True
             self.width = 0
             self.height = 0
+            self.rotate = 0
             self.format = 'SVG'
             self.mode = 'RGB'
         else:
@@ -135,6 +138,7 @@ class Image(Entity, db.Model):
             self.vector = False
             self.width = im.width
             self.height = im.height
+            self.rotate = 0
             self.format = im.format
             self.mode = im.mode
             
@@ -175,6 +179,17 @@ class Image(Entity, db.Model):
         
     def __repr__(self):
         return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
+        
+    def rotate_image(self, degree):
+        self.rotate = (self.rotate+degree)%360
+        
+    def get_html_scale(self):
+        if self.rotate in (90,270) and self.width>self.height:
+            return self.height/self.width
+        elif self.rotate in (90,270) and self.width<self.height:
+            return self.width/self.height
+        else:
+            return 1
         
     def get_path(self):
         if self.name:

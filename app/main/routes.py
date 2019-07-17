@@ -18,7 +18,6 @@ def before_request():
         db.session.commit()
     g.locale = str(get_locale())
 
-
 # routes for rendered pages
 @bp.route('/')
 def root():
@@ -34,7 +33,17 @@ def image(image_id):
     image = Image.query.get_or_404(image_id)
     return render_template('image.html', 
                            title=_('Image'), 
-                           image=image)
+                           image=image,
+                           allow_turning=(not image.vector))
+
+@bp.route('/rotate_image/<image_id>')
+@login_required
+def rotate_image(image_id):
+    degree = request.args.get('degree', 0, type=int)
+    image = Image.query.get_or_404(image_id)
+    image.rotate_image(degree)
+    db.session.commit()
+    return redirect(url_for('main.image', image_id=image.id))
 
 @bp.route('/currencies')
 @login_required

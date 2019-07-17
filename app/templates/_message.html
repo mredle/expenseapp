@@ -1,9 +1,11 @@
     <table class="table table-hover">
         <tr>
             <td width="64px">
-                <a href="{{ url_for('main.user', username=message.author.username) }}">
-                    <img src="{{ message.author.avatar(64) }}" alt="" width="64">
+                {% if message.author.profile_picture %}
+                <a href="{{ url_for('main.image', image_id=message.author.profile_picture.id) }}">
+                    <img src="{{ message.author.avatar(64) }}" alt="" width="64" style="transform:rotate({{ message.author.profile_picture.rotate }}deg) scale({{ message.author.profile_picture.get_html_scale() }});">
                 </a>
+                {% endif %}
             </td>
             <td>
                 {% set user_link %}

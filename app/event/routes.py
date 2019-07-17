@@ -148,7 +148,7 @@ def edit_picture(event_id):
             flash(_('Invalid or empty image.'))
         return redirect(url_for('event.main', event_id=event_id))
     return render_template('edit_form.html', 
-                           title=_('Add Receipt'), 
+                           title=_('Event Picture'), 
                            form=form)
     
 @bp.route('/users/<event_id>', methods=['GET', 'POST'])
@@ -315,7 +315,7 @@ def add_receipt(expense_id):
             flash(_('Invalid or empty image.'))
         return redirect(url_for('event.expenses', event_id=expense.event.id))
     return render_template('edit_form.html', 
-                           title=_('Event Picture'), 
+                           title=_('Add Receipt'), 
                            form=form)
     
 @bp.route('/edit_expense/<expense_id>', methods=['GET', 'POST'])

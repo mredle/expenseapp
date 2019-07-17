@@ -1,9 +1,11 @@
     <table class="table table-hover">
         <tr>
             <td width="64px">
+                {% if expense.image %}
                 <a href="{{ url_for('main.image', image_id=expense.image.id) }}">
-                    <img src="{{ expense.avatar(64) }}" alt="" width="64">
+                    <img src="{{ expense.avatar(64) }}" alt="" width="64" style="transform:rotate({{ expense.image.rotate }}deg) scale({{ expense.image.get_html_scale() }});">
                 </a>
+                {% endif %}
             </td>
             <td>
                 {% set add_receipt_link %}

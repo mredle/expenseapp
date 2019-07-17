@@ -1,9 +1,11 @@
     <table class="table table-hover">
         <tr>
             <td width="64px">
+                {% if currency.image %}
                 <a href="{{ url_for('main.image', image_id=currency.image.id) }}">
-                    <img src="{{ currency.avatar(64) }}" alt="" width="64">
+                    <img src="{{ currency.avatar(64) }}" alt="" width="64"style="transform:rotate({{ currency.image.rotate }}deg) scale({{ currency.image.get_html_scale() }});">
                 </a>
+                {% endif %}
             </td>
             <td>
                 {% set edit_link %}
