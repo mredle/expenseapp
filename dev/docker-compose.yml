@@ -35,6 +35,7 @@ services:
     restart: on-failure
     container_name: expenseapp-mailhog-dev
     ports:
+     - "1025:1025"
      - "8025:8025"
     environment:
       MH_UI_BIND_ADDR: 0.0.0.0:8025

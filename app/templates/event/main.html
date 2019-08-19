@@ -36,6 +36,7 @@
             {% if event.closed %}
             <p><a href="{{ url_for('event.reopen', event_id=event.id) }}">{{ _('Reopen this event') }}</a></p>
             {% else %}
+            <p><a href="{{ url_for('event.send_payment_reminders', event_id=event.id) }}">{{ _('Send payment reminders') }}</a></p>
             <p><a href="{{ url_for('event.convert_currencies', event_id=event.id) }}">{{ _('Convert all transactions of this event to the base currency') }}</a></p>
             <p><a href="{{ url_for('event.close', event_id=event.id) }}">{{ _('Close this event') }}</a></p>
             <p><a href="{{ url_for('event.edit', event_id=event.id) }}">{{ _('Edit this event') }}</a></p>

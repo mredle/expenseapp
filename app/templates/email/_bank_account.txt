@@ -1,0 +1,7 @@
+IBAN: {{ bank_account.iban }}
+Bank name: {{ bank_account.bank }}
+Account Name: {{ bank_account.name }}
+Address: {{ bank_account.address }}
+Address suffix: {{ bank_account.address_suffix }}
+ZIP City: {{ bank_account.zip_code }} {{ bank_account.city }}
+Country: {{ bank_account.country }}

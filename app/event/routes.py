@@ -10,6 +10,7 @@ from app import db, images
 from app.event import bp
 from app.main.forms import ImageForm
 from app.event.forms import PostForm, EventForm, EventAddUserForm, ExpenseForm, SettlementForm
+from app.event.email import send_reminder_email
 from app.models import Currency, Event, Expense, Settlement, Post, User, Image
       
 # routes for rendered pages
@@ -477,6 +478,21 @@ def remove_settlement(settlement_id):
         db.session.commit()
         flash(_('Settlement over %(amount_str)s has been removed from event %(event_name)s.', amount_str=amount_str, event_name=event.name))
     return redirect(url_for('event.settlements', event_id=event.id))
+
+@bp.route('/send_payment_reminders/<event_id>')
+@login_required
+def send_payment_reminders(event_id):
+    event = Event.query.get_or_404(event_id)
+    if current_user != event.admin and not current_user.is_admin:
+        flash(_('Your are only allowed to send payment reminders of your own event!'))
+        return redirect(url_for('event.main', event_id=event.id))
+    event.settlements.filter_by(draft=True).delete()
+    draft_settlements = event.get_compensation_settlements_accountant()
+    db.session.add_all(draft_settlements)
+    db.session.commit()
+    send_reminder_email(draft_settlements)
+    flash(_('All users have been reminded of their duties!'))
+    return redirect(url_for('event.main', event_id=event.id))
 
 @bp.route('/convert_currencies/<event_id>')
 @login_required

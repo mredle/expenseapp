@@ -376,7 +376,7 @@ class Event(Entity, db.Model):
             return 0
         else:
             return 1
-            
+    
     def convert_currencies(self):
         expenses = self.expenses.all()
         settlements = self.settlements.all()

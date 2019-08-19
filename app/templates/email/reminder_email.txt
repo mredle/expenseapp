@@ -1,0 +1,12 @@
+Dear {{ settlement.sender.username }},
+
+To settle all your depts, you have to make the following payment to me:
+{{ settlement.get_amount_str() }}
+
+You can pay directly to one of his bank accounts:
+{% for bank_account in bank_accounts %}
+{% include 'email/_bank_account.txt' %}
+{% endfor %}
+
+Sincerely
+{{ settlement.recipient.username }}
