@@ -8,8 +8,8 @@ from flask_babel import get_locale, _
 
 from app import db, images
 from app.main import bp
-from app.main.forms import ImageForm, EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm
-from app.models import Currency, User, Message, Notification, Event, Image
+from app.main.forms import ImageForm, EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm, BankAccountForm
+from app.models import Currency, User, Message, Notification, Event, Image, BankAccount
 
 @bp.before_app_request
 def before_request():
@@ -63,9 +63,12 @@ def currencies():
 def new_currency():
     form = CurrencyForm()
     if form.validate_on_submit():
-        currency = Currency(code=form.code.data, name=form.name.data, 
-                            number=form.number.data, exponent=form.exponent.data, 
-                            inCHF=form.inCHF.data, description=form.description.data, 
+        currency = Currency(code=form.code.data, 
+                            name=form.name.data, 
+                            number=form.number.data, 
+                            exponent=form.exponent.data, 
+                            inCHF=form.inCHF.data, 
+                            description=form.description.data, 
                             db_created_by=current_user.username)
         
         db.session.add(currency)
@@ -101,6 +104,118 @@ def edit_currency(currency_id):
     return render_template('edit_form.html', 
                            title=_('Edit Currency'), 
                            form=form)
+
+@bp.route('/new_bank_account', methods=['GET', 'POST'])
+@login_required
+def new_bank_account():
+    form = BankAccountForm()
+    if form.validate_on_submit():
+        bank_account = BankAccount(user=current_user, 
+                                   iban=form.iban.data, 
+                                   bank=form.bank.data, 
+                                   name=form.name.data, 
+                                   address=form.address.data, 
+                                   address_suffix=form.address_suffix.data, 
+                                   zip_code=form.zip_code.data, 
+                                   city=form.city.data, 
+                                   country=form.country.data, 
+                                   description=form.description.data, 
+                                   db_created_by=current_user.username)
+        
+        db.session.add(bank_account)
+        db.session.commit()
+        flash(_('Your new bank account has been added.'))
+        return redirect(url_for('main.user', username=current_user.username))
+    return render_template('edit_form.html', 
+                           title=_('New Bank Account'), 
+                           form=form)
+
+@bp.route('/bank_accounts/<username>', methods=['GET', 'POST'])
+@login_required
+def bank_accounts(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if current_user != user and not current_user.is_admin:
+        flash(_('Your are only allowed to edit your own bank accounts!'))
+        return redirect(url_for('main.user', username=current_user.username))
+    form = BankAccountForm()
+    if form.validate_on_submit():
+        bank_account = BankAccount(user=current_user, 
+                                   iban=form.iban.data, 
+                                   bank=form.bank.data, 
+                                   name=form.name.data, 
+                                   address=form.address.data, 
+                                   address_suffix=form.address_suffix.data, 
+                                   zip_code=form.zip_code.data, 
+                                   city=form.city.data, 
+                                   country=form.country.data, 
+                                   description=form.description.data, 
+                                   db_created_by=current_user.username)
+        
+        db.session.add(bank_account)
+        db.session.commit()
+        flash(_('Your new bank account has been added.'))
+        return redirect(url_for('main.bank_accounts', username=user.username))
+    
+    page = request.args.get('page', 1, type=int)
+    bank_accounts = current_user.bank_accounts.order_by(BankAccount.iban.asc()).paginate(
+        page, current_app.config['ITEMS_PER_PAGE'], False)
+    next_url = url_for('main.bank_accounts', username=current_user.username, page=users.next_num) if bank_accounts.has_next else None
+    prev_url = url_for('main.bank_accounts', username=current_user.username, page=users.prev_num) if bank_accounts.has_prev else None
+    return render_template('bank_accounts.html', 
+                           form=form, 
+                           bank_accounts=bank_accounts.items,
+                           next_url=next_url, prev_url=prev_url)
+
+@bp.route('/edit_bank_account/<bank_account_id>', methods=['GET', 'POST'])
+@login_required
+def edit_bank_account(bank_account_id):
+    bank_account = BankAccount.query.get_or_404(bank_account_id)
+    if current_user not in [bank_account.user] and not current_user.is_admin:
+        flash(_('Your are only allowed to edit your own bank accounts!'))
+        return redirect(url_for('main.user', username=current_user.username))
+    
+    form = BankAccountForm()
+    if form.validate_on_submit():
+        bank_account.iban = form.iban.data, 
+        bank_account.bank = form.bank.data, 
+        bank_account.name = form.name.data, 
+        bank_account.address = form.address.data, 
+        bank_account.address_suffix = form.address_suffix.data, 
+        bank_account.zip_code = form.zip_code.data, 
+        bank_account.city = form.city.data, 
+        bank_account.country = form.country.data, 
+        bank_account.description = form.description.data
+        db.session.commit()
+        flash(_('Your changes have been saved.'))
+        return redirect(url_for('main.bank_accounts', username=current_user.username))
+    elif request.method == 'GET':
+        form.iban.data = bank_account.iban
+        form.bank.data = bank_account.bank
+        form.name.data = bank_account.name
+        form.address.data = bank_account.address
+        form.address_suffix.data = bank_account.address_suffix
+        form.zip_code.data = bank_account.zip_code
+        form.city.data = bank_account.city
+        form.country.data = bank_account.country
+        form.description.data = bank_account.description
+    return render_template('edit_form.html', 
+                           title=_('Edit Bank Account'), 
+                           form=form)
+
+@bp.route('/remove_bank_account/<bank_account_id>')
+@login_required
+def remove_bank_account(bank_account_id):
+    bank_account = BankAccount.query.get_or_404(bank_account_id)
+    user = bank_account.user
+    if current_user not in [user] and not current_user.is_admin:
+        flash(_('Your are only allowed to remove your own bank accounts!'))
+        return redirect(url_for('main.user', username=current_user.username))
+    
+    if bank_account in user.bank_accounts:
+        user.bank_accounts.remove(bank_account)
+        db.session.commit()
+        flash(_('Bank account %(iban_str)s has been removed from user %(username)s.', iban_str=bank_account.iban, username=user.username))
+    return redirect(url_for('main.bank_accounts', username=user.username))
 
 @bp.route('/users')
 @login_required
@@ -143,7 +258,7 @@ def new_user():
                     email=form.email.data,
                     locale=form.locale.data,
                     timezone=form.timezone.data,
-                    about_me = form.about_me.data)
+                    about_me=form.about_me.data)
         user.is_admin = form.is_admin.data
         user.set_password(form.password.data)
         user.get_token()

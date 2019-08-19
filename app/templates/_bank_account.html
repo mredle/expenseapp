@@ -1,0 +1,29 @@
+    <table class="table table-hover">
+        <tr>
+            <td width="64px">
+            </td>
+            <td>
+                {% set edit_link %}
+                    <span>
+                        <a href="{{ url_for('main.edit_bank_account', bank_account_id=bank_account.id) }}">
+                            {{ _('edit') }}
+                        </a>
+                    </span>
+                {% endset %}
+                {% set remove_link %}
+                    <span>
+                        <a href="{{ url_for('main.remove_bank_account', bank_account_id=bank_account.id) }}">
+                            {{ _('remove') }}
+                        </a>
+                    </span>
+                {% endset %}
+                <br>
+                {{ _('%(bank)s: %(iban)s',
+                    bank=bank_account.bank, 
+                    iban=bank_account.iban) }}
+                <br>
+                {{ bank_account.description }}
+                {{ _('%(link)s', link=edit_link) }}, {{ _('%(link)s', link=remove_link) }}
+            </td>
+        </tr>
+    </table>
