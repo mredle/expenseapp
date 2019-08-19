@@ -295,11 +295,12 @@ class Event(Entity, db.Model):
     image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
     image = db.relationship('Image', foreign_keys=image_id)
     description = db.Column(db.String(256))
+    fileshare_link = db.Column(db.String(256))
     expenses = db.relationship('Expense', back_populates='event', lazy='dynamic')
     settlements = db.relationship('Settlement', back_populates='event', lazy='dynamic')
     posts = db.relationship('Post', back_populates='event', lazy='dynamic')
     
-    def __init__(self, name, date, admin, accountant, base_currency, exchange_fee, closed=False, description='', db_created_by=''):
+    def __init__(self, name, date, admin, accountant, base_currency, exchange_fee, fileshare_link, closed=False, description='', db_created_by=''):
         Entity.__init__(self, db_created_by)
         self.name = name
         self.date = date
@@ -308,6 +309,7 @@ class Event(Entity, db.Model):
         self.base_currency = base_currency
         self.exchange_fee = exchange_fee
         self.closed = closed
+        self.fileshare_link = fileshare_link
         self.description = description
     
     def __repr__(self):

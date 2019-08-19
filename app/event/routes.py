@@ -80,6 +80,7 @@ def new():
                       base_currency=base_currency,
                       exchange_fee=form.exchange_fee.data,
                       closed=False,
+                      fileshare_link=form.fileshare_link.data, 
                       description=form.description.data, 
                       db_created_by=current_user.username)
         event.add_user(admin)
@@ -109,6 +110,7 @@ def edit(event_id):
     if form.validate_on_submit():
         event.name = form.name.data
         event.date = form.date.data
+        event.fileshare_link = form.fileshare_link.data
         event.description = form.description.data
         event.admin = User.query.get(form.admin_id.data)
         event.accountant = User.query.get(form.accountant_id.data)
@@ -120,6 +122,7 @@ def edit(event_id):
     elif request.method == 'GET':
         form.name.data = event.name
         form.date.data = event.date
+        form.fileshare_link.data = event.fileshare_link
         form.description.data = event.description
         form.admin_id.data = event.admin_id
         form.accountant_id.data = event.accountant_id

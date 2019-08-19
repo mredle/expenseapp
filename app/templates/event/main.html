@@ -29,6 +29,9 @@
             <p><a href="{{ url_for('event.expenses', event_id=event.id) }}">{{ _('Expenses') }}</a></p>
             <p><a href="{{ url_for('event.settlements', event_id=event.id) }}">{{ _('Settlements') }}</a></p>
             <p><a href="{{ url_for('event.balance', event_id=event.id) }}">{{ _('Balance sheet') }}</a></p>
+            {% if event.fileshare_link %}
+                <p><a href="{{ event.fileshare_link }}" target="_blank">{{ _('Link to external fileshare') }}</a></p>
+            {% endif %}
             {% if event.admin == current_user or current_user.is_admin %}
             {% if event.closed %}
             <p><a href="{{ url_for('event.reopen', event_id=event.id) }}">{{ _('Reopen this event') }}</a></p>

@@ -19,6 +19,8 @@ class EventForm(FlaskForm):
                         format='%Y-%m-%d', 
                         validators=[DataRequired()])
     
+    fileshare_link = TextAreaField(_l('Link to external fileshare'), 
+                                validators=[Length(min=0, max=256)])
     description = TextAreaField(_l('Description'), 
                                 validators=[Length(min=0, max=256)])
     admin_id = SelectField(_l('Administrator'), coerce=int,
