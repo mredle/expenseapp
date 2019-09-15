@@ -253,6 +253,12 @@ class BankAccount(Entity, db.Model):
     def __repr__(self):
         return '<BankAccount {}>'.format(self.iban)
 
+event_currencies = db.Table('event_currencies',
+    db.Column('event_id', db.Integer, db.ForeignKey('events.id')),
+    db.Column('currency_id', db.Integer, db.ForeignKey('currencies.id')),
+    db.PrimaryKeyConstraint('event_id', 'currency_id')
+)
+
 class Currency(Entity, db.Model):
     __tablename__ = 'currencies'
     id = db.Column(db.Integer, primary_key=True)
@@ -267,6 +273,7 @@ class Currency(Entity, db.Model):
     description = db.Column(db.String(256))
     expenses = db.relationship('Expense', back_populates='currency', lazy='dynamic')
     settlements = db.relationship('Settlement', back_populates='currency', lazy='dynamic')
+    events = db.relationship('Event', secondary=event_currencies, back_populates='allowed_currencies', lazy='dynamic')
     events_base_currency = db.relationship('Event', foreign_keys='Event.base_currency_id', back_populates='base_currency', lazy='dynamic')
     
     def __init__(self, code, name, number, exponent, inCHF, description='', db_created_by=''):
@@ -301,7 +308,6 @@ class Currency(Entity, db.Model):
         amount_str = ('{} {:.'+'{}'.format(self.exponent)+'f}').format(currency.code, self.get_amount_in(amount, currency, exchange_fee))
         return amount_str
 
-
 event_users = db.Table('event_users',
     db.Column('event_id', db.Integer, db.ForeignKey('events.id')),
     db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
@@ -322,6 +328,7 @@ class Event(Entity, db.Model):
     base_currency = db.relationship('Currency', foreign_keys=base_currency_id, back_populates='events_base_currency')
     exchange_fee = db.Column(db.Float)
     users = db.relationship('User', secondary=event_users, back_populates='events', lazy='dynamic')
+    allowed_currencies = db.relationship('Currency', secondary=event_currencies, back_populates='events', lazy='dynamic')
     closed = db.Column(db.Boolean)
     image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
     image = db.relationship('Image', foreign_keys=image_id)
@@ -331,13 +338,14 @@ class Event(Entity, db.Model):
     settlements = db.relationship('Settlement', back_populates='event', lazy='dynamic')
     posts = db.relationship('Post', back_populates='event', lazy='dynamic')
     
-    def __init__(self, name, date, admin, accountant, base_currency, exchange_fee, fileshare_link, closed=False, description='', db_created_by=''):
+    def __init__(self, name, date, admin, accountant, base_currency, allowed_currencies, exchange_fee, fileshare_link, closed=False, description='', db_created_by=''):
         Entity.__init__(self, db_created_by)
         self.name = name
         self.date = date
         self.admin = admin
         self.accountant = accountant
         self.base_currency = base_currency
+        self.allowed_currencies = allowed_currencies
         self.exchange_fee = exchange_fee
         self.closed = closed
         self.fileshare_link = fileshare_link
@@ -376,6 +384,24 @@ class Event(Entity, db.Model):
             return 0
         else:
             return 1
+        
+    def has_currency(self, currency):
+        return (currency in self.allowed_currencies)
+        
+    def add_currency(self, currency):
+        if not self.has_currency(currency):
+            self.allowed_currencies.append(currency)
+
+    def remove_currency(self, currency):
+        blocked_currencies = set([x.currency for x in self.expenses] +
+                            [x.currency for x in self.settlements] +
+                            [self.base_currency])
+        
+        if self.has_currency(currency) and currency not in blocked_currencies:
+            self.allowed_currencies.remove(currency)
+            return 0
+        else:
+            return 1
     
     def convert_currencies(self):
         expenses = self.expenses.all()
@@ -389,6 +415,11 @@ class Event(Entity, db.Model):
             x.amount = x.currency.get_amount_in(x.amount, self.base_currency, self.exchange_fee)
             x.currency = self.base_currency
             
+    def get_allowed_currencies_str(self):
+        currency_codes = [c.code for c in self.allowed_currencies]
+        currency_codes.sort()
+        return ', '.join(currency_codes)
+                         
     def get_total_expenses(self):
         expenses = self.expenses.all()
         expenses_num = [x.get_amount() for x in expenses]

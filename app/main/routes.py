@@ -56,6 +56,7 @@ def currencies():
     return render_template('currencies.html', 
                            title=_('Current currencies'), 
                            currencies=currencies.items, 
+                           allow_new=True,
                            next_url=next_url, prev_url=prev_url)
 
 @bp.route('/new_currency', methods=['GET', 'POST'])

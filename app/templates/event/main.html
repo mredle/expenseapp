@@ -20,6 +20,7 @@
             <p>{{ _('Admin') }}: {{ event.admin.username }}</p>
             <p>{{ _('Accountant') }}: {{ event.accountant.username }}</p>
             <p>{{ _('Base Currency') }}: {{ event.base_currency.code }}</p>
+            <p><a href="{{ url_for('event.currencies', event_id=event.id) }}">{{ _('Allowed currencies') }}</a>: {{ event.get_allowed_currencies_str() }} </p>
             <p>{{ _('Exchange fee') }}: {{ event.exchange_fee }}%</p>
             <p>{{ _('From') }}: {{ moment(event.date).format('LLL') }}</p>
             <p>{{ _('%(count)d users', count=stats['users']) }}, 

@@ -55,6 +55,21 @@ def main(event_id):
                            posts=posts.items,
                            next_url=next_url, prev_url=prev_url)
 
+@bp.route('/currencies/<event_id>')
+@login_required
+def currencies(event_id):
+    event = Event.query.get_or_404(event_id)
+    page = request.args.get('page', 1, type=int)
+    currencies = event.allowed_currencies.order_by(Currency.code.asc()).paginate(
+        page, current_app.config['ITEMS_PER_PAGE'], False)
+    next_url = url_for('event.currencies', page=currencies.next_num) if currencies.has_next else None
+    prev_url = url_for('event.currencies', page=currencies.prev_num) if currencies.has_prev else None
+    return render_template('currencies.html', 
+                           title=_('Allowed currencies'), 
+                           currencies=currencies.items, 
+                           allow_new=False,
+                           next_url=next_url, prev_url=prev_url)
+    
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new():
@@ -70,6 +85,8 @@ def new():
     form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
     CHF = Currency.query.filter_by(code='CHF').first()
     form.base_currency_id.data = CHF.id
+    form.allowed_currency_id.choices = form.base_currency_id.choices
+    form.allowed_currency_id.data = [CHF.id]
     if form.validate_on_submit():
         admin = User.query.get(form.admin_id.data)
         accountant = User.query.get(form.accountant_id.data)
@@ -79,6 +96,7 @@ def new():
                       admin=admin,
                       accountant=accountant,
                       base_currency=base_currency,
+                      allowed_currencies=[Currency.query.get(currency_id) for currency_id in form.allowed_currency_id.data],
                       exchange_fee=form.exchange_fee.data,
                       closed=False,
                       fileshare_link=form.fileshare_link.data, 
@@ -86,6 +104,7 @@ def new():
                       db_created_by=current_user.username)
         event.add_user(admin)
         event.add_user(accountant)
+        event.add_currency(base_currency)
         db.session.add(event)
         db.session.commit()
         flash(_('Your new event has been added.'))
@@ -107,7 +126,8 @@ def edit(event_id):
     form = EventForm()
     form.admin_id.choices = [(u.id, u.username) for u in event.users.order_by('username')]
     form.accountant_id.choices = [(u.id, u.username) for u in event.users.order_by('username')]
-    form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
+    form.base_currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
+    form.allowed_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
     if form.validate_on_submit():
         event.name = form.name.data
         event.date = form.date.data
@@ -116,6 +136,7 @@ def edit(event_id):
         event.admin = User.query.get(form.admin_id.data)
         event.accountant = User.query.get(form.accountant_id.data)
         event.base_currency = Currency.query.get(form.base_currency_id.data)
+        event.allowed_currencies = [Currency.query.get(currency_id) for currency_id in form.allowed_currency_id.data]
         event.exchange_fee = form.exchange_fee.data
         db.session.commit()
         flash(_('Your changes have been saved.'))
@@ -128,6 +149,7 @@ def edit(event_id):
         form.admin_id.data = event.admin_id
         form.accountant_id.data = event.accountant_id
         form.base_currency_id.data = event.base_currency_id
+        form.allowed_currency_id.data = [c.id for c in event.allowed_currencies]
         form.exchange_fee.data = event.exchange_fee
     return render_template('edit_form.html', 
                            title=_('Edit Event'), 
@@ -262,7 +284,7 @@ def balance(event_id):
 def expenses(event_id):
     event = Event.query.get_or_404(event_id)
     form = ExpenseForm()
-    form.currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
+    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         if event.closed:
@@ -335,7 +357,7 @@ def edit_expense(expense_id):
         return redirect(url_for('event.main', event_id=event.id))
     
     form = ExpenseForm()
-    form.currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
+    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         expense.currency = Currency.query.get(form.currency_id.data)
@@ -380,7 +402,7 @@ def remove_expense(expense_id):
 def settlements(event_id):
     event = Event.query.get_or_404(event_id)
     form = SettlementForm()
-    form.currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
+    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users if u!=current_user]
     if form.validate_on_submit():
         if event.closed:
@@ -428,7 +450,7 @@ def edit_settlement(settlement_id):
         return redirect(url_for('event.main', event_id=event.id))
     
     form = SettlementForm()
-    form.currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
+    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users if u!=current_user]
     if form.validate_on_submit():
         settlement.currency = Currency.query.get(form.currency_id.data)
