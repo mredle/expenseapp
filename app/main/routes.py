@@ -21,7 +21,7 @@ def before_request():
 # routes for rendered pages
 @bp.route('/')
 def root():
-    return redirect(url_for('event.index'))
+    return redirect(url_for('main.index'))
 
 @bp.route('/index')
 def index():
@@ -56,12 +56,15 @@ def currencies():
     return render_template('currencies.html', 
                            title=_('Current currencies'), 
                            currencies=currencies.items, 
-                           allow_new=True,
+                           allow_new=current_user.is_admin,
                            next_url=next_url, prev_url=prev_url)
 
 @bp.route('/new_currency', methods=['GET', 'POST'])
 @login_required
 def new_currency():
+    if not current_user.is_admin:
+        flash(_('Only an admin is allowed to create new currencies!'))
+        return redirect(url_for('main.currencies'))
     form = CurrencyForm()
     if form.validate_on_submit():
         currency = Currency(code=form.code.data, 
@@ -83,6 +86,9 @@ def new_currency():
 @bp.route('/edit_currency/<currency_id>', methods=['GET', 'POST'])
 @login_required
 def edit_currency(currency_id):
+    if not current_user.is_admin:
+        flash(_('Only an admin is allowed to edit currencies!'))
+        return redirect(url_for('main.currencies'))
     currency = Currency.query.get_or_404(currency_id)
     form = CurrencyForm()
     if form.validate_on_submit():
@@ -136,7 +142,7 @@ def new_bank_account():
 def bank_accounts(username):
     user = User.query.filter_by(username=username).first_or_404()
     if current_user != user and not current_user.is_admin:
-        flash(_('Your are only allowed to edit your own bank accounts!'))
+        flash(_('Your are only allowed to view your own bank accounts!'))
         return redirect(url_for('main.user', username=current_user.username))
     form = BankAccountForm()
     if form.validate_on_submit():
@@ -171,7 +177,7 @@ def bank_accounts(username):
 @login_required
 def edit_bank_account(bank_account_id):
     bank_account = BankAccount.query.get_or_404(bank_account_id)
-    if current_user not in [bank_account.user] and not current_user.is_admin:
+    if not bank_account.can_edit(current_user):
         flash(_('Your are only allowed to edit your own bank accounts!'))
         return redirect(url_for('main.user', username=current_user.username))
     
@@ -208,7 +214,7 @@ def edit_bank_account(bank_account_id):
 def remove_bank_account(bank_account_id):
     bank_account = BankAccount.query.get_or_404(bank_account_id)
     user = bank_account.user
-    if current_user not in [user] and not current_user.is_admin:
+    if not bank_account.can_edit(current_user):
         flash(_('Your are only allowed to remove your own bank accounts!'))
         return redirect(url_for('main.user', username=current_user.username))
     
@@ -326,13 +332,16 @@ def revoke_admin(username):
     if not current_user.is_admin:
         flash(_('Only an admin can revoke the admin rights!'))
         return redirect(url_for('main.user', username=user.username))
-    user.is_admin = True
+    user.is_admin = False
     db.session.commit()
     return redirect(url_for('main.user', username=user.username))
 
 @bp.route('/administration')
 @login_required
 def administration():
+    if not current_user.is_admin:
+        flash(_('Only an admin can view the admin page!'))
+        return redirect(url_for('main.index'))
     return render_template('administration.html',
                            title= _('Administration'))
 

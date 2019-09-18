@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-09-15 23:34+0200\n"
+"POT-Creation-Date: 2019-09-18 23:07+0200\n"
 "PO-Revision-Date: 2018-08-29 22:41+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -30,7 +30,7 @@ msgstr "Ein neuer Benutzer hat sich bei ExpenseApp registriert!"
 msgid "Validate Your Email"
 msgstr "Validiere deine Eamil"
 
-#: app/auth/email.py:35 app/auth/routes.py:89
+#: app/auth/email.py:35
 msgid "Reset Your Password"
 msgstr "Passwort zurücksetzen"
 
@@ -111,6 +111,10 @@ msgstr "Passwort zurücksetzen"
 #: app/auth/routes.py:87
 msgid "Your password has been reset."
 msgstr "Dein Passwort wurde zurückgesetzt."
+
+#: app/auth/routes.py:89
+msgid "Set your password"
+msgstr "Setze dein Passwort"
 
 #: app/event/email.py:11
 msgid "Please settle your depts!"
@@ -196,7 +200,8 @@ msgstr "Empfänger"
 msgid "Hi %(username)s, your events:"
 msgstr "Hallo %(username)s, deine Veranstaltungen:"
 
-#: app/event/routes.py:35 app/event/routes.py:257
+#: app/event/routes.py:35 app/event/routes.py:254 app/event/routes.py:284
+#: app/event/routes.py:405
 msgid "Your are only allowed to view your events!"
 msgstr "Du kannst nur deine eigene Veranstaltungen sehen!"
 
@@ -212,22 +217,22 @@ msgstr "Deine neue Veranstaltung wurde hinzugefügt."
 msgid "New Event"
 msgstr "Neue Veranstaltung"
 
-#: app/event/routes.py:121 app/event/routes.py:163 app/event/routes.py:187
-#: app/event/routes.py:217 app/event/routes.py:236
+#: app/event/routes.py:121 app/event/routes.py:163 app/event/routes.py:217
+#: app/event/routes.py:233
 msgid "Your are only allowed to edit your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung bearbeiten!"
 
 #: app/event/routes.py:124 app/event/routes.py:193 app/event/routes.py:220
-#: app/event/routes.py:239 app/event/routes.py:291 app/event/routes.py:329
-#: app/event/routes.py:356 app/event/routes.py:390 app/event/routes.py:409
-#: app/event/routes.py:449 app/event/routes.py:494
+#: app/event/routes.py:236 app/event/routes.py:291 app/event/routes.py:329
+#: app/event/routes.py:356 app/event/routes.py:390 app/event/routes.py:412
+#: app/event/routes.py:452 app/event/routes.py:497
 msgid "Your are only allowed to edit an open event!"
 msgstr "Du kannst nur eine geöffnete Veranstaltung bearbeiten!"
 
 #: app/event/routes.py:142 app/event/routes.py:172 app/event/routes.py:339
-#: app/event/routes.py:369 app/event/routes.py:461 app/main/routes.py:96
-#: app/main/routes.py:190 app/main/routes.py:296 app/main/routes.py:357
-#: app/main/routes.py:378
+#: app/event/routes.py:369 app/event/routes.py:464 app/main/routes.py:102
+#: app/main/routes.py:196 app/main/routes.py:302 app/main/routes.py:366
+#: app/main/routes.py:387
 msgid "Your changes have been saved."
 msgstr "Deine Änderungen wurden gespeichert."
 
@@ -235,12 +240,12 @@ msgstr "Deine Änderungen wurden gespeichert."
 msgid "Edit Event"
 msgstr "Veranstaltung bearbeiten"
 
-#: app/event/routes.py:170 app/event/routes.py:337 app/main/routes.py:376
+#: app/event/routes.py:170 app/event/routes.py:337 app/main/routes.py:385
 #, python-format
 msgid "Importing %(filename)s..."
 msgstr "Importiere %(filename)s..."
 
-#: app/event/routes.py:174 app/event/routes.py:341 app/main/routes.py:380
+#: app/event/routes.py:174 app/event/routes.py:341 app/main/routes.py:389
 msgid "Invalid or empty image."
 msgstr "Ungültiges oder leeres Bild."
 
@@ -248,27 +253,27 @@ msgstr "Ungültiges oder leeres Bild."
 msgid "Event Picture"
 msgstr "Veranstaltungsbild"
 
-#: app/event/routes.py:198 app/event/routes.py:228
+#: app/event/routes.py:187
+msgid "Your are only allowed to view your own event!"
+msgstr "Du kannst nur deine eigene Veranstaltung sehen!"
+
+#: app/event/routes.py:198 app/event/routes.py:225
 #, python-format
 msgid "User %(username)s has been added to event %(event_name)s."
 msgstr "Benutzer %(username)s wurde der Veranstaltung %(event_name)s hinzugefügt."
 
-#: app/event/routes.py:224
-msgid "You cannot add the event admin as user!"
-msgstr "Du kannst den Administrator nicht als Benutzer hinzufügen!"
-
-#: app/event/routes.py:243
+#: app/event/routes.py:240
 msgid "You cannot remove the event admin!"
 msgstr "Du kannst den Veranstaltungsadministrator nicht entfernen!"
 
-#: app/event/routes.py:246
+#: app/event/routes.py:243
 #, python-format
 msgid "User %(username)s cannot be removed from event %(event_name)s."
 msgstr ""
 "Benutzer %(username)s kann nicht von der Veranstaltung %(event_name)s "
 "entfernt werden."
 
-#: app/event/routes.py:249
+#: app/event/routes.py:246
 #, python-format
 msgid "User %(username)s has been removed from event %(event_name)s."
 msgstr "Benutzer %(username)s wurde aus der Veranstaltung %(event_name)s entfernt."
@@ -301,75 +306,75 @@ msgstr ""
 "Ausgabe von %(amount_str)s wurde aus der Veranstaltung %(event_name)s "
 "entfernt."
 
-#: app/event/routes.py:425
+#: app/event/routes.py:428
 #, python-format
 msgid "Your new settlement has been added to event %(event_name)s."
 msgstr ""
 "Deine neue Ausgleichszahlung wurde der Veranstaltung %(event_name)s "
 "hinzugefügt."
 
-#: app/event/routes.py:446
+#: app/event/routes.py:449
 msgid "Your are only allowed to edit your own settlements!"
 msgstr "Du kannst nur deine eigenen Ausgleichszahlung bearbeiten!"
 
-#: app/event/routes.py:469
+#: app/event/routes.py:472
 msgid "Edit Settlement"
 msgstr "Ausgleichszahlung bearbeiten"
 
-#: app/event/routes.py:478
+#: app/event/routes.py:481
 msgid "Your are only allowed to add settlements directed to you!"
 msgstr "Du kannst nur Zahlungen an dich bestätigen"
 
-#: app/event/routes.py:481
+#: app/event/routes.py:484
 #, python-format
 msgid "Confirmed by user %(username)s"
 msgstr "Bestätigt von Benutzer %(username)s"
 
-#: app/event/routes.py:491
+#: app/event/routes.py:494
 msgid "Your are only allowed to remove your own settlements!"
 msgstr "Du kannst nur deine eigenen Ausgleichszahlung entfernen!"
 
-#: app/event/routes.py:501
+#: app/event/routes.py:504
 #, python-format
 msgid "Settlement over %(amount_str)s has been removed from event %(event_name)s."
 msgstr ""
 "Ausgleichszahlung von %(amount_str)s wurde aus der Veranstaltung "
 "%(event_name)s entfernt."
 
-#: app/event/routes.py:509
+#: app/event/routes.py:512
 msgid "Your are only allowed to send payment reminders of your own event!"
 msgstr "Du kannst nur Zahlungserinnerungen deiner eigenen Veranstaltung versenden!"
 
-#: app/event/routes.py:516
+#: app/event/routes.py:519
 msgid "All users have been reminded of their duties!"
 msgstr "Alle Beteiligten wurden ihrer Pflichten erinnert!"
 
-#: app/event/routes.py:524
+#: app/event/routes.py:527
 msgid "Your are only allowed to convert currencies of your own event!"
 msgstr "Du kannst nur Währungen deiner eigenen Veranstaltung umwandeln!"
 
-#: app/event/routes.py:528
+#: app/event/routes.py:531
 #, python-format
 msgid "All transaction of this event have been converted to %(code)s."
 msgstr "Alle Beträge dieser Veranstaltung wurden zu %(code)s umgewandelt."
 
-#: app/event/routes.py:536
+#: app/event/routes.py:539
 msgid "Your are only allowed to reopen your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung wieder öffnen!"
 
-#: app/event/routes.py:540
+#: app/event/routes.py:543
 msgid "Event has been reopened."
 msgstr "Veranstaltung wurde wieder geöffnet"
 
-#: app/event/routes.py:548
+#: app/event/routes.py:551
 msgid "Your are only allowed to close your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung schliessen!"
 
-#: app/event/routes.py:551
+#: app/event/routes.py:554
 msgid "Your are only allowed to close an event with no open liabilities!"
 msgstr "Du kannst nur eine Veranstaltung mit ausgeglichener Bilanz schliessen!"
 
-#: app/event/routes.py:555
+#: app/event/routes.py:558
 msgid "Event has been closed."
 msgstr "Veranstaltung wurde geschlossen"
 
@@ -445,118 +450,134 @@ msgstr "Bild"
 msgid "Current currencies"
 msgstr "Aktuelle Währungen"
 
-#: app/main/routes.py:77
+#: app/main/routes.py:66
+msgid "Only an admin is allowed to create new currencies!"
+msgstr "Nur ein Admin kann neue Währungen erstellen!"
+
+#: app/main/routes.py:80
 msgid "Your new currency has been added."
 msgstr "Deine neue Währung wurde hinzugefügt."
 
-#: app/main/routes.py:80 app/templates/currencies.html:7
+#: app/main/routes.py:83 app/templates/currencies.html:7
 msgid "New Currency"
 msgstr "Neue Währung"
 
-#: app/main/routes.py:106
+#: app/main/routes.py:90
+msgid "Only an admin is allowed to edit currencies!"
+msgstr "Nur ein Admin kann Währungen bearbeiten!"
+
+#: app/main/routes.py:112
 msgid "Edit Currency"
 msgstr "Währung bearbeiten"
 
-#: app/main/routes.py:128 app/main/routes.py:157
+#: app/main/routes.py:134 app/main/routes.py:163
 msgid "Your new bank account has been added."
 msgstr "Dein neues Bankkonto wurde hinzugefügt."
 
-#: app/main/routes.py:131
+#: app/main/routes.py:137
 msgid "New Bank Account"
 msgstr "Neues Bank Konto"
 
-#: app/main/routes.py:139 app/main/routes.py:175
+#: app/main/routes.py:145
+msgid "Your are only allowed to view your own bank accounts!"
+msgstr "Du kannst nur deine eigenen Bankkonten sehen!"
+
+#: app/main/routes.py:181
 msgid "Your are only allowed to edit your own bank accounts!"
 msgstr "Du kannst nur deine eigenen Bankkonten bearbeiten!"
 
-#: app/main/routes.py:203
+#: app/main/routes.py:209
 msgid "Edit Bank Account"
 msgstr "Bearbeite Bankkonto"
 
-#: app/main/routes.py:212
+#: app/main/routes.py:218
 msgid "Your are only allowed to remove your own bank accounts!"
 msgstr "Du kannst nur deine eigenen Bankkonten entfernen!"
 
-#: app/main/routes.py:218
+#: app/main/routes.py:224
 #, python-format
 msgid "Bank account %(iban_str)s has been removed from user %(username)s."
 msgstr "Bankkonto %(iban_str)s vom Benutzer %(username)s wurde gelöscht."
 
-#: app/main/routes.py:230
+#: app/main/routes.py:236
 msgid "Current users"
 msgstr "Aktuelle Benutzer"
 
-#: app/main/routes.py:244
+#: app/main/routes.py:250
 #, python-format
 msgid "User %(username)s"
 msgstr "Benutzer %(username)s"
 
-#: app/main/routes.py:252
+#: app/main/routes.py:258
 msgid "Only an admin can create new users!"
 msgstr "Nur ein Administrator kann neue Benutzer erstellen!"
 
-#: app/main/routes.py:268
+#: app/main/routes.py:274
 #, python-format
 msgid "New user %(username)s created"
 msgstr "Neuer Benutzer %(username)s wurde erstellt"
 
-#: app/main/routes.py:270 app/templates/users.html:7
+#: app/main/routes.py:276 app/templates/users.html:7
 msgid "New User"
 msgstr "Neuer Benutzer"
 
-#: app/main/routes.py:275
+#: app/main/routes.py:281
 msgid "Only an admin can edit users!"
 msgstr "Nur ein Administrator kann Benutzer bearbeiten!"
 
-#: app/main/routes.py:280 app/main/routes.py:324
+#: app/main/routes.py:286 app/main/routes.py:330
 msgid "You cannot change the master admin!"
 msgstr "Du kannst den Grossen Administrator nicht verändern!"
 
-#: app/main/routes.py:305
+#: app/main/routes.py:311
 msgid "Edit User"
 msgstr "Benutzer bearbeiten"
 
-#: app/main/routes.py:312
+#: app/main/routes.py:318
 msgid "Only an admin can set the admin rights!"
 msgstr "Nur ein Administrator kann Administratorenrechte vergeben!"
 
-#: app/main/routes.py:327
+#: app/main/routes.py:333
 msgid "Only an admin can revoke the admin rights!"
 msgstr "Nur ein Administrator kann Administratorenrechte zurücksetzen!"
 
-#: app/main/routes.py:337 app/templates/base.html:40
+#: app/main/routes.py:343
+msgid "Only an admin can view the admin page!"
+msgstr "Nur ein Admin kann die Adminseite sehen!"
+
+#: app/main/routes.py:346 app/templates/base.html:40
 msgid "Administration"
 msgstr "Administration"
 
-#: app/main/routes.py:365
+#: app/main/routes.py:374
 msgid "Edit Profile"
 msgstr "Benutzerprofil bearbeiten"
 
-#: app/main/routes.py:383
+#: app/main/routes.py:392
 msgid "Profile Picture"
 msgstr "Benutzerprofilbild"
 
-#: app/main/routes.py:407
+#: app/main/routes.py:416
 msgid "Your message has been sent."
 msgstr "Deine Nachricht wurde versendet."
 
-#: app/main/routes.py:418 app/templates/base.html:30
+#: app/main/routes.py:427 app/templates/base.html:30
 msgid "Messages"
 msgstr "Nachrichten"
 
-#: app/main/routes.py:439
+#: app/main/routes.py:448
 msgid "An export task is currently in progress"
 msgstr "Ein Exportvorgang läuft schon zur Zeit"
 
-#: app/main/routes.py:441
+#: app/main/routes.py:450
 msgid "Exporting posts..."
 msgstr "Beiträge exportieren..."
 
-#: app/main/routes.py:449
+#: app/main/routes.py:458
 msgid "A time consuming task is currently in progress"
 msgstr "Eine zeitraubende Aufgabe ist im Gange"
 
-#: app/main/routes.py:451
+#: app/main/routes.py:460
 msgid "Consuming time..."
 msgstr "Verbrauche Zeit..."
 
@@ -576,20 +597,20 @@ msgstr "entfernen"
 msgid "%(bank)s: %(iban)s"
 msgstr "%(bank)s: %(iban)s"
 
-#: app/templates/_bank_account.html:26 app/templates/_user.html:26
+#: app/templates/_bank_account.html:27 app/templates/_user.html:26
 #: app/templates/_user.html:28 app/templates/event/_draft_settlement.html:18
-#: app/templates/event/_expense.html:49 app/templates/event/_settlement.html:49
-#: app/templates/event/_user.html:30
+#: app/templates/event/_expense.html:48 app/templates/event/_settlement.html:48
+#: app/templates/event/_user.html:30 app/templates/event/_user.html:31
 #, python-format
 msgid "%(link)s"
 msgstr "%(link)s"
 
-#: app/templates/_currency.html:18
+#: app/templates/_currency.html:19
 #, python-format
 msgid "%(name)s (%(edit_link)s)"
 msgstr "%(name)s (%(edit_link)s)"
 
-#: app/templates/_currency.html:22
+#: app/templates/_currency.html:26
 #, python-format
 msgid "%(code)s 1 equals CHF %(inCHF).4f"
 msgstr "%(code)s 1 entspricht CHF %(inCHF).4f"
@@ -943,4 +964,7 @@ msgstr "Ältere Ausgleichszahlungen"
 
 #~ msgid "%(code)s 1 equals %(inCHF).4f"
 #~ msgstr "%(code)s 1 entspricht %(inCHF).4f"
+
+#~ msgid "You cannot add the event admin as user!"
+#~ msgstr "Du kannst den Administrator nicht als Benutzer hinzufügen!"
 

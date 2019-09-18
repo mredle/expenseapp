@@ -15,9 +15,13 @@
                         </a>
                     </span>
                 {% endset %}
+                {% if currency.can_edit(current_user) %}
                 {{ _('%(name)s (%(edit_link)s)',
                     name=currency.name, 
                     edit_link=edit_link) }}
+                {% else %}
+                {{ currency.name }}
+                {% endif %}
                 <br>
                 {{ _('%(code)s 1 equals CHF %(inCHF).4f',
                     code=currency.code,

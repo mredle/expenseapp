@@ -22,8 +22,10 @@
                     bank=bank_account.bank, 
                     iban=bank_account.iban) }}
                 <br>
-                {{ bank_account.description }}
-                {{ _('%(link)s', link=edit_link) }}, {{ _('%(link)s', link=remove_link) }}
+                {% if bank_account.can_edit(current_user) %}
+                    {{ bank_account.description }}
+                    {{ _('%(link)s', link=edit_link) }}, {{ _('%(link)s', link=remove_link) }}
+                {% endif %}
             </td>
         </tr>
     </table>

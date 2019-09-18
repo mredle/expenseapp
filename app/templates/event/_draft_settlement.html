@@ -14,7 +14,7 @@
                     </span>
                 {% endset %}
                 {{ settlement.get_amount_str() }} 
-                {% if event.admin == current_user or current_user.is_admin or settlement.recipient==current_user %}
+                {% if settlement.can_confirm(current_user) %}
                 ({{ _('%(link)s', link=paid_link) }})
                 {% endif %}
             </td>

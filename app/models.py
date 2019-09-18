@@ -252,6 +252,9 @@ class BankAccount(Entity, db.Model):
     
     def __repr__(self):
         return '<BankAccount {}>'.format(self.iban)
+    
+    def can_edit(self, user):
+        return (user.is_admin or user==self.user)
 
 event_currencies = db.Table('event_currencies',
     db.Column('event_id', db.Integer, db.ForeignKey('events.id')),
@@ -287,6 +290,9 @@ class Currency(Entity, db.Model):
     
     def __repr__(self):
         return '<Currency {}>'.format(self.code)
+    
+    def can_edit(self, user):
+        return user.is_admin
     
     def avatar(self, size):
         if self.image:
@@ -353,6 +359,12 @@ class Event(Entity, db.Model):
     
     def __repr__(self):
         return '<Event {}>'.format(self.name)
+    
+    def can_view(self, user):
+        return (user.is_admin or user in self.users)
+    
+    def can_edit(self, user):
+        return (user.is_admin or user==self.admin)
         
     def avatar(self, size):
         if self.image:
@@ -509,6 +521,12 @@ class Expense(Entity, db.Model):
     def __repr__(self):
         return '<Expense {}{}>'.format(self.amount, self.currency.code)
     
+    def can_view(self, user):
+        return self.event.can_view(user)
+    
+    def can_edit(self, user):
+        return (user.is_admin or self.event.can_edit(user) or user==self.user )
+    
     def avatar(self, size):
         if self.image:
             return self.image.get_thumbnail_url(size)
@@ -563,6 +581,15 @@ class Settlement(Entity, db.Model):
     def __repr__(self):
         return '<Settlement {}{}>'.format(self.amount, self.currency.code)
     
+    def can_view(self, user):
+        return self.event.can_view(user)
+    
+    def can_edit(self, user):
+        return (user.is_admin or self.event.can_edit(user) or user==self.sender )
+    
+    def can_confirm(self, user):
+        return (user.is_admin or self.event.can_edit(user) or user==self.recipient )
+    
     def avatar(self, size):
         if self.image:
             return self.image.get_thumbnail_url(size)
@@ -602,6 +629,12 @@ class Post(Entity, db.Model):
     
     def __repr__(self):
         return '<Post {}>'.format(self.body)
+    
+    def can_view(self, user):
+        return self.event.can_view(user)
+    
+    def can_edit(self, user):
+        return (user.is_admin or self.event.can_edit(user) or user==self.author )
 
 
 class Message(Entity, db.Model):
@@ -648,6 +681,7 @@ class Notification(Entity, db.Model):
     
     def get_data(self):
         return json.loads(str(self.payload_json))
+
 
 class Task(Entity, db.Model):
     __tablename__ = 'tasks'
@@ -710,7 +744,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     notifications = db.relationship('Notification', back_populates='user', lazy='dynamic')
     tasks = db.relationship('Task', foreign_keys='Task.user_id', back_populates='user', lazy='dynamic')
     bank_accounts = db.relationship('BankAccount', foreign_keys='BankAccount.user_id', back_populates='user', lazy='dynamic')
-    
+
     is_admin = db.Column(db.Boolean)
     about_me = db.Column(db.String(256))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)

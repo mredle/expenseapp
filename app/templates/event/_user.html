@@ -27,7 +27,8 @@
                     </span>
                 {% endset %}
                 <br>
-                {{ _('%(link)s', link=user_link) }}, {{ _('%(link)s', link=remove_link) }}
+                {{ _('%(link)s', link=user_link) }}
+                {% if event.can_edit(current_user) %}, {{ _('%(link)s', link=remove_link) }}{% endif %}
             </td>
         </tr>
     </table>

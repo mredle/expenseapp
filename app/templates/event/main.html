@@ -13,7 +13,7 @@
                 <img src="{{ event.avatar(512) }}" alt="" width="100%" style="transform:rotate({{ event.image.rotate }}deg) scale({{ event.image.get_html_scale() }});">
             </a>
             {% endif %}
-            {% if event.admin == current_user or current_user.is_admin %}
+            {% if event.can_edit(current_user) %}
             <p><a href="{{ url_for('event.edit_picture', event_id=event.id) }}">{{ _('Edit your event picture') }}</a></p>
             {% endif %}
 
@@ -22,7 +22,7 @@
             <p>{{ _('Base Currency') }}: {{ event.base_currency.code }}</p>
             <p><a href="{{ url_for('event.currencies', event_id=event.id) }}">{{ _('Allowed currencies') }}</a>: {{ event.get_allowed_currencies_str() }} </p>
             <p>{{ _('Exchange fee') }}: {{ event.exchange_fee }}%</p>
-            <p>{{ _('From') }}: {{ moment(event.date).format('LLL') }}</p>
+            <p>{{ _('From') }}: {{ moment(event.date).format('LL') }}</p>
             <p>{{ _('%(count)d users', count=stats['users']) }}, 
                {{ _('%(count)d posts', count=stats['posts']) }}, 
                {{ _('%(count)d expenses', count=stats['expenses']) }}, 
@@ -33,7 +33,7 @@
             {% if event.fileshare_link %}
                 <p><a href="{{ event.fileshare_link }}" target="_blank">{{ _('Link to external fileshare') }}</a></p>
             {% endif %}
-            {% if event.admin == current_user or current_user.is_admin %}
+            {% if event.can_edit(current_user) %}
             {% if event.closed %}
             <p><a href="{{ url_for('event.reopen', event_id=event.id) }}">{{ _('Reopen this event') }}</a></p>
             {% else %}
