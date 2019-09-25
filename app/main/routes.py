@@ -416,7 +416,7 @@ def messages():
         flash(_('Your message has been sent.'))
         return redirect(url_for('main.messages'))
     page = request.args.get('page', 1, type=int)
-    messages = current_user.messages_received.order_by(
+    messages = current_user.messages_sent.union(current_user.messages_received).order_by(
         Message.timestamp.desc()).paginate(
             page, current_app.config['MESSAGES_PER_PAGE'], False)
     next_url = url_for('main.messages', page=messages.next_num) \
