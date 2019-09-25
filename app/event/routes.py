@@ -83,10 +83,7 @@ def new():
     if current_user.username != 'admin':
         form.accountant_id.data = current_user.id
     form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
-    CHF = Currency.query.filter_by(code='CHF').first()
-    form.base_currency_id.data = CHF.id
     form.allowed_currency_id.choices = form.base_currency_id.choices
-    form.allowed_currency_id.data = [CHF.id]
     if form.validate_on_submit():
         admin = User.query.get(form.admin_id.data)
         accountant = User.query.get(form.accountant_id.data)
@@ -109,6 +106,10 @@ def new():
         db.session.commit()
         flash(_('Your new event has been added.'))
         return redirect(url_for('event.main', event_id=event.id))
+    
+    CHF = Currency.query.filter_by(code='CHF').first()
+    form.base_currency_id.data = CHF.id
+    form.allowed_currency_id.data = [CHF.id]
     return render_template('edit_form.html', 
                            title=_('New Event'), 
                            form=form)
@@ -417,7 +418,7 @@ def expense_users(expense_id):
     expense = Expense.query.get_or_404(expense_id)
     event = expense.event
     if not expense.can_view(current_user):
-        flash(_('Your are only allowed to view your own expense!'))
+        flash(_('Your are only allowed to view your own expenses!'))
         return redirect(url_for('event.users', event_id=event.id))
     form = EventAddUserForm()
     admins = User.query.filter_by(username='admin').all()
@@ -429,7 +430,7 @@ def expense_users(expense_id):
         user = User.query.get(form.user_id.data)
         expense.add_user(user)
         db.session.commit()
-        flash(_('User %(username)s has been added to expense over %(expense_str)s.', username=user.username, expense_str=expense.get_amount_str()))
+        flash(_('User %(username)s has been added to the expense.', username=user.username))
         return redirect(url_for('event.expense_users', expense_id=expense_id))
     
     page = request.args.get('page', 1, type=int)
@@ -459,7 +460,7 @@ def expense_add_user(expense_id, username):
     user = User.query.filter_by(username=username).first_or_404()
     expense.add_user(user)
     db.session.commit()
-    flash(_('User %(username)s has been added to expense over %(expense_str)s.', username=user.username, expense_str=expense.get_amount_str()))
+    flash(_('User %(username)s has been added to the expense.', username=user.username))
     return redirect(url_for('event.expense_users', expense_id=expense_id))
 
 @bp.route('/expense_remove_user/<expense_id>/<username>')
@@ -476,10 +477,10 @@ def expense_remove_user(expense_id, username):
     
     user = User.query.filter_by(username=username).first_or_404()
     if expense.remove_user(user):
-        flash(_('User %(username)s cannot be removed from expense over %(expense_str)s.', username=user.username, expense_str=expense.get_amount_str()))
+        flash(_('User %(username)s cannot be removed from the expense.', username=user.username))
         return redirect(url_for('event.expense_users', expense_id=expense_id))
     db.session.commit()
-    flash(_('User %(username)s has been removed from expense over %(expense_str)s.', username=user.username, expense_str=expense.get_amount_str()))
+    flash(_('User %(username)s has been removed from the expense.', username=user.username))
     return redirect(url_for('event.expense_users', expense_id=expense_id))
 
 @bp.route('/settlements/<event_id>', methods=['GET', 'POST'])

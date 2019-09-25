@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-09-18 23:07+0200\n"
+"POT-Creation-Date: 2019-09-26 20:45+0200\n"
 "PO-Revision-Date: 2018-08-29 22:41+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -23,14 +23,21 @@ msgid "Please log in to access this page."
 msgstr "Bitte melde dich an um diese Seite zu sehen."
 
 #: app/auth/email.py:9
+#, python-format
+msgid "A new user has registered on ExpenseApp: %(username)s (%(email)s)"
+msgstr ""
+"Ein neuer Benutzer hat sich auf der ExpenseApp registriert: %(username)s "
+"(%(email)s)"
+
+#: app/auth/email.py:10
 msgid "New user has registered on ExpenseApp!"
 msgstr "Ein neuer Benutzer hat sich bei ExpenseApp registriert!"
 
-#: app/auth/email.py:22
+#: app/auth/email.py:24
 msgid "Validate Your Email"
 msgstr "Validiere deine Eamil"
 
-#: app/auth/email.py:35
+#: app/auth/email.py:38
 msgid "Reset Your Password"
 msgstr "Passwort zurücksetzen"
 
@@ -116,7 +123,7 @@ msgstr "Dein Passwort wurde zurückgesetzt."
 msgid "Set your password"
 msgstr "Setze dein Passwort"
 
-#: app/event/email.py:11
+#: app/event/email.py:12
 msgid "Please settle your depts!"
 msgstr "Bitte begleiche deine Schulden!"
 
@@ -125,7 +132,7 @@ msgid "Say something"
 msgstr "Sag etwas"
 
 #: app/event/forms.py:13 app/event/forms.py:36 app/event/forms.py:41
-#: app/event/forms.py:55 app/event/forms.py:66 app/main/forms.py:14
+#: app/event/forms.py:57 app/event/forms.py:70 app/main/forms.py:14
 #: app/main/forms.py:23 app/main/forms.py:40 app/main/forms.py:61
 #: app/main/forms.py:76 app/main/forms.py:89 app/main/forms.py:112
 msgid "Submit"
@@ -143,7 +150,7 @@ msgstr "Datum als Y-m-d"
 msgid "Link to external fileshare"
 msgstr "Link zu externer Datenablage"
 
-#: app/event/forms.py:24 app/event/forms.py:53 app/event/forms.py:64
+#: app/event/forms.py:24 app/event/forms.py:55 app/event/forms.py:68
 #: app/main/forms.py:59 app/main/forms.py:74
 msgid "Description"
 msgstr "Beschreibung"
@@ -175,23 +182,31 @@ msgstr "Wechselgebühren (%)"
 msgid "Add user"
 msgstr "Benutzer hinzufügen"
 
-#: app/event/forms.py:44 app/event/forms.py:58
+#: app/event/forms.py:44
+msgid "From user"
+msgstr "Von Benutzer"
+
+#: app/event/forms.py:46 app/event/forms.py:62
 msgid "Currency"
 msgstr "Währung"
 
-#: app/event/forms.py:46 app/event/forms.py:60
+#: app/event/forms.py:48 app/event/forms.py:64
 msgid "Amount"
 msgstr "Betrag"
 
-#: app/event/forms.py:48
-msgid "Affected Users"
-msgstr "Betroffene Benutzer"
-
 #: app/event/forms.py:50
+msgid "For users"
+msgstr "Für Benutzer"
+
+#: app/event/forms.py:52
 msgid "Date"
 msgstr "Datum"
 
-#: app/event/forms.py:62 app/main/forms.py:36
+#: app/event/forms.py:60
+msgid "Sender"
+msgstr "Absender"
+
+#: app/event/forms.py:66 app/main/forms.py:36
 msgid "Recipient"
 msgstr "Empfänger"
 
@@ -200,8 +215,8 @@ msgstr "Empfänger"
 msgid "Hi %(username)s, your events:"
 msgstr "Hallo %(username)s, deine Veranstaltungen:"
 
-#: app/event/routes.py:35 app/event/routes.py:254 app/event/routes.py:284
-#: app/event/routes.py:405
+#: app/event/routes.py:35 app/event/routes.py:255 app/event/routes.py:285
+#: app/event/routes.py:490
 msgid "Your are only allowed to view your events!"
 msgstr "Du kannst nur deine eigene Veranstaltungen sehen!"
 
@@ -217,20 +232,21 @@ msgstr "Deine neue Veranstaltung wurde hinzugefügt."
 msgid "New Event"
 msgstr "Neue Veranstaltung"
 
-#: app/event/routes.py:121 app/event/routes.py:163 app/event/routes.py:217
-#: app/event/routes.py:233
+#: app/event/routes.py:121 app/event/routes.py:163 app/event/routes.py:218
+#: app/event/routes.py:234
 msgid "Your are only allowed to edit your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung bearbeiten!"
 
-#: app/event/routes.py:124 app/event/routes.py:193 app/event/routes.py:220
-#: app/event/routes.py:236 app/event/routes.py:291 app/event/routes.py:329
-#: app/event/routes.py:356 app/event/routes.py:390 app/event/routes.py:412
-#: app/event/routes.py:452 app/event/routes.py:497
+#: app/event/routes.py:124 app/event/routes.py:193 app/event/routes.py:221
+#: app/event/routes.py:237 app/event/routes.py:297 app/event/routes.py:336
+#: app/event/routes.py:363 app/event/routes.py:404 app/event/routes.py:427
+#: app/event/routes.py:456 app/event/routes.py:474 app/event/routes.py:501
+#: app/event/routes.py:542 app/event/routes.py:593
 msgid "Your are only allowed to edit an open event!"
 msgstr "Du kannst nur eine geöffnete Veranstaltung bearbeiten!"
 
-#: app/event/routes.py:142 app/event/routes.py:172 app/event/routes.py:339
-#: app/event/routes.py:369 app/event/routes.py:464 app/main/routes.py:102
+#: app/event/routes.py:142 app/event/routes.py:172 app/event/routes.py:346
+#: app/event/routes.py:382 app/event/routes.py:559 app/main/routes.py:102
 #: app/main/routes.py:196 app/main/routes.py:302 app/main/routes.py:366
 #: app/main/routes.py:387
 msgid "Your changes have been saved."
@@ -240,12 +256,12 @@ msgstr "Deine Änderungen wurden gespeichert."
 msgid "Edit Event"
 msgstr "Veranstaltung bearbeiten"
 
-#: app/event/routes.py:170 app/event/routes.py:337 app/main/routes.py:385
+#: app/event/routes.py:170 app/event/routes.py:344 app/main/routes.py:385
 #, python-format
 msgid "Importing %(filename)s..."
 msgstr "Importiere %(filename)s..."
 
-#: app/event/routes.py:174 app/event/routes.py:341 app/main/routes.py:389
+#: app/event/routes.py:174 app/event/routes.py:348 app/main/routes.py:389
 msgid "Invalid or empty image."
 msgstr "Ungültiges oder leeres Bild."
 
@@ -257,124 +273,144 @@ msgstr "Veranstaltungsbild"
 msgid "Your are only allowed to view your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung sehen!"
 
-#: app/event/routes.py:198 app/event/routes.py:225
+#: app/event/routes.py:198 app/event/routes.py:226
 #, python-format
 msgid "User %(username)s has been added to event %(event_name)s."
 msgstr "Benutzer %(username)s wurde der Veranstaltung %(event_name)s hinzugefügt."
 
-#: app/event/routes.py:240
+#: app/event/routes.py:241
 msgid "You cannot remove the event admin!"
 msgstr "Du kannst den Veranstaltungsadministrator nicht entfernen!"
 
-#: app/event/routes.py:243
+#: app/event/routes.py:244
 #, python-format
 msgid "User %(username)s cannot be removed from event %(event_name)s."
 msgstr ""
 "Benutzer %(username)s kann nicht von der Veranstaltung %(event_name)s "
 "entfernt werden."
 
-#: app/event/routes.py:246
+#: app/event/routes.py:247
 #, python-format
 msgid "User %(username)s has been removed from event %(event_name)s."
 msgstr "Benutzer %(username)s wurde aus der Veranstaltung %(event_name)s entfernt."
 
-#: app/event/routes.py:306
+#: app/event/routes.py:312
 #, python-format
 msgid "Your new expense has been added to event %(event_name)s."
 msgstr "Deine neue Ausgabe wurde der Veranstaltung %(event_name)s hinzugefügt."
 
-#: app/event/routes.py:326 app/event/routes.py:353
+#: app/event/routes.py:333 app/event/routes.py:360 app/event/routes.py:453
+#: app/event/routes.py:471
 msgid "Your are only allowed to edit your own expenses!"
 msgstr "Du kannst nur deine eigenen Ausgaben bearbeiten!"
 
-#: app/event/routes.py:344
+#: app/event/routes.py:351
 msgid "Add Receipt"
 msgstr "Beleg hinzufügen"
 
-#: app/event/routes.py:378
+#: app/event/routes.py:392
 msgid "Edit Expense"
 msgstr "Ausgabe bearbeiten"
 
-#: app/event/routes.py:387
+#: app/event/routes.py:401
 msgid "Your are only allowed to remove your own expenses!"
 msgstr "Du kannst nur deine eigenen Ausgaben entfernen!"
 
-#: app/event/routes.py:397
+#: app/event/routes.py:411
 #, python-format
 msgid "Expense over %(amount_str)s has been removed from event %(event_name)s."
 msgstr ""
 "Ausgabe von %(amount_str)s wurde aus der Veranstaltung %(event_name)s "
 "entfernt."
 
-#: app/event/routes.py:428
+#: app/event/routes.py:420
+msgid "Your are only allowed to view your own expenses!"
+msgstr "Du kannst nur deine eigenen Ausgaben bearbeiten!"
+
+#: app/event/routes.py:432 app/event/routes.py:462
+#, python-format
+msgid "User %(username)s has been added to the expense."
+msgstr "Benutzer %(username)s wurde zur Ausgabe hinzugefügt."
+
+#: app/event/routes.py:479
+#, python-format
+msgid "User %(username)s cannot be removed from the expense."
+msgstr "Benutzer %(username)s kann nicht von der Ausgabe entfernt werden."
+
+#: app/event/routes.py:482
+#, python-format
+msgid "User %(username)s has been removed from the expense."
+msgstr "Benutzer %(username)s wurde von der Ausgabe entfernt."
+
+#: app/event/routes.py:517
 #, python-format
 msgid "Your new settlement has been added to event %(event_name)s."
 msgstr ""
 "Deine neue Ausgleichszahlung wurde der Veranstaltung %(event_name)s "
 "hinzugefügt."
 
-#: app/event/routes.py:449
+#: app/event/routes.py:539
 msgid "Your are only allowed to edit your own settlements!"
 msgstr "Du kannst nur deine eigenen Ausgleichszahlung bearbeiten!"
 
-#: app/event/routes.py:472
+#: app/event/routes.py:568
 msgid "Edit Settlement"
 msgstr "Ausgleichszahlung bearbeiten"
 
-#: app/event/routes.py:481
+#: app/event/routes.py:577
 msgid "Your are only allowed to add settlements directed to you!"
 msgstr "Du kannst nur Zahlungen an dich bestätigen"
 
-#: app/event/routes.py:484
+#: app/event/routes.py:580
 #, python-format
 msgid "Confirmed by user %(username)s"
 msgstr "Bestätigt von Benutzer %(username)s"
 
-#: app/event/routes.py:494
+#: app/event/routes.py:590
 msgid "Your are only allowed to remove your own settlements!"
 msgstr "Du kannst nur deine eigenen Ausgleichszahlung entfernen!"
 
-#: app/event/routes.py:504
+#: app/event/routes.py:600
 #, python-format
 msgid "Settlement over %(amount_str)s has been removed from event %(event_name)s."
 msgstr ""
 "Ausgleichszahlung von %(amount_str)s wurde aus der Veranstaltung "
 "%(event_name)s entfernt."
 
-#: app/event/routes.py:512
+#: app/event/routes.py:608
 msgid "Your are only allowed to send payment reminders of your own event!"
 msgstr "Du kannst nur Zahlungserinnerungen deiner eigenen Veranstaltung versenden!"
 
-#: app/event/routes.py:519
+#: app/event/routes.py:615
 msgid "All users have been reminded of their duties!"
 msgstr "Alle Beteiligten wurden ihrer Pflichten erinnert!"
 
-#: app/event/routes.py:527
+#: app/event/routes.py:623
 msgid "Your are only allowed to convert currencies of your own event!"
 msgstr "Du kannst nur Währungen deiner eigenen Veranstaltung umwandeln!"
 
-#: app/event/routes.py:531
+#: app/event/routes.py:627
 #, python-format
 msgid "All transaction of this event have been converted to %(code)s."
 msgstr "Alle Beträge dieser Veranstaltung wurden zu %(code)s umgewandelt."
 
-#: app/event/routes.py:539
+#: app/event/routes.py:635
 msgid "Your are only allowed to reopen your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung wieder öffnen!"
 
-#: app/event/routes.py:543
+#: app/event/routes.py:639
 msgid "Event has been reopened."
 msgstr "Veranstaltung wurde wieder geöffnet"
 
-#: app/event/routes.py:551
+#: app/event/routes.py:647
 msgid "Your are only allowed to close your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung schliessen!"
 
-#: app/event/routes.py:554
+#: app/event/routes.py:650
 msgid "Your are only allowed to close an event with no open liabilities!"
 msgstr "Du kannst nur eine Veranstaltung mit ausgeglichener Bilanz schliessen!"
 
-#: app/event/routes.py:558
+#: app/event/routes.py:654
 msgid "Event has been closed."
 msgstr "Veranstaltung wurde geschlossen"
 
@@ -394,11 +430,11 @@ msgstr "Über mich"
 msgid "Message"
 msgstr "Nachricht"
 
-#: app/main/forms.py:43
+#: app/main/forms.py:43 app/templates/email/_bank_account.html:4
 msgid "IBAN"
 msgstr "IBAN"
 
-#: app/main/forms.py:45
+#: app/main/forms.py:45 app/templates/email/_bank_account.html:12
 msgid "Bank name"
 msgstr "Bankname"
 
@@ -410,7 +446,7 @@ msgstr "Kontobesitzer"
 msgid "Address line"
 msgstr "Adresse"
 
-#: app/main/forms.py:51
+#: app/main/forms.py:51 app/templates/email/_bank_account.html:36
 msgid "Address suffix"
 msgstr "Adresszusatz"
 
@@ -422,7 +458,7 @@ msgstr "PLZ"
 msgid "City"
 msgstr "Stadt"
 
-#: app/main/forms.py:57
+#: app/main/forms.py:57 app/templates/email/_bank_account.html:52
 msgid "Country"
 msgstr "Land"
 
@@ -588,6 +624,7 @@ msgid "edit"
 msgstr "bearbeiten"
 
 #: app/templates/_bank_account.html:16 app/templates/event/_expense.html:28
+#: app/templates/event/_expense_user.html:21
 #: app/templates/event/_settlement.html:21 app/templates/event/_user.html:24
 msgid "remove"
 msgstr "entfernen"
@@ -599,8 +636,11 @@ msgstr "%(bank)s: %(iban)s"
 
 #: app/templates/_bank_account.html:27 app/templates/_user.html:26
 #: app/templates/_user.html:28 app/templates/event/_draft_settlement.html:18
-#: app/templates/event/_expense.html:48 app/templates/event/_settlement.html:48
-#: app/templates/event/_user.html:30 app/templates/event/_user.html:31
+#: app/templates/event/_expense.html:55
+#: app/templates/event/_expense_user.html:26
+#: app/templates/event/_expense_user.html:27
+#: app/templates/event/_settlement.html:48 app/templates/event/_user.html:30
+#: app/templates/event/_user.html:31
 #, python-format
 msgid "%(link)s"
 msgstr "%(link)s"
@@ -615,7 +655,12 @@ msgstr "%(name)s (%(edit_link)s)"
 msgid "%(code)s 1 equals CHF %(inCHF).4f"
 msgstr "%(code)s 1 entspricht CHF %(inCHF).4f"
 
-#: app/templates/_message.html:18
+#: app/templates/_message.html:19
+#, python-format
+msgid "You wrote %(username)s %(when)s:"
+msgstr "Du hast %(username)s %(when)s geschrieben:"
+
+#: app/templates/_message.html:29
 #, python-format
 msgid "%(username)s wrote you %(when)s:"
 msgstr "%(username)s schrieb dir %(when)s:"
@@ -732,11 +777,13 @@ msgstr "Neuere Veranstaltungen"
 msgid "Older events"
 msgstr "Ältere Veranstaltungen"
 
-#: app/templates/event/users.html:17 app/templates/users.html:17
+#: app/templates/event/expense_users.html:17 app/templates/event/users.html:17
+#: app/templates/users.html:17
 msgid "Previous users"
 msgstr "Vorherige Benutzer"
 
-#: app/templates/event/users.html:22 app/templates/users.html:22
+#: app/templates/event/expense_users.html:22 app/templates/event/users.html:22
+#: app/templates/users.html:22
 msgid "More users"
 msgstr "Mehr Benutzer"
 
@@ -756,6 +803,72 @@ msgstr "Passwort vergessen?"
 msgid "Click to Reset It"
 msgstr "Klicken um es zurückzusetzen"
 
+#: app/templates/email/_bank_account.html:20
+msgid "Account name"
+msgstr "Kontoname"
+
+#: app/templates/email/_bank_account.html:28
+msgid "Address"
+msgstr "Adresse"
+
+#: app/templates/email/_bank_account.html:44
+msgid "ZIP/city"
+msgstr "PLZ/Stadt"
+
+#: app/templates/email/reminder_email.html:1
+#: app/templates/email/reset_password.html:1
+#: app/templates/email/simple_email.html:1
+#: app/templates/email/validate_email.html:1
+#, python-format
+msgid "Dear %(username)s"
+msgstr "Lieber %(username)s"
+
+#: app/templates/email/reminder_email.html:3
+msgid "To settle all your depts, you have to make the following payment to me"
+msgstr ""
+"Um all deine Schulden zu begleichen, musst du mir folgende Summe "
+"überweisen"
+
+#: app/templates/email/reminder_email.html:6
+msgid "You can pay directly to one of my bank accounts"
+msgstr "Du kannst direkt auf eines meiner Konten zahlen"
+
+#: app/templates/email/reminder_email.html:11
+#: app/templates/email/reset_password.html:11
+#: app/templates/email/simple_email.html:3
+#: app/templates/email/validate_email.html:11
+msgid "Sincerely"
+msgstr "Hochachtungsvoll"
+
+#: app/templates/email/reset_password.html:3
+msgid "To reset your password click on the following link"
+msgstr "Um dein Passwort zurückzusetzen, klicke auf den folgenden Link"
+
+#: app/templates/email/reset_password.html:5
+#: app/templates/email/validate_email.html:5
+msgid "click here"
+msgstr "klicke hier"
+
+#: app/templates/email/reset_password.html:8
+#: app/templates/email/validate_email.html:8
+msgid ""
+"Alternatively, you can paste the following link in your browser's address"
+" bar"
+msgstr ""
+"Alternativ kannst du auch den folgenden Link in die Adresszeile deines "
+"Browsers kopieren"
+
+#: app/templates/email/reset_password.html:10
+#: app/templates/email/validate_email.html:10
+msgid "If you have not registered simply ignore this message"
+msgstr "Falls du dich nicht registriert hast, ignoriere diese Nachricht einfach"
+
+#: app/templates/email/validate_email.html:3
+msgid "To validate your email and set your password click on the following link"
+msgstr ""
+"Um deine eMail zu verifizieren und das Passwort zu setzen, klicke auf den"
+" folgenden Link"
+
 #: app/templates/errors/404.html:4
 msgid "Not Found"
 msgstr "Nicht gefunden"
@@ -771,11 +884,6 @@ msgstr "Etwas unerwartetes ist passiert"
 #: app/templates/errors/500.html:5
 msgid "The administrator has been notified. Sorry for the inconvenience!"
 msgstr "Der Administrator wurde informiert. Entschuldige die Störung!"
-
-#: app/templates/event/_balance.html:11
-#, python-format
-msgid "%(username)s: "
-msgstr "%(username)s: "
 
 #: app/templates/event/_draft_settlement.html:4
 #, python-format
@@ -795,7 +903,12 @@ msgstr "%(event_name)s (%(when)s):"
 msgid "add receipt"
 msgstr "Beleg hinzufügen"
 
-#: app/templates/event/_expense.html:39
+#: app/templates/event/_expense.html:42
+#, python-format
+msgid "%(affected_users)d User"
+msgstr "%(affected_users)d Benutzer"
+
+#: app/templates/event/_expense.html:46
 #, python-format
 msgid "%(when)s, %(username)s spent %(amount_str)s for %(affected_users)s:"
 msgstr "%(when)s, gab %(username)s %(amount_str)s für %(affected_users)s aus:"
@@ -824,31 +937,35 @@ msgid "Total expenses "
 msgstr "Total Ausgaben "
 
 #: app/templates/event/balance.html:15
-msgid "Expenses paid:"
-msgstr "Ausgaben bezahlt:"
+msgid "Expenses paid"
+msgstr "Ausgaben bezahlt"
 
 #: app/templates/event/balance.html:18
-msgid "Expenses involved:"
-msgstr "In Ausgaben verwickelt:"
+msgid "Expenses involved"
+msgstr "In Ausgaben verwickelt"
 
 #: app/templates/event/balance.html:21
-msgid "Sent to users:"
-msgstr "Benutzern gesendet:"
+msgid "Sent to users"
+msgstr "Benutzern gesendet"
 
 #: app/templates/event/balance.html:24
-msgid "Received from users:"
-msgstr "Von Benutzern erhalten:"
+msgid "Received from users"
+msgstr "Von Benutzern erhalten"
 
 #: app/templates/event/balance.html:27
-msgid "Balance:"
-msgstr "Saldo:"
+msgid "Balance"
+msgstr "Saldo"
 
 #: app/templates/event/balance.html:35
 msgid "Financial compensation"
 msgstr "Finanzausgleich"
 
+#: app/templates/event/expense_users.html:5
+msgid "Back to expenses"
+msgstr "Zurück zu den Ausgaben"
+
 #: app/templates/event/expenses.html:7
-msgid "Add expense:"
+msgid "Add expense"
 msgstr "Ausgaben hinzufügen"
 
 #: app/templates/event/expenses.html:20
@@ -967,4 +1084,5 @@ msgstr "Ältere Ausgleichszahlungen"
 
 #~ msgid "You cannot add the event admin as user!"
 #~ msgstr "Du kannst den Administrator nicht als Benutzer hinzufügen!"
+
 

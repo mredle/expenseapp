@@ -1,11 +1,11 @@
-<p>Dear {{ username }},</p>
+<p>{{ _('Dear %(username)s', username=username) }},</p>
 <p>
-    To validate your email and set your password
+    {{ _('To validate your email and set your password click on the following link') }}:
     <a href="{{ url }}">
-        click here
+        {{ _('click here') }}
     </a>.
 </p>
-<p>Alternatively, you can paste the following link in your browser's address bar:</p>
+<p>{{ _('Alternatively, you can paste the following link in your browser\'s address bar') }}:</p>
 <p>{{ url }}</p>
-<p>If you have not registered simply ignore this message.</p>
-<p>Sincerely</p>
+<p>{{ _('If you have not registered simply ignore this message') }}.</p>
+<p>{{ _('Sincerely') }}</p>

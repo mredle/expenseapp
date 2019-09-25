@@ -16,7 +16,7 @@
                         </a>
                     </span>
                 {% endset %}
-                {{ _('you wrote %(username)s %(when)s:',
+                {{ _('You wrote %(username)s %(when)s:',
                     username=recipient_link, when=moment(message.timestamp).fromNow()) }}
                 {% else %}
                 {% set sender_link %}

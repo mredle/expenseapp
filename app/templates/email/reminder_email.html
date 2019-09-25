@@ -1,12 +1,12 @@
-<p>Dear {{ settlement.sender.username }},</p>
+<p>{{ _('Dear %(username)s', username=settlement.sender.username) }},</p>
 <p>
-    To settle all your depts, you have to make the following payment to me: <br>
+    {{ _('To settle all your depts, you have to make the following payment to me') }}: <br>
     {{ settlement.get_amount_str() }} <br>
     <br>
-    You can pay directly to one of his bank accounts: <br>
+    {{ _('You can pay directly to one of my bank accounts') }}: <br>
     {% for bank_account in bank_accounts %}
         {% include 'email/_bank_account.html' %}
     {% endfor %}
 </p>
-<p>Sincerely</p>
+<p>{{ _('Sincerely') }}</p>
 <p>{{ settlement.recipient.username }}</p>

@@ -1,7 +1,7 @@
 <table class="table table-hover">
     <tr>
         <td width="200px">
-        IBAN 
+        {{ _('IBAN') }}
         </td>
         <td width="300px">
         {{ bank_account.iban }}
@@ -9,7 +9,7 @@
     <tr>
         </td>
         <td width="200px">
-        Bank name
+        {{ _('Bank name') }}
         </td>
         <td width="300px">
         {{ bank_account.bank }}
@@ -17,7 +17,7 @@
     <tr>
         </td>
         <td width="200px">
-        Account Name
+        {{ _('Account name') }}
         </td>
         <td width="300px">
         {{ bank_account.name }}
@@ -25,7 +25,7 @@
     <tr>
         </td>
         <td width="200px">
-        Address
+        {{ _('Address') }}
         </td>
         <td width="300px">
         {{ bank_account.address }}
@@ -33,7 +33,7 @@
     <tr>
         </td>
         <td width="200px">
-        Address suffix
+        {{ _('Address suffix') }}
         </td>
         <td width="300px">
         {{ bank_account.address_suffix }}
@@ -41,15 +41,15 @@
     <tr>
         </td>
         <td width="200px">
-        ZIP City
+        {{ _('ZIP/city') }}
         </td>
         <td width="300px">
-        {{ bank_account.zip_code }} {{ bank_account.city }}
+        {{ bank_account.zip_code }}/{{ bank_account.city }}
     </tr>
     <tr>
         </td>
         <td width="200px">
-        Country
+        {{ _('Country') }}
         </td>
         <td width="300px">
         {{ bank_account.country }}
