@@ -2,13 +2,13 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    <p><a href="{{ url_for('event.main', event_id=event.id) }}">{{ _('Back to event') }}</a></p>
+    <p><a href="{{ url_for('event.expenses', event_id=expense.event.id) }}">{{ _('Back to expenses') }}</a></p>
     {% if form and can_edit %}
     {{ wtf.quick_form(form) }}
     <br>
     {% endif %}
     {% for user in users %}
-        {% include 'event/_user.html' %}
+        {% include 'event/_expense_user.html' %}
     {% endfor %}
     <nav aria-label="...">
         <ul class="pager">

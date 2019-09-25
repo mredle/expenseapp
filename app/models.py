@@ -533,6 +533,20 @@ class Expense(Entity, db.Model):
         else:
             return ''
         
+    def has_user(self, user):
+        return (user in self.affected_users)
+        
+    def add_user(self, user):
+        if not self.has_user(user):
+            self.affected_users.append(user)
+
+    def remove_user(self, user):
+        if self.has_user(user):
+            self.affected_users.remove(user)
+            return 0
+        else:
+            return 1
+        
     def get_amount(self):
         return self.currency.get_amount_in(self.amount, self.event.base_currency, self.event.exchange_fee)
     
@@ -544,9 +558,6 @@ class Expense(Entity, db.Model):
         else:
             amount_str_in = self.currency.get_amount_as_str_in(self.amount, self.event.base_currency, self.event.exchange_fee)
             return '{} ({})'.format(amount_str, amount_str_in)
-    
-    def get_affected_users_str(self):
-        return ', '.join([u.username for u in self.affected_users])
 
 class Settlement(Entity, db.Model):
     __tablename__ = 'settlements'

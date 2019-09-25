@@ -36,11 +36,18 @@
                         </a>
                     </span>
                 {% endset %}
+                {% set users_link %}
+                    <span class="user_popup">
+                        <a href="{{ url_for('event.expense_users', expense_id=expense.id) }}">
+                            {{ _('%(affected_users)d User', affected_users=expense.affected_users.count()) }}
+                        </a>
+                    </span>
+                {% endset %}
                 {{ _('%(when)s, %(username)s spent %(amount_str)s for %(affected_users)s:',
                     when=moment(expense.date).fromNow(),
                     username=user_link, 
                     amount_str=expense.get_amount_str(),
-                    affected_users=expense.get_affected_users_str()) }}
+                    affected_users=users_link) }}
                 <br>
                 {{ expense.description }}
                 {% if not expense.event.closed and expense.can_edit(current_user) %}

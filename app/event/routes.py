@@ -201,11 +201,12 @@ def users(event_id):
     page = request.args.get('page', 1, type=int)
     users = event.users.order_by(User.username.asc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
-    next_url = url_for('event.users', event_id=event.id, page=users.next_num) if users.has_next else None
-    prev_url = url_for('event.users', event_id=event.id, page=users.prev_num) if users.has_prev else None
+    next_url = url_for('event.users', event_id=event_id, page=users.next_num) if users.has_next else None
+    prev_url = url_for('event.users', event_id=event_id, page=users.prev_num) if users.has_prev else None
     return render_template('event/users.html', 
-                           form=form, 
-                           event=event, 
+                           form=form,
+                           event=event,
+                           can_edit=event.can_edit(current_user),
                            users=users.items,
                            next_url=next_url, prev_url=prev_url)
 
@@ -396,6 +397,77 @@ def remove_expense(expense_id):
         db.session.commit()
         flash(_('Expense over %(amount_str)s has been removed from event %(event_name)s.', amount_str=amount_str, event_name=event.name))
     return redirect(url_for('event.expenses', event_id=event.id))
+
+@bp.route('/expense_users/<expense_id>', methods=['GET', 'POST'])
+@login_required
+def expense_users(expense_id):
+    expense = Expense.query.get_or_404(expense_id)
+    event = expense.event
+    if not expense.can_view(current_user):
+        flash(_('Your are only allowed to view your own expense!'))
+        return redirect(url_for('event.users', event_id=event.id))
+    form = EventAddUserForm()
+    admins = User.query.filter_by(username='admin').all()
+    form.user_id.choices = [(u.id, u.username) for u in User.query.order_by('username') if u not in admins and u not in expense.affected_users]
+    if form.validate_on_submit():
+        if event.closed:
+            flash(_('Your are only allowed to edit an open event!'))
+            return redirect(url_for('main.event', event_id=event.id))
+        user = User.query.get(form.user_id.data)
+        expense.add_user(user)
+        db.session.commit()
+        flash(_('User %(username)s has been added to expense over %(expense_str)s.', username=user.username, expense_str=expense.get_amount_str()))
+        return redirect(url_for('event.expense_users', expense_id=expense_id))
+    
+    page = request.args.get('page', 1, type=int)
+    users = expense.affected_users.order_by(User.username.asc()).paginate(
+        page, current_app.config['ITEMS_PER_PAGE'], False)
+    next_url = url_for('event.expense_users', expense_id=expense_id, page=users.next_num) if users.has_next else None
+    prev_url = url_for('event.expense_users', expense_id=expense_id, page=users.prev_num) if users.has_prev else None
+    return render_template('event/expense_users.html', 
+                           form=form,
+                           expense=expense,
+                           can_edit=expense.can_edit(current_user),
+                           users=users.items,
+                           next_url=next_url, prev_url=prev_url)
+
+@bp.route('/expense_add_user/<expense_id>/<username>')
+@login_required
+def expense_add_user(expense_id, username):
+    expense = Expense.query.get_or_404(expense_id)
+    event = expense.event
+    if not expense.can_edit(current_user):
+        flash(_('Your are only allowed to edit your own expenses!'))
+        return redirect(url_for('event.expenses', event_id=event.id))
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('event.main', event_id=event.id))
+    
+    user = User.query.filter_by(username=username).first_or_404()
+    expense.add_user(user)
+    db.session.commit()
+    flash(_('User %(username)s has been added to expense over %(expense_str)s.', username=user.username, expense_str=expense.get_amount_str()))
+    return redirect(url_for('event.expense_users', expense_id=expense_id))
+
+@bp.route('/expense_remove_user/<expense_id>/<username>')
+@login_required
+def expense_remove_user(expense_id, username):
+    expense = Expense.query.get_or_404(expense_id)
+    event = expense.event
+    if not expense.can_edit(current_user):
+        flash(_('Your are only allowed to edit your own expenses!'))
+        return redirect(url_for('event.expenses', event_id=event.id))
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('event.main', event_id=event.id))
+    
+    user = User.query.filter_by(username=username).first_or_404()
+    if expense.remove_user(user):
+        flash(_('User %(username)s cannot be removed from expense over %(expense_str)s.', username=user.username, expense_str=expense.get_amount_str()))
+        return redirect(url_for('event.expense_users', expense_id=expense_id))
+    db.session.commit()
+    flash(_('User %(username)s has been removed from expense over %(expense_str)s.', username=user.username, expense_str=expense.get_amount_str()))
+    return redirect(url_for('event.expense_users', expense_id=expense_id))
 
 @bp.route('/settlements/<event_id>', methods=['GET', 'POST'])
 @login_required
