@@ -284,14 +284,19 @@ def expenses(event_id):
     if not event.can_view(current_user):
         flash(_('Your are only allowed to view your events!'))
         return redirect(url_for('event.index'))
+    
     form = ExpenseForm()
+    if event.can_edit(current_user):
+        form.user_id.choices = [(u.id, u.username) for u in event.users]
+    else:
+        form.user_id.choices = [(current_user.id, current_user.username)]
     form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))
             return redirect(url_for('main.event', event_id=event.id))
-        expense = Expense(user=current_user, 
+        expense = Expense(user=User.query.get(form.user_id.data), 
                           event=event, 
                           currency=Currency.query.get(form.currency_id.data), 
                           amount=form.amount.data, 
@@ -307,6 +312,7 @@ def expenses(event_id):
         flash(_('Your new expense has been added to event %(event_name)s.', event_name=event.name))
         return redirect(url_for('event.expenses', event_id=event_id))
     
+    form.user_id.data = current_user.id
     form.currency_id.data = event.base_currency.id
     page = request.args.get('page', 1, type=int)
     expenses = event.expenses.order_by(Expense.date.desc()).paginate(
@@ -358,9 +364,15 @@ def edit_expense(expense_id):
         return redirect(url_for('event.main', event_id=event.id))
     
     form = ExpenseForm()
+    if event.can_edit(current_user):
+        form.user_id.choices = [(u.id, u.username) for u in event.users]
+    else:
+        form.user_id.choices = [(expense.user.id, expense.user.username)]
+    
     form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
+        expense.user=User.query.get(form.user_id.data)
         expense.currency = Currency.query.get(form.currency_id.data)
         expense.amount = form.amount.data
         expense.affected_users = [User.query.get(user_id) for user_id in form.affected_users_id.data]
@@ -370,6 +382,7 @@ def edit_expense(expense_id):
         flash(_('Your changes have been saved.'))
         return redirect(url_for('event.expenses', event_id=event.id))
     elif request.method == 'GET':
+        form.user_id.data = expense.user.id
         form.currency_id.data = expense.currency.id
         form.amount.data = expense.amount
         form.affected_users_id.data = [u.id for u in expense.affected_users]
@@ -477,13 +490,17 @@ def settlements(event_id):
         flash(_('Your are only allowed to view your events!'))
         return redirect(url_for('event.index'))
     form = SettlementForm()
+    if event.can_edit(current_user):
+        form.sender_id.choices = [(u.id, u.username) for u in event.users]
+    else:
+        form.sender_id.choices = [(current_user.id, current_user.username)]
     form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
-    form.recipient_id.choices = [(u.id, u.username) for u in event.users if u!=current_user]
+    form.recipient_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))
             return redirect(url_for('main.event', event_id=event.id))
-        settlement = Settlement(sender=current_user, 
+        settlement = Settlement(sender=User.query.get(form.sender_id.data), 
                                 recipient=User.query.get(form.recipient_id.data), 
                                 event=event, 
                                 currency=Currency.query.get(form.currency_id.data), 
@@ -500,6 +517,7 @@ def settlements(event_id):
         flash(_('Your new settlement has been added to event %(event_name)s.', event_name=event.name))
         return redirect(url_for('event.settlements', event_id=event_id))
     
+    form.sender_id.data = current_user.id
     form.currency_id.data = event.base_currency.id
     page = request.args.get('page', 1, type=int)
     settlements = event.settlements.filter_by(draft=False).order_by(Settlement.date.desc()).paginate(
@@ -525,9 +543,14 @@ def edit_settlement(settlement_id):
         return redirect(url_for('event.main', event_id=event.id))
     
     form = SettlementForm()
+    if event.can_edit(current_user):
+        form.sender_id.choices = [(u.id, u.username) for u in event.users]
+    else:
+        form.sender_id.choices = [(settlement.sender.id, settlement.sender.username)]
     form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
-    form.recipient_id.choices = [(u.id, u.username) for u in event.users if u!=current_user]
+    form.recipient_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
+        settlement.sender=User.query.get(form.sender_id.data)
         settlement.currency = Currency.query.get(form.currency_id.data)
         settlement.amount = form.amount.data
         settlement.recipient = User.query.get(form.recipient_id.data)
@@ -536,6 +559,7 @@ def edit_settlement(settlement_id):
         flash(_('Your changes have been saved.'))
         return redirect(url_for('event.settlements', event_id=event.id))
     elif request.method == 'GET':
+        form.sender_id.data = settlement.sender.id
         form.currency_id.data = settlement.currency.id
         form.amount.data = settlement.amount
         form.recipient_id.data = settlement.recipient.id

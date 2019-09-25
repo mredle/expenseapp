@@ -39,13 +39,15 @@ class EventAddUserForm(FlaskForm):
     user_id = SelectField(_l('Add user'), coerce=int,
                           validators=[DataRequired()])
     submit = SubmitField(_l('Submit'))
-
+ 
 class ExpenseForm(FlaskForm):
+    user_id = SelectField(_l('From user'), coerce=int,
+                               validators=[DataRequired()])
     currency_id = SelectField(_l('Currency'), coerce=int,
                               validators=[DataRequired()])
     amount = FloatField(_l('Amount'), 
                         validators=[DataRequired()])
-    affected_users_id = SelectMultipleField(_l('Affected Users'), coerce=int,
+    affected_users_id = SelectMultipleField(_l('For users'), coerce=int,
                               validators=[DataRequired()])
     date = DateField(_l('Date'), 
                          format='%Y-%m-%d', 
@@ -53,8 +55,10 @@ class ExpenseForm(FlaskForm):
     description = TextAreaField(_l('Description'), 
                                 validators=[Length(min=0, max=256)])
     submit = SubmitField(_l('Submit'))
-    
+
 class SettlementForm(FlaskForm):
+    sender_id = SelectField(_l('Sender'), coerce=int,
+                               validators=[DataRequired()])
     currency_id = SelectField(_l('Currency'), coerce=int,
                               validators=[DataRequired()])
     amount = FloatField(_l('Amount'), 
@@ -64,4 +68,3 @@ class SettlementForm(FlaskForm):
     description = TextAreaField(_l('Description'), 
                                 validators=[Length(min=0, max=256)])
     submit = SubmitField(_l('Submit'))
-
