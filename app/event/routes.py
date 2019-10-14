@@ -422,7 +422,7 @@ def expense_users(expense_id):
         return redirect(url_for('event.users', event_id=event.id))
     form = EventAddUserForm()
     admins = User.query.filter_by(username='admin').all()
-    form.user_id.choices = [(u.id, u.username) for u in User.query.order_by('username') if u not in admins and u not in expense.affected_users]
+    form.user_id.choices = [(u.id, u.username) for u in event.users.order_by('username') if u not in admins and u not in expense.affected_users]
     if form.validate_on_submit():
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))

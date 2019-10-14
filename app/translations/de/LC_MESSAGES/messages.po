@@ -35,7 +35,7 @@ msgstr "Ein neuer Benutzer hat sich bei ExpenseApp registriert!"
 
 #: app/auth/email.py:24
 msgid "Validate Your Email"
-msgstr "Validiere deine Eamil"
+msgstr "Validiere deine eMail"
 
 #: app/auth/email.py:38
 msgid "Reset Your Password"

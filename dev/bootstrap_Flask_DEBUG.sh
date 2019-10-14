@@ -5,6 +5,11 @@ cd ..
 source activate flask_app
 export FLASK_APP=./expenseapp.py
 export FLASK_DEBUG=1
+export MYSQL_HOST=localhost
+export MYSQL_PORT=3306
+export MYSQL_USER=user
+export MYSQL_PW=pw
+export MYSQL_DB=expenseapp
 
 while true; do
     sleep 10
@@ -12,7 +17,7 @@ while true; do
     if [[ "$?" == "0" ]]; then
         break
     fi
-    echo Upgrade command failed, retrying in 10 secs...
+    echo "Upgrade command failed, retrying in 10 secs..."
 done
 
 flask db upgrade

@@ -5,6 +5,11 @@ services:
     container_name: expenseapp-db-dev
     command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
     restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", 'mysqladmin ping --silent']
+      interval: 30s
+      timeout: 10s
+      retries: 4
     environment:
       MYSQL_ROOT_PASSWORD: pw
       MYSQL_USER: user
@@ -71,7 +76,11 @@ services:
     container_name: expenseapp-rq-worker-dev
     environment:
       SECRET_KEY: 'you-will-never-guess'
-      DATABASE_URL: 'mysql+pymysql://user:pw@db/expenseapp?charset=utf8mb4'
+      MYSQL_HOST: 'db'
+      MYSQL_PORT: 3306
+      MYSQL_USER: 'user'
+      MYSQL_PW: 'pw'
+      MYSQL_DB: 'expenseapp'
       MAIL_SERVER: 'mailhog'
       MAIL_PORT: '1025'
       MAIL_USE_TLS:
@@ -103,7 +112,11 @@ services:
       - "5000:5000"
     environment:
       SECRET_KEY: 'you-will-never-guess'
-      DATABASE_URL: 'mysql+pymysql://user:pw@db/expenseapp?charset=utf8mb4'
+      MYSQL_HOST: 'db'
+      MYSQL_PORT: 3306
+      MYSQL_USER: 'user'
+      MYSQL_PW: 'pw'
+      MYSQL_DB: 'expenseapp'
       MAIL_SERVER: 'mailhog'
       MAIL_PORT: '1025'
       MAIL_USE_TLS:

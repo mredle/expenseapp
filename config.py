@@ -8,8 +8,13 @@ load_dotenv(os.path.join(basedir, '.env'))
 
 class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+    MYSQL_HOST = os.environ.get('MYSQL_HOST') or 'localhost'
+    MYSQL_PORT = os.environ.get('MYSQL_PORT') or 3306
+    MYSQL_USER = os.environ.get('MYSQL_USER') or 'user'
+    MYSQL_PW = os.environ.get('MYSQL_PW') or 'pw'
+    MYSQL_DB = os.environ.get('MYSQL_DB') or 'expenseapp'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'mysql+pymysql://user:pw@localhost/expenseapp?charset=utf8mb4'
+        'mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8mb4'.format(MYSQL_USER, MYSQL_PW, MYSQL_HOST, MYSQL_PORT, MYSQL_DB)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_POOL_RECYCLE = 480
     MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'localhost'

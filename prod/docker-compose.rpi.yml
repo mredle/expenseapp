@@ -3,11 +3,17 @@ services:
   db:
     image: linuxserver/mariadb
     container_name: expenseapp-db
+    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", 'mysqladmin ping --silent']
+      interval: 30s
+      timeout: 10s
+      retries: 4
     environment:
-      MYSQL_ROOT_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: pw
       MYSQL_USER: user
-      MYSQL_PASSWORD: password
+      MYSQL_PASSWORD: pw
       MYSQL_DATABASE: expenseapp
     networks:
      - expenseapp
@@ -31,8 +37,11 @@ services:
     networks:
      - expenseapp
 
+    networks:
+     - expenseapp
+
   redis:
-    image: redis:5
+    image: redis:5-alpine
     restart: always
     container_name: expenseapp-redis
     networks:
@@ -45,14 +54,18 @@ services:
          nocopy: true
 
   rq-worker:
-    image: mredle/eexpenseapp:rpi
+    image: mredle/expenseapp:latest
     restart: always
     entrypoint: rq
     command: ['worker', '-u', 'redis://redis:6379/0', 'expenseapp-tasks']
     container_name: expenseapp-rq-worker
     environment:
       SECRET_KEY: 'you-will-never-guess'
-      DATABASE_URL: 'mysql+pymysql://user:password@db/expenseapp?charset=utf8mb4'
+      MYSQL_HOST: 'db'
+      MYSQL_PORT: 3306
+      MYSQL_USER: 'user'
+      MYSQL_PW: 'pw'
+      MYSQL_DB: 'expenseapp'
       MAIL_SERVER: 'mailhog'
       MAIL_PORT: '1025'
       MAIL_USE_TLS:
@@ -76,14 +89,18 @@ services:
          nocopy: false
          
   expenseapp:
-    image: mredle/eexpenseapp:rpi
+    image: mredle/expenseapp:latest
     restart: always
     container_name: expenseapp
     ports:
       - "5000:5000"
     environment:
       SECRET_KEY: 'you-will-never-guess'
-      DATABASE_URL: 'mysql+pymysql://user:password@db/expenseapp?charset=utf8mb4'
+      MYSQL_HOST: 'db'
+      MYSQL_PORT: 3306
+      MYSQL_USER: 'user'
+      MYSQL_PW: 'pw'
+      MYSQL_DB: 'expenseapp'
       MAIL_SERVER: 'mailhog'
       MAIL_PORT: '1025'
       MAIL_USE_TLS:
