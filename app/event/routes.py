@@ -12,11 +12,13 @@ from app.main.forms import ImageForm
 from app.event.forms import PostForm, EventForm, EventAddUserForm, ExpenseForm, SettlementForm
 from app.event.email import send_reminder_email
 from app.models import Currency, Event, Expense, Settlement, Post, User, Image
-      
+from app.db_logging import log_page_access, log_page_access_denied
+
 # routes for rendered pages
 @bp.route('/index')
 @login_required
 def index():
+    log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
     events = current_user.events.order_by(Event.date.desc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
@@ -33,8 +35,9 @@ def main(event_id):
     event = Event.query.get_or_404(event_id)
     if not event.can_view(current_user):
         flash(_('Your are only allowed to view your events!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.index'))
-    
+    log_page_access(request, current_user)
     form = PostForm()
     if form.validate_on_submit():
         post = Post(body=form.post.data, author=current_user, timestamp=datetime.utcnow(), event=event)
@@ -59,6 +62,11 @@ def main(event_id):
 @login_required
 def currencies(event_id):
     event = Event.query.get_or_404(event_id)
+    if not event.can_view(current_user):
+        flash(_('Your are only allowed to view your events!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.index'))
+    log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
     currencies = event.allowed_currencies.order_by(Currency.code.asc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
@@ -73,8 +81,9 @@ def currencies(event_id):
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new():
+    log_page_access(request, current_user)
     admins = User.query.filter_by(username='admin').all()
-    users = [(u.id, u.username) for u in User.query.order_by('username') if u not in admins]
+    users = [(u.id, u.username) for u in User.query.order_by(User.username.asc()) if u not in admins]
     form = EventForm()
     form.admin_id.choices = users
     if current_user.username != 'admin':
@@ -82,7 +91,7 @@ def new():
     form.accountant_id.choices = users
     if current_user.username != 'admin':
         form.accountant_id.data = current_user.id
-    form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
+    form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by(Currency.code.asc())]
     form.allowed_currency_id.choices = form.base_currency_id.choices
     if form.validate_on_submit():
         admin = User.query.get(form.admin_id.data)
@@ -120,15 +129,17 @@ def edit(event_id):
     event = Event.query.get_or_404(event_id)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to edit your own event!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.main', event_id=event.id))
+    log_page_access(request, current_user)
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
     form = EventForm()
-    form.admin_id.choices = [(u.id, u.username) for u in event.users.order_by('username')]
-    form.accountant_id.choices = [(u.id, u.username) for u in event.users.order_by('username')]
-    form.base_currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
-    form.allowed_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by('code')]
+    form.admin_id.choices = [(u.id, u.username) for u in event.users.order_by(User.username.asc())]
+    form.accountant_id.choices = [(u.id, u.username) for u in event.users.order_by(User.username.asc())]
+    form.base_currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by(Currency.code.asc())]
+    form.allowed_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by(Currency.code.asc())]
     if form.validate_on_submit():
         event.name = form.name.data
         event.date = form.date.data
@@ -162,7 +173,9 @@ def edit_picture(event_id):
     event = Event.query.get_or_404(event_id)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to edit your own event!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.main', event_id=event.id))
+    log_page_access(request, current_user)
     form = ImageForm()
     if form.validate_on_submit():
         try:
@@ -186,9 +199,11 @@ def users(event_id):
     admins.append(event.admin)
     if not event.can_view(current_user):
         flash(_('Your are only allowed to view your own event!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.users', event_id=event.id))
+    log_page_access(request, current_user)
     form = EventAddUserForm()
-    form.user_id.choices = [(u.id, u.username) for u in User.query.order_by('username') if u not in admins and u not in event.users]
+    form.user_id.choices = [(u.id, u.username) for u in User.query.order_by(User.username.asc()) if u not in admins and u not in event.users]
     if form.validate_on_submit():
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))
@@ -217,7 +232,9 @@ def add_user(event_id, username):
     event = Event.query.get_or_404(event_id)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to edit your own event!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.users', event_id=event.id))
+    log_page_access(request, current_user)
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('main.event', event_id=event.id))
@@ -233,7 +250,9 @@ def remove_user(event_id, username):
     event = Event.query.get_or_404(event_id)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to edit your own event!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.users', event_id=event.id))
+    log_page_access(request, current_user)
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
@@ -254,8 +273,9 @@ def balance(event_id):
     event = Event.query.get_or_404(event_id)
     if not event.can_view(current_user):
         flash(_('Your are only allowed to view your events!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.index'))
-    
+    log_page_access(request, current_user)
     balances = [event.get_user_balance(u) for u in event.users]
     balances_str = list(map(lambda x: (x[0], 
                                        event.base_currency.get_amount_as_str(x[1]), 
@@ -284,14 +304,15 @@ def expenses(event_id):
     event = Event.query.get_or_404(event_id)
     if not event.can_view(current_user):
         flash(_('Your are only allowed to view your events!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.index'))
-    
+    log_page_access(request, current_user)
     form = ExpenseForm()
     if event.can_edit(current_user):
         form.user_id.choices = [(u.id, u.username) for u in event.users]
     else:
         form.user_id.choices = [(current_user.id, current_user.username)]
-    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
+    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by(Currency.code.asc())]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         if event.closed:
@@ -332,7 +353,9 @@ def add_receipt(expense_id):
     expense = Expense.query.get_or_404(expense_id)
     if not expense.can_edit(current_user):
         flash(_('Your are only allowed to edit your own expenses!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.expenses', event_id=expense.event.id))
+    log_page_access(request, current_user)
     if expense.event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=expense.event.id))
@@ -359,7 +382,9 @@ def edit_expense(expense_id):
     event = expense.event
     if not expense.can_edit(current_user):
         flash(_('Your are only allowed to edit your own expenses!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.expenses', event_id=event.id))
+    log_page_access(request, current_user)
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
@@ -370,7 +395,7 @@ def edit_expense(expense_id):
     else:
         form.user_id.choices = [(expense.user.id, expense.user.username)]
     
-    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
+    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by(Currency.code.asc())]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         expense.user=User.query.get(form.user_id.data)
@@ -400,7 +425,9 @@ def remove_expense(expense_id):
     event = expense.event
     if not expense.can_edit(current_user):
         flash(_('Your are only allowed to remove your own expenses!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.expenses', event_id=event.id))
+    log_page_access(request, current_user)
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
@@ -419,10 +446,12 @@ def expense_users(expense_id):
     event = expense.event
     if not expense.can_view(current_user):
         flash(_('Your are only allowed to view your own expenses!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.users', event_id=event.id))
+    log_page_access(request, current_user)
     form = EventAddUserForm()
     admins = User.query.filter_by(username='admin').all()
-    form.user_id.choices = [(u.id, u.username) for u in event.users.order_by('username') if u not in admins and u not in expense.affected_users]
+    form.user_id.choices = [(u.id, u.username) for u in event.users.order_by(User.username.asc()) if u not in admins and u not in expense.affected_users]
     if form.validate_on_submit():
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))
@@ -452,7 +481,9 @@ def expense_add_user(expense_id, username):
     event = expense.event
     if not expense.can_edit(current_user):
         flash(_('Your are only allowed to edit your own expenses!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.expenses', event_id=event.id))
+    log_page_access(request, current_user)
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
@@ -470,7 +501,9 @@ def expense_remove_user(expense_id, username):
     event = expense.event
     if not expense.can_edit(current_user):
         flash(_('Your are only allowed to edit your own expenses!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.expenses', event_id=event.id))
+    log_page_access(request, current_user)
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
@@ -489,13 +522,15 @@ def settlements(event_id):
     event = Event.query.get_or_404(event_id)
     if not event.can_view(current_user):
         flash(_('Your are only allowed to view your events!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.index'))
+    log_page_access(request, current_user)
     form = SettlementForm()
     if event.can_edit(current_user):
         form.sender_id.choices = [(u.id, u.username) for u in event.users]
     else:
         form.sender_id.choices = [(current_user.id, current_user.username)]
-    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
+    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by(Currency.code.asc())]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         if event.closed:
@@ -538,7 +573,9 @@ def edit_settlement(settlement_id):
     event = settlement.event
     if not settlement.can_edit(current_user):
         flash(_('Your are only allowed to edit your own settlements!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.settlements', event_id=event.id))
+    log_page_access(request, current_user)
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
@@ -548,7 +585,7 @@ def edit_settlement(settlement_id):
         form.sender_id.choices = [(u.id, u.username) for u in event.users]
     else:
         form.sender_id.choices = [(settlement.sender.id, settlement.sender.username)]
-    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by('code')]
+    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by(Currency.code.asc())]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         settlement.sender=User.query.get(form.sender_id.data)
@@ -576,7 +613,9 @@ def settlement_execute(settlement_id):
     event = settlement.event
     if not settlement.can_confirm(current_user):
         flash(_('Your are only allowed to add settlements directed to you!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.settlements', settlement_id=settlement.id))
+    log_page_access(request, current_user)
     settlement.draft = False
     settlement.description = _('Confirmed by user %(username)s', username = current_user.username)
     db.session.commit()
@@ -589,7 +628,9 @@ def remove_settlement(settlement_id):
     event = settlement.event
     if not settlement.can_edit(current_user):
         flash(_('Your are only allowed to remove your own settlements!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.settlements', settlement_id=settlement.id))
+    log_page_access(request, current_user)
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', event_id=event.id))
@@ -607,7 +648,9 @@ def send_payment_reminders(event_id):
     event = Event.query.get_or_404(event_id)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to send payment reminders of your own event!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.main', event_id=event.id))
+    log_page_access(request, current_user)
     event.settlements.filter_by(draft=True).delete()
     draft_settlements = event.get_compensation_settlements_accountant()
     db.session.add_all(draft_settlements)
@@ -622,7 +665,9 @@ def convert_currencies(event_id):
     event = Event.query.get_or_404(event_id)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to convert currencies of your own event!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.main', event_id=event.id))
+    log_page_access(request, current_user)
     event.convert_currencies()
     db.session.commit()
     flash(_('All transaction of this event have been converted to %(code)s.', code=event.base_currency.code))
@@ -634,7 +679,9 @@ def reopen(event_id):
     event = Event.query.get_or_404(event_id)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to reopen your own event!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.main', event_id=event.id))
+    log_page_access(request, current_user)
     event.closed = False
     db.session.commit()
     flash(_('Event has been reopened.'))
@@ -646,7 +693,9 @@ def close(event_id):
     event = Event.query.get_or_404(event_id)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to close your own event!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('event.main', event_id=event.id))
+    log_page_access(request, current_user)
     if event.settlements.filter_by(draft=True).all():
         flash(_('Your are only allowed to close an event with no open liabilities!'))
         return redirect(url_for('event.main', event_id=event.id))

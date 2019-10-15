@@ -10,6 +10,7 @@ from app.auth import bp
 from app.auth.forms import LoginForm, RegistrationForm, ResetPasswordRequestForm, ResetPasswordForm
 from app.auth.email import send_validate_email, send_password_reset_email, send_newuser_notification
 from app.models import User
+from app.db_logging import log_login, log_login_denied, log_logout, log_register, log_reset_password_request, log_reset_password
       
 # routes for rendered pages
 @bp.route('/login', methods=['GET', 'POST'])
@@ -20,8 +21,10 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
+            log_login_denied(request.path, form.username.data)
             flash(_('Invalid username or password'))
             return redirect(url_for('auth.login'))
+        log_login(request.path, user)
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
         if not next_page or url_parse(next_page).netloc != '':
@@ -32,6 +35,7 @@ def login():
 
 @bp.route('/logout')
 def logout():
+    log_logout(request.path, current_user)
     logout_user()
     return redirect(url_for('main.index'))
 
@@ -51,7 +55,7 @@ def register():
         user.set_random_password()
         user.get_token()
         db.session.add(user)
-        db.session.commit()
+        log_register(request.path, user)
         send_newuser_notification(user)
         send_validate_email(user)
         flash(_('Congratulations, you are now a registered user!'))
@@ -68,6 +72,7 @@ def reset_password_request():
         user = User.query.filter_by(email=form.email.data.lower()).first()
         if user:
             send_password_reset_email(user)
+        log_reset_password_request(request.path, user)
         flash(_('Check your email for the instructions to reset your password'))
         return redirect(url_for('auth.login'))
     return render_template('edit_form.html', title=_('Reset Password'), form=form)
@@ -83,7 +88,7 @@ def reset_password(token):
     form = ResetPasswordForm()
     if form.validate_on_submit():
         user.set_password(form.password.data)
-        db.session.commit()
+        log_reset_password(request.path, user)
         flash(_('Your password has been reset.'))
         return redirect(url_for('auth.login'))
     return render_template('edit_form.html', title=_('Set your password'), form=form)

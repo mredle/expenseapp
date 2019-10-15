@@ -57,6 +57,32 @@ class Entity():
         self.db_created_by = db_created_by
         self.db_updated_by = db_created_by
 
+class Log(db.Model):
+    __tablename__ = 'log'
+    id = db.Column(db.Integer, primary_key=True)
+    
+    severity = db.Column(db.String(32))
+    module = db.Column(db.String(128))
+    msg_type = db.Column(db.String(128))
+    msg = db.Column(db.String(256))
+    trace = db.Column(db.String(4096))
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = db.relationship('User', back_populates='logs')
+    
+    def __init__(self, severity, module, msg_type, msg, user, trace=None):
+        self.severity = severity
+        self.module = module
+        self.msg_type = msg_type
+        self.msg = msg
+        self.trace = trace
+        self.user = user
+    
+    def __repr__(self):
+        return '<{} log from {} at {}: {}>'.format(self.severity, self.user.username, self.date, self.msg)
+        
+
 class Thumbnail(Entity, db.Model):
     __tablename__ = 'thumbnails'
     id = db.Column(db.Integer, primary_key=True)
@@ -220,7 +246,7 @@ class Image(Entity, db.Model):
             return thumbnail.get_url()
         else:
             return self.get_url()
-
+    
 class BankAccount(Entity, db.Model):
     __tablename__ = 'bank_account'
     id = db.Column(db.Integer, primary_key=True)
@@ -755,6 +781,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     notifications = db.relationship('Notification', back_populates='user', lazy='dynamic')
     tasks = db.relationship('Task', foreign_keys='Task.user_id', back_populates='user', lazy='dynamic')
     bank_accounts = db.relationship('BankAccount', foreign_keys='BankAccount.user_id', back_populates='user', lazy='dynamic')
+    logs = db.relationship('Log', foreign_keys='Log.user_id', back_populates='user', lazy='dynamic')
 
     is_admin = db.Column(db.Boolean)
     about_me = db.Column(db.String(256))

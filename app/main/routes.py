@@ -9,7 +9,8 @@ from flask_babel import get_locale, _
 from app import db, images
 from app.main import bp
 from app.main.forms import ImageForm, EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm, BankAccountForm
-from app.models import Currency, User, Message, Notification, Event, Image, BankAccount
+from app.models import Currency, User, Message, Notification, Event, Image, BankAccount, Log
+from app.db_logging import log_page_access, log_page_access_denied
 
 @bp.before_app_request
 def before_request():
@@ -30,6 +31,7 @@ def index():
 @bp.route('/image/<image_id>')
 @login_required
 def image(image_id):
+    log_page_access(request, current_user)
     image = Image.query.get_or_404(image_id)
     return render_template('image.html', 
                            title=_('Image'), 
@@ -42,12 +44,13 @@ def rotate_image(image_id):
     degree = request.args.get('degree', 0, type=int)
     image = Image.query.get_or_404(image_id)
     image.rotate_image(degree)
-    db.session.commit()
+    log_page_access(request, current_user)
     return redirect(url_for('main.image', image_id=image.id))
 
 @bp.route('/currencies')
 @login_required
 def currencies():
+    log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
     currencies = Currency.query.order_by(Currency.code.asc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
@@ -64,7 +67,9 @@ def currencies():
 def new_currency():
     if not current_user.is_admin:
         flash(_('Only an admin is allowed to create new currencies!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('main.currencies'))
+    log_page_access(request, current_user)
     form = CurrencyForm()
     if form.validate_on_submit():
         currency = Currency(code=form.code.data, 
@@ -88,7 +93,9 @@ def new_currency():
 def edit_currency(currency_id):
     if not current_user.is_admin:
         flash(_('Only an admin is allowed to edit currencies!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('main.currencies'))
+    log_page_access(request, current_user)
     currency = Currency.query.get_or_404(currency_id)
     form = CurrencyForm()
     if form.validate_on_submit():
@@ -115,6 +122,7 @@ def edit_currency(currency_id):
 @bp.route('/new_bank_account', methods=['GET', 'POST'])
 @login_required
 def new_bank_account():
+    log_page_access(request, current_user)
     form = BankAccountForm()
     if form.validate_on_submit():
         bank_account = BankAccount(user=current_user, 
@@ -143,7 +151,9 @@ def bank_accounts(username):
     user = User.query.filter_by(username=username).first_or_404()
     if current_user != user and not current_user.is_admin:
         flash(_('Your are only allowed to view your own bank accounts!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('main.user', username=current_user.username))
+    log_page_access(request, current_user)
     form = BankAccountForm()
     if form.validate_on_submit():
         bank_account = BankAccount(user=current_user, 
@@ -179,8 +189,9 @@ def edit_bank_account(bank_account_id):
     bank_account = BankAccount.query.get_or_404(bank_account_id)
     if not bank_account.can_edit(current_user):
         flash(_('Your are only allowed to edit your own bank accounts!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('main.user', username=current_user.username))
-    
+    log_page_access(request, current_user)
     form = BankAccountForm()
     if form.validate_on_submit():
         bank_account.iban = form.iban.data, 
@@ -216,8 +227,9 @@ def remove_bank_account(bank_account_id):
     user = bank_account.user
     if not bank_account.can_edit(current_user):
         flash(_('Your are only allowed to remove your own bank accounts!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('main.user', username=current_user.username))
-    
+    log_page_access(request, current_user)
     if bank_account in user.bank_accounts:
         user.bank_accounts.remove(bank_account)
         db.session.commit()
@@ -227,6 +239,7 @@ def remove_bank_account(bank_account_id):
 @bp.route('/users')
 @login_required
 def users():
+    log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
     users = User.query.order_by(User.username.asc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
@@ -241,6 +254,7 @@ def users():
 @login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
+    log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
     events = user.events_admin.order_by(Event.date.desc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
@@ -256,7 +270,9 @@ def user(username):
 def new_user():
     if not current_user.is_admin:
         flash(_('Only an admin can create new users!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('main.users'))
+    log_page_access(request, current_user)
     form = NewUserForm()
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
     form.timezone.choices = [(x, x) for x in current_app.config['TIMEZONES']]
@@ -279,7 +295,9 @@ def new_user():
 def edit_user(username):
     if not current_user.is_admin:
         flash(_('Only an admin can edit users!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('main.users'))
+    log_page_access(request, current_user)
     user = User.query.filter_by(username=username).first_or_404()
     admin = User.query.filter_by(username='admin').first()
     if user==admin:
@@ -316,7 +334,9 @@ def set_admin(username):
     user = User.query.filter_by(username=username).first_or_404()
     if not current_user.is_admin:
         flash(_('Only an admin can set the admin rights!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('main.user', username=user.username))
+    log_page_access(request, current_user)
     user.is_admin = True
     db.session.commit()
     return redirect(url_for('main.user', username=user.username))
@@ -331,7 +351,9 @@ def revoke_admin(username):
         return redirect(url_for('main.user', username=user.username))
     if not current_user.is_admin:
         flash(_('Only an admin can revoke the admin rights!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('main.user', username=user.username))
+    log_page_access(request, current_user)
     user.is_admin = False
     db.session.commit()
     return redirect(url_for('main.user', username=user.username))
@@ -341,19 +363,32 @@ def revoke_admin(username):
 def administration():
     if not current_user.is_admin:
         flash(_('Only an admin can view the admin page!'))
+        log_page_access_denied(request, current_user)
         return redirect(url_for('main.index'))
+    log_page_access(request, current_user)
+    page = request.args.get('page', 1, type=int)
+    logs = Log.query.order_by(Log.date.desc()).paginate(
+            page, 100, False)
+    next_url = url_for('main.administration', page=logs.next_num) \
+        if logs.has_next else None
+    prev_url = url_for('main.administration', page=logs.prev_num) \
+        if logs.has_prev else None
     return render_template('administration.html',
-                           title= _('Administration'))
+                           logs=logs.items,
+                           title= _('Administration'),
+                           next_url=next_url, prev_url=prev_url,)
 
 @bp.route('/user/<username>/popup')
 @login_required
 def user_popup(username):
+    log_page_access(request, current_user)
     user = User.query.filter_by(username=username).first_or_404()
     return render_template('user_popup.html', user=user)
 
 @bp.route('/edit_profile', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
+    log_page_access(request, current_user)
     form = EditProfileForm(current_user.username)
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
     form.timezone.choices = [(x, x) for x in current_app.config['TIMEZONES']]
@@ -377,6 +412,7 @@ def edit_profile():
 @bp.route('/edit_profile_picture', methods=['GET', 'POST'])
 @login_required
 def edit_profile_picture():
+    log_page_access(request, current_user)
     form = ImageForm()
     if form.validate_on_submit():
         try:
@@ -395,10 +431,11 @@ def edit_profile_picture():
 @bp.route('/messages', methods=['GET', 'POST'])
 @login_required
 def messages():
+    log_page_access(request, current_user)
     current_user.last_message_read_time = datetime.utcnow()
     current_user.add_notification('unread_message_count', 0)
     db.session.commit()
-    users = [(u.id, u.username) for u in User.query.order_by('username') if u != current_user]
+    users = [(u.id, u.username) for u in User.query.order_by(User.username.asc()) if u != current_user]
     form = MessageForm()
     form.recipient_id.choices = users
     recipient_username = request.args.get('recipient')
@@ -444,6 +481,7 @@ def notifications():
 @bp.route('/export_posts')
 @login_required
 def export_posts():
+    log_page_access(request, current_user)
     if current_user.get_task_in_progress('export_posts'):
         flash(_('An export task is currently in progress'))
     else:
@@ -454,6 +492,7 @@ def export_posts():
 @bp.route('/consume_time/<amount>')
 @login_required
 def consume_time(amount):
+    log_page_access(request, current_user)
     if current_user.get_task_in_progress('consume_time'):
         flash(_('A time consuming task is currently in progress'))
     else:
