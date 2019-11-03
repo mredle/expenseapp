@@ -88,7 +88,7 @@ def reset_password(token):
     form = ResetPasswordForm()
     if form.validate_on_submit():
         user.set_password(form.password.data)
-        log_reset_password(request.path, user)
+        log_reset_password('/reset_password/<token>', user)
         flash(_('Your password has been reset.'))
         return redirect(url_for('auth.login'))
     return render_template('edit_form.html', title=_('Set your password'), form=form)

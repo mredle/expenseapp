@@ -16,3 +16,4 @@ flask-httpauth
 flask-wtf
 flask-bootstrap 
 flask-uploads
+flask-restplus

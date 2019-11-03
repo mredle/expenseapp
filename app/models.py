@@ -819,7 +819,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
             'about_me': self.about_me,
             'post_count': self.posts.count(),
             '_links': {
-                'self': url_for('api.get_user', id=self.id),
+                'self': url_for('api.api_user', id=self.id),
                 'avatar': self.avatar(128)
             }
         }
