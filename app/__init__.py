@@ -51,8 +51,8 @@ def create_app(config_class=Config):
     from app.auth import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
     
-    from app.api import bp as api_bp
-    app.register_blueprint(api_bp, url_prefix='/api')
+    from app.apis import bp as apis_bp
+    app.register_blueprint(apis_bp, url_prefix='/apis')
     
     from app.event import bp as event_bp
     app.register_blueprint(event_bp, url_prefix='/event')

@@ -6,7 +6,7 @@
 	},
 	"item": [
 		{
-			"name": "{{SERVER}}/api/tokens",
+			"name": "get token",
 			"request": {
 				"auth": {
 					"type": "basic",
@@ -26,50 +26,52 @@
 				"method": "POST",
 				"header": [],
 				"url": {
-					"raw": "{{SERVER}}/api/tokens",
+					"raw": "{{SERVER}}/apis/tokens/",
 					"host": [
 						"{{SERVER}}"
 					],
 					"path": [
-						"api",
-						"tokens"
+						"apis",
+						"tokens",
+						""
 					]
 				}
 			},
 			"response": []
 		},
 		{
-			"name": "{{SERVER}}/api/users",
+			"name": "get all users",
 			"request": {
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{SERVER}}/api/users",
+					"raw": "{{SERVER}}/apis/users/",
 					"host": [
 						"{{SERVER}}"
 					],
 					"path": [
-						"api",
-						"users"
+						"apis",
+						"users",
+						""
 					]
 				}
 			},
 			"response": []
 		},
 		{
-			"name": "{{SERVER}}/api/user/1",
+			"name": "get user",
 			"request": {
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{SERVER}}/api/user/1",
+					"raw": "{{SERVER}}/apis/users/2",
 					"host": [
 						"{{SERVER}}"
 					],
 					"path": [
-						"api",
-						"user",
-						"1"
+						"apis",
+						"users",
+						"2"
 					]
 				}
 			},
@@ -81,7 +83,7 @@
 		"bearer": [
 			{
 				"key": "token",
-				"value": "Zb54kak6Z9OmptibsswCicYegBCcE6XB",
+				"value": "bXu0eEYcDTpwXzlXjPHpKKjB2PiPmusU",
 				"type": "string"
 			}
 		]
@@ -110,7 +112,7 @@
 	],
 	"variable": [
 		{
-			"id": "7ee20a40-35ee-4111-b2aa-e156df9eb2a3",
+			"id": "872d8fd7-2db5-4fb6-9316-a5e4523dc569",
 			"key": "SERVER",
 			"value": "http://localhost:5000",
 			"type": "string"
