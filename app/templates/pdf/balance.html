@@ -1,0 +1,77 @@
+{% extends "pdf/base.html" %}
+
+{% block content %}
+    <table class="table table-hover">
+        <tr>
+            <h1>{{ _('Event') }}: {{ event.name }}</h1>
+            {% if event.description %}
+            <p>{{ event.description }}</p>
+            {% endif %}
+            {% if event.image %}
+            <img src="{{ event.avatar(512) }}" alt="" width="100%" style="transform:rotate({{ event.image.rotate }}deg) scale({{ event.image.get_html_scale() }});">
+            {% endif %}
+
+            <p>{{ _('Admin') }}: {{ event.admin.username }}</p>
+            <p>{{ _('Accountant') }}: {{ event.accountant.username }}</p>
+            <p>{{ _('Base Currency') }}: {{ event.base_currency.code }}</p>
+            <p>{{ _('Allowed currencies') }}: {{ event.get_allowed_currencies_str() }} </p>
+            <p>{{ _('Exchange fee') }}: {{ event.exchange_fee }}%</p>
+            <p>{{ _('Date') }}: {{ event.date }}</p>
+            <p>{{ _('%(count)d users', count=stats['users']) }}, 
+               {{ _('%(count)d posts', count=stats['posts']) }}, 
+               {{ _('%(count)d expenses', count=stats['expenses']) }}, 
+               {{ _('%(count)d settlements', count=stats['settlements']) }}</p>
+        </tr>
+    </table>
+    <br>
+    
+    <h3>{{ _('Summary') }}</h3>
+    <p>{{ _('Total expenses ') }}: {{ total_expenses_str }}</p>
+    <br>
+    <table class="table table-hover">
+        <tr>
+            <td width="width:10%">
+            
+            </td>
+            <td width="width:18%">
+                {{ _('Paid') }}:
+            </td>
+            <td width="width:18%">
+                {{ _('Involved') }}:
+            </td>
+            <td width="width:18%">
+                {{ _('Sent') }}:
+            </td>
+            <td width="width:18%">
+                {{ _('Received') }}:
+            </td>
+            <td width="width:18%">
+                {{ _('Balance') }}:
+            </td>
+        </tr>
+    </table>
+    {% for balance in balances_str %}
+        {% include 'pdf/_balance.html' %}
+    {% endfor %}
+    <br>
+    
+    <h3>{{ _('Open financial compensation') }}</h3>
+    <p>{{ _('Accountant') }}: {{ event.accountant.username }}</p>
+    <br>
+    {% for settlement in draft_settlements %}
+        {% include 'pdf/_draft_settlement.html' %}
+    {% endfor %}
+    <br>
+    
+    <h3>{{ _('Expenses') }}</h3>
+    {% for expense in event.expenses %}
+        {% include 'pdf/_expense.html' %}
+    {% endfor %}
+    <br>
+
+    <h3>{{ _('Settlements') }}</h3>
+    {% for settlement in event.settlements %}
+        {% include 'pdf/_settlement.html' %}
+    {% endfor %}
+    <br>
+{% endblock %}

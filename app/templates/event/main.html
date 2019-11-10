@@ -10,7 +10,7 @@
             {% endif %}
             {% if event.image %}
             <a href="{{ url_for('main.image', image_id=event.image.id) }}">
-                <img src="{{ event.avatar(512) }}" alt="" width="100%" style="transform:rotate({{ event.image.rotate }}deg) scale({{ event.image.get_html_scale() }});">
+                <img src="{{ event.avatar(1024) }}" alt="" width="100%" style="transform:rotate({{ event.image.rotate }}deg) scale({{ event.image.get_html_scale() }});">
             </a>
             {% endif %}
             {% if event.can_edit(current_user) %}

@@ -17,3 +17,4 @@ flask-wtf
 flask-bootstrap 
 flask-uploads
 flask-restplus
+flask-weasyprint

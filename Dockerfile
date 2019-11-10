@@ -3,12 +3,18 @@ FROM python:3.7-alpine
 SHELL ["/bin/sh", "-c"]
 
 # Setup python environment with pip
+RUN apk --update --upgrade --no-cache add \
+    cairo-dev pango-dev gdk-pixbuf font-noto
+    
 COPY requirements.txt /tmp/requirements.txt
 RUN apk add --no-cache --virtual .build-deps build-base linux-headers && \
     apk add --no-cache freetype-dev \
+                       gcc \
                        jpeg-dev \
                        lcms2-dev \
+                       libffi-dev \
                        openjpeg-dev \
+                       musl-dev \
                        tcl-dev \
                        tiff-dev \
                        tk-dev \

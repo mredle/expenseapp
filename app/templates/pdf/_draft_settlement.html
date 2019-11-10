@@ -1,0 +1,12 @@
+    <table class="table table-hover">
+        <tr>
+            <td width="350px">
+                {{ _('%(from)s has to pay %(to)s:',
+                    from=settlement.sender.username,
+                    to=settlement.recipient.username) }}
+            </td>
+            <td>
+                {{ settlement.get_amount_str() }} 
+            </td>
+        </tr>
+    </table>

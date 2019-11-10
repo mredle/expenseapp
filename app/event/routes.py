@@ -10,7 +10,6 @@ from app import db, images
 from app.event import bp
 from app.main.forms import ImageForm
 from app.event.forms import PostForm, EventForm, EventAddUserForm, ExpenseForm, SettlementForm
-from app.event.email import send_reminder_email
 from app.models import Currency, Event, Expense, Settlement, Post, User, Image
 from app.db_logging import log_page_access, log_page_access_denied
 
@@ -276,22 +275,8 @@ def balance(event_id):
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.index'))
     log_page_access(request, current_user)
-    balances = [event.get_user_balance(u) for u in event.users]
-    balances_str = list(map(lambda x: (x[0], 
-                                       event.base_currency.get_amount_as_str(x[1]), 
-                                       event.base_currency.get_amount_as_str(x[2]), 
-                                       event.base_currency.get_amount_as_str(x[3]), 
-                                       event.base_currency.get_amount_as_str(x[4]), 
-                                       event.base_currency.get_amount_as_str(x[5])) 
-                                       , balances))
     
-    total_expenses = event.get_total_expenses()
-    total_expenses_str = event.base_currency.get_amount_as_str(total_expenses)
-    
-    event.settlements.filter_by(draft=True).delete()
-    draft_settlements = event.get_compensation_settlements_accountant()
-    db.session.add_all(draft_settlements)
-    db.session.commit()
+    draft_settlements, balances_str, total_expenses_str = event.calculate_balance()
     return render_template('event/balance.html', 
                            event=event, 
                            draft_settlements=draft_settlements,
@@ -651,11 +636,8 @@ def send_payment_reminders(event_id):
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.main', event_id=event.id))
     log_page_access(request, current_user)
-    event.settlements.filter_by(draft=True).delete()
-    draft_settlements = event.get_compensation_settlements_accountant()
-    db.session.add_all(draft_settlements)
+    current_user.launch_task('send_reminders', _('Sending balance reports...'), event_id=event_id)
     db.session.commit()
-    send_reminder_email(draft_settlements)
     flash(_('All users have been reminded of their duties!'))
     return redirect(url_for('event.main', event_id=event.id))
 

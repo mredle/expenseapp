@@ -10,7 +10,7 @@
             {% endif %}
             {% if user.profile_picture %}
             <a href="{{ url_for('main.image', image_id=user.profile_picture.id) }}">
-                <img src="{{ user.avatar(512) }}" alt="" width="100%" style="transform:rotate({{ user.profile_picture.rotate }}deg) scale({{ user.profile_picture.get_html_scale() }});">
+                <img src="{{ user.avatar(1024) }}" alt="" width="100%" style="transform:rotate({{ user.profile_picture.rotate }}deg) scale({{ user.profile_picture.get_html_scale() }});">
             </a>
             {% endif %}
             {% if user == current_user %}

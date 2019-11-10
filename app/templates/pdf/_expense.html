@@ -1,0 +1,21 @@
+    <table class="table table-hover">
+        <tr>
+            <td width="64px">
+                {% if expense.image %}
+                <img src="{{ expense.avatar(64) }}" alt="" width="64" style="transform:rotate({{ expense.image.rotate }}deg) scale({{ expense.image.get_html_scale() }});">
+                {% endif %}
+            </td>
+            <td>
+                {{ _('%(when)s, %(username)s spent %(amount_str)s for:',
+                    when=expense.date,
+                    username=expense.user.username, 
+                    amount_str=expense.get_amount_str()) }}
+                <br>
+                {% for user in expense.affected_users %}
+                    {{ user.username }}
+                    <br>
+                {% endfor %}
+                {{ expense.description }}
+            </td>
+        </tr>
+    </table>
