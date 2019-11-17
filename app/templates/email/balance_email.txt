@@ -1,0 +1,5 @@
+{{ _('Dear %(username)s', username=username) }},
+
+{{ _('Attached you find the balance of event %(eventname)s at time %(timenow)s', eventname=eventname, timenow=timenow) }}. <br>
+
+{{ _('Sincerely') }}

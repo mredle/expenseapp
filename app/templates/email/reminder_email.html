@@ -8,5 +8,8 @@
         {% include 'email/_bank_account.html' %}
     {% endfor %}
 </p>
+<br>
+{{ _('Attached you find the balance of event %(eventname)s at time %(timenow)s', eventname=settlement.event.name, timenow=timenow) }}. <br>
+<br>
 <p>{{ _('Sincerely') }}</p>
 <p>{{ settlement.recipient.username }}</p>

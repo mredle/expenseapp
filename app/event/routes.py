@@ -276,7 +276,8 @@ def balance(event_id):
         return redirect(url_for('event.index'))
     log_page_access(request, current_user)
     
-    draft_settlements, balances_str, total_expenses_str = event.calculate_balance()
+    draft_settlements = event.calculate_balance()
+    balances_str, total_expenses_str = event.get_balance()
     return render_template('event/balance.html', 
                            event=event, 
                            draft_settlements=draft_settlements,
@@ -639,6 +640,20 @@ def send_payment_reminders(event_id):
     current_user.launch_task('send_reminders', _('Sending balance reports...'), event_id=event_id)
     db.session.commit()
     flash(_('All users have been reminded of their duties!'))
+    return redirect(url_for('event.main', event_id=event.id))
+
+@bp.route('/request_balance/<event_id>')
+@login_required
+def request_balance(event_id):
+    event = Event.query.get_or_404(event_id)
+    if not event.can_view(current_user):
+        flash(_('Your are only allowed to view your events!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.main', event_id=event.id))
+    log_page_access(request, current_user)
+    current_user.launch_task('request_balance', _('Sending balance reports...'), event_id=event_id)
+    db.session.commit()
+    flash(_('The balance has been sent to your email'))
     return redirect(url_for('event.main', event_id=event.id))
 
 @bp.route('/convert_currencies/<event_id>')

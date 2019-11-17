@@ -8,5 +8,7 @@
 {% include 'email/_bank_account.txt' %}
 {% endfor %}
 
+{{ _('Attached you find the balance of event %(eventname)s at time %(timenow)s', eventname=settlement.event.name, timenow=timenow) }}.
+
 {{ _('Sincerely') }}
 {{ settlement.recipient.username }}

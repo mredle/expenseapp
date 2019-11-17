@@ -509,8 +509,15 @@ class Event(Entity, db.Model):
                 continue
             
         return settlements
-
+    
     def calculate_balance(self):
+        self.settlements.filter_by(draft=True).delete()
+        draft_settlements = self.get_compensation_settlements_accountant()
+        db.session.add_all(draft_settlements)
+        db.session.commit()
+        return draft_settlements
+    
+    def get_balance(self):
         balances = [self.get_user_balance(u) for u in self.users]
         balances_str = list(map(lambda x: (x[0], 
                                            self.base_currency.get_amount_as_str(x[1]), 
@@ -522,12 +529,7 @@ class Event(Entity, db.Model):
         
         total_expenses = self.get_total_expenses()
         total_expenses_str = self.base_currency.get_amount_as_str(total_expenses)
-        
-        self.settlements.filter_by(draft=True).delete()
-        draft_settlements = self.get_compensation_settlements_accountant()
-        db.session.add_all(draft_settlements)
-        db.session.commit()
-        return (draft_settlements, balances_str, total_expenses_str)
+        return (balances_str, total_expenses_str)
 
 expense_affected_users = db.Table('expense_affected_users',
     db.Column('expense_id', db.Integer, db.ForeignKey('expenses.id')),

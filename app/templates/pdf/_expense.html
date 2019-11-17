@@ -6,10 +6,10 @@
                 {% endif %}
             </td>
             <td>
-                {{ _('%(when)s, %(username)s spent %(amount_str)s for:',
+                {{ _('%(when)s, %(username)s spent %(amount_str)s for',
                     when=expense.date,
                     username=expense.user.username, 
-                    amount_str=expense.get_amount_str()) }}
+                    amount_str=expense.get_amount_str()) }}:
                 <br>
                 {% for user in expense.affected_users %}
                     {{ user.username }}

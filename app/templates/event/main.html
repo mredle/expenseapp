@@ -29,7 +29,8 @@
                {{ _('%(count)d settlements', count=stats['settlements']) }}</p>
             <p><a href="{{ url_for('event.expenses', event_id=event.id) }}">{{ _('Expenses') }}</a></p>
             <p><a href="{{ url_for('event.settlements', event_id=event.id) }}">{{ _('Settlements') }}</a></p>
-            <p><a href="{{ url_for('event.balance', event_id=event.id) }}">{{ _('Balance sheet') }}</a></p>
+            <p><a href="{{ url_for('event.balance', event_id=event.id) }}">{{ _('Balance sheet') }} </a>
+            (<a href="{{ url_for('event.request_balance', event_id=event.id) }}">{{ _('Send balance sheet as PDF to my email') }}</a>)</p>
             {% if event.fileshare_link %}
                 <p><a href="{{ event.fileshare_link }}" target="_blank">{{ _('Link to external fileshare') }}</a></p>
             {% endif %}

@@ -3,6 +3,7 @@
 import sys
 import time
 import json
+from datetime import datetime
 from weasyprint import HTML
 from flask import render_template, current_app
 from flask_babel import _, force_locale
@@ -130,80 +131,87 @@ def export_posts(user_id):
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
+def get_balance_pdf(event, locale, timenow=None, recalculate=False):
+    
+    if recalculate:
+        event.calculate_balance()
+    else:
+        event.settlements.filter_by(draft=True).all()
+    balances_str, total_expenses_str = event.get_balance()
+    
+    if timenow is None:
+        timenow=datetime.utcnow().replace(microsecond=0).isoformat()
+        
+    balance_grid = ('10%', '18%', '18%','18%','18%','18%')
+    with force_locale(locale):
+        html = render_template('pdf/balance.html', 
+                               event=event,
+                               timenow=timenow,
+                               balance_grid=balance_grid,
+                               stats=event.get_stats(),
+                               balances_str=balances_str, 
+                               total_expenses_str=total_expenses_str)
+        
+        pdf = HTML(string=html).write_pdf(presentational_hints=True)
+    
+    return pdf
+    
 def request_balance(user_id, event_id):
     try:
         user = User.query.get(user_id)
         event = Event.query.get(event_id)
+        
         _set_task_progress(0)
+        timenow=datetime.utcnow().replace(microsecond=0).isoformat()
+        pdf = get_balance_pdf(event, user.locale, timenow, recalculate=True)
         
-        draft_settlements, balances_str, total_expenses_str = event.calculate_balance()
-        
-        i = 0
-        total_payments = len(draft_settlements)
         with force_locale(user.locale):
-            
-            html = render_template('pdf/balance.html', 
-                                   event=event,
-                                   stats=event.get_stats(),
-                                   draft_settlements=draft_settlements,
-                                   balances_str=balances_str, 
-                                   total_expenses_str=total_expenses_str)
-            
-            pdf = HTML(string=html).write_pdf(presentational_hints=True)
-            
-            send_email(_('Please settle your depts!'),
+            send_email(_('Your balance of event %(eventname)s', eventname=event.name),
                        sender=current_app.config['ADMIN_NOREPLY_SENDER'],
-                       recipients=[settlement.sender.email],
-                       text_body=render_template('email/reminder_email.txt',
-                                                 settlement=settlement,
-                                                 bank_accounts=bank_accounts),
-                       html_body=render_template('email/reminder_email.html',
-                                                 settlement=settlement,
-                                                 bank_accounts=bank_accounts),
+                       recipients=[user.email],
+                       text_body=render_template('email/balance_email.txt',
+                                                 username=user.username,
+                                                 eventname=event.name,
+                                                 timenow=timenow),
+                       html_body=render_template('email/balance_email.html',
+                                                 username=user.username,
+                                                 eventname=event.name,
+                                                 timenow=timenow),
                        attachments=[('balance.pdf', 'application/pdf', pdf)],
                        sync=True)
-            i += 1
-            _set_task_progress(100*i//total_payments)
-        
         _set_task_progress(100)
-
-    
     except:
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
 def send_reminders(user_id, event_id):
     try:
-        user = User.query.get(user_id)
+        User.query.get(user_id)
         event = Event.query.get(event_id)
-        _set_task_progress(0)
         
-        draft_settlements, balances_str, total_expenses_str = event.calculate_balance()
+        _set_task_progress(0)
+        draft_settlements = event.calculate_balance()
+        timenow=datetime.utcnow().replace(microsecond=0).isoformat()
+        total_payments = len(draft_settlements)
         
         i = 0
-        total_payments = len(draft_settlements)
         for settlement in draft_settlements:
             with force_locale(settlement.sender.locale):
                 bank_accounts = settlement.recipient.bank_accounts
                 
-                html = render_template('pdf/balance.html', 
-                                       event=event,
-                                       stats=event.get_stats(),
-                                       draft_settlements=draft_settlements,
-                                       balances_str=balances_str, 
-                                       total_expenses_str=total_expenses_str)
-                
-                pdf = HTML(string=html).write_pdf(presentational_hints=True)
+                pdf = get_balance_pdf(event, settlement.sender.locale, timenow)
                 
                 send_email(_('Please settle your depts!'),
                            sender=current_app.config['ADMIN_NOREPLY_SENDER'],
                            recipients=[settlement.sender.email],
                            text_body=render_template('email/reminder_email.txt',
                                                      settlement=settlement,
-                                                     bank_accounts=bank_accounts),
+                                                     bank_accounts=bank_accounts,
+                                                     timenow=timenow),
                            html_body=render_template('email/reminder_email.html',
                                                      settlement=settlement,
-                                                     bank_accounts=bank_accounts),
+                                                     bank_accounts=bank_accounts,
+                                                     timenow=timenow),
                            attachments=[('balance.pdf', 'application/pdf', pdf)],
                            sync=True)
             i += 1

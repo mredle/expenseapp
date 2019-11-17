@@ -27,25 +27,26 @@
     
     <h3>{{ _('Summary') }}</h3>
     <p>{{ _('Total expenses ') }}: {{ total_expenses_str }}</p>
+    <p>({{ _('Time') }}: {{ timenow }})</p>
     <br>
     <table class="table table-hover">
         <tr>
-            <td width="width:10%">
-            
+            <td width="width:{{balance_grid[0]}}">
+                {{ _('Username') }}:
             </td>
-            <td width="width:18%">
+            <td width="width:{{balance_grid[1]}}">
                 {{ _('Paid') }}:
             </td>
-            <td width="width:18%">
+            <td width="width:{{balance_grid[2]}}">
                 {{ _('Involved') }}:
             </td>
-            <td width="width:18%">
+            <td width="width:{{balance_grid[3]}}">
                 {{ _('Sent') }}:
             </td>
-            <td width="width:18%">
+            <td width="width:{{balance_grid[4]}}">
                 {{ _('Received') }}:
             </td>
-            <td width="width:18%">
+            <td width="width:{{balance_grid[5]}}">
                 {{ _('Balance') }}:
             </td>
         </tr>
@@ -55,11 +56,17 @@
     {% endfor %}
     <br>
     
-    <h3>{{ _('Open financial compensation') }}</h3>
+    <h3>{{ _('Open settlements') }}</h3>
     <p>{{ _('Accountant') }}: {{ event.accountant.username }}</p>
     <br>
-    {% for settlement in draft_settlements %}
+    {% for settlement in event.settlements.filter_by(draft=True).all() %}
         {% include 'pdf/_draft_settlement.html' %}
+    {% endfor %}
+    <br>
+    
+    <h3>{{ _('Settlements') }}</h3>
+    {% for settlement in event.settlements.filter_by(draft=False).all() %}
+        {% include 'pdf/_settlement.html' %}
     {% endfor %}
     <br>
     
@@ -69,9 +76,4 @@
     {% endfor %}
     <br>
 
-    <h3>{{ _('Settlements') }}</h3>
-    {% for settlement in event.settlements %}
-        {% include 'pdf/_settlement.html' %}
-    {% endfor %}
-    <br>
 {% endblock %}
