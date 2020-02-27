@@ -66,7 +66,7 @@ class Log(db.Model):
     msg_type = db.Column(db.String(128))
     msg = db.Column(db.String(256))
     trace = db.Column(db.String(4096))
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    date = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     user = db.relationship('User', back_populates='logs')
@@ -87,12 +87,12 @@ class Thumbnail(Entity, db.Model):
     __tablename__ = 'thumbnails'
     id = db.Column(db.Integer, primary_key=True)
     
-    name = db.Column(db.String(64))
+    name = db.Column(db.String(64), index=True)
     extension = db.Column(db.String(8))
     size = db.Column(db.Integer)
     format = db.Column(db.String(8))
     mode = db.Column(db.String(8))
-    image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    image_id = db.Column(db.Integer, db.ForeignKey('images.id'), index=True)
     image = db.relationship('Image', foreign_keys=image_id, back_populates='thumbnails')
     
     def __init__(self, image, size):
@@ -136,7 +136,7 @@ class Image(Entity, db.Model):
     __tablename__ = 'images'
     id = db.Column(db.Integer, primary_key=True)
     
-    name = db.Column(db.String(64))
+    name = db.Column(db.String(64), index=True)
     extension = db.Column(db.String(8))
     vector = db.Column(db.Boolean)
     width = db.Column(db.Integer)
@@ -260,7 +260,7 @@ class BankAccount(Entity, db.Model):
     city = db.Column(db.String(64))
     country = db.Column(db.String(64))
     description = db.Column(db.String(256))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     user = db.relationship('User', back_populates='bank_accounts')
     
     def __init__(self, user, iban, bank, name, address, address_suffix, zip_code, city, country, description='', db_created_by=''):
@@ -292,7 +292,7 @@ class Currency(Entity, db.Model):
     __tablename__ = 'currencies'
     id = db.Column(db.Integer, primary_key=True)
     
-    code = db.Column(db.String(3))
+    code = db.Column(db.String(3), index=True)
     name = db.Column(db.String(64))
     number = db.Column(db.Integer)
     exponent = db.Column(db.Integer)
@@ -541,9 +541,9 @@ class Expense(Entity, db.Model):
     __tablename__ = 'expenses'
     id = db.Column(db.Integer, primary_key=True)
     
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     user = db.relationship('User', back_populates='expenses')
-    event_id = db.Column(db.Integer, db.ForeignKey('events.id'))
+    event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
     event = db.relationship('Event', back_populates='expenses')
     currency_id = db.Column(db.Integer, db.ForeignKey('currencies.id'))
     currency = db.relationship('Currency', back_populates='expenses')
@@ -609,11 +609,11 @@ class Settlement(Entity, db.Model):
     __tablename__ = 'settlements'
     id = db.Column(db.Integer, primary_key=True)
     
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     sender = db.relationship('User', foreign_keys=sender_id, back_populates='settlements_sender')
-    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     recipient = db.relationship('User', foreign_keys=recipient_id, back_populates='settlements_recipient')
-    event_id = db.Column(db.Integer, db.ForeignKey('events.id'))
+    event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
     event = db.relationship('Event', back_populates='settlements')
     currency_id = db.Column(db.Integer, db.ForeignKey('currencies.id'))
     currency = db.relationship('Currency', back_populates='settlements')
@@ -672,9 +672,9 @@ class Post(Entity, db.Model):
     
     body = db.Column(db.String(256))
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     author = db.relationship('User', back_populates='posts')
-    event_id = db.Column(db.Integer, db.ForeignKey('events.id'))
+    event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
     event = db.relationship('Event', back_populates='posts')
     
     def __init__(self, body, timestamp, author, event, db_created_by=''):
@@ -700,9 +700,9 @@ class Message(Entity, db.Model):
     
     body = db.Column(db.String(256))
     timestamp = db.Column(db.DateTime, index=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     author = db.relationship('User', foreign_keys=sender_id, back_populates='messages_sent')
-    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     recipient = db.relationship('User', foreign_keys=recipient_id,  back_populates='messages_received')
     
     def __init__(self, body, author, recipient, db_created_by=''):
