@@ -25,6 +25,7 @@ flask dbinit admin --overwrite
 flask dbinit icons --overwrite --subfolder icons
 flask dbinit currencies --overwrite
 flask dbinit dummyusers --count 3
-flask dbinit add-missing-guid
+flask dbmaint add-missing-guid
+flask dbmaint clean-log --no-error --keepdays 30
 flask translate compile
 flask run -h localhost
