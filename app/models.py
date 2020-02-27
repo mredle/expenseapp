@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from sqlalchemy.orm import validates
+from sqlalchemy.types import TypeDecorator, CHAR
+from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from hashlib import md5
@@ -19,6 +21,44 @@ import mimetypes
 from app import db, login
 from flask import current_app, url_for
 from flask_login import UserMixin
+
+class GUID(TypeDecorator):
+    """Platform-independent GUID type.
+
+    Uses PostgreSQL's UUID type, otherwise uses
+    CHAR(32), storing as stringified hex values.
+
+    """
+    impl = CHAR
+    
+    def __repr__(self):
+        return self.impl.__repr__()
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(UUID())
+        else:
+            return dialect.type_descriptor(CHAR(32))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        elif dialect.name == 'postgresql':
+            return str(value)
+        else:
+            if not isinstance(value, uuid.UUID):
+                return "%.32x" % uuid.UUID(value).int
+            else:
+                # hexstring
+                return "%.32x" % value.int
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            if not isinstance(value, uuid.UUID):
+                value = uuid.UUID(value)
+            return value
 
 
 class PaginatedAPIMixin(object):
@@ -50,10 +90,12 @@ class Entity():
     db_updated_at = db.Column(db.DateTime)
     db_created_by = db.Column(db.String(64))
     db_updated_by = db.Column(db.String(64))
+    guid = db.Column(GUID(), index=True)
 
     def __init__(self, db_created_by=''):
         self.db_created_at = datetime.utcnow()
         self.db_updated_at = datetime.utcnow()
+        self.guid = uuid.uuid4()
         self.db_created_by = db_created_by
         self.db_updated_by = db_created_by
 

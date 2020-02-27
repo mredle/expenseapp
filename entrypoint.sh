@@ -12,5 +12,6 @@ flask dbinit admin --overwrite
 flask dbinit icons --overwrite --subfolder icons
 flask dbinit currencies --overwrite
 flask dbinit currency-flags --overwrite
+flask dbinit add-missing-guid
 flask translate compile
 exec gunicorn -b :5000 --access-logfile - --error-logfile - expenseapp:app

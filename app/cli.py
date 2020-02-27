@@ -5,8 +5,10 @@ import sys
 import click
 import time
 import csv
+import uuid
+from datetime import datetime
 from app import create_app, db
-from app.models import Currency, User, Image
+from app.models import BankAccount, Thumbnail, Image, Currency, Event, Post, Expense, Settlement, User, Message, Notification, Task
 from app.tasks import create_thumbnails
 from config import Config
 
@@ -224,11 +226,10 @@ def register(app):
     @click.option('--count', default=3, help='Number of dummy users to create.')
     def dummyusers(count):
         """Create dummy users for development."""
-        created_by = 'flask dummy --count {}'.format(count) 
+        created_by = 'flask dummyusers --count {}'.format(count) 
             
         # Fill users with dummy values
         n_users = count
-        users = []
         existing_usernames = [user.username for user in  User.query.all()]
         existing_emails = [user.email for user in  User.query.all()]
         for i_user in range(0, n_users):
@@ -241,7 +242,33 @@ def register(app):
             user.set_password(user.username)
             if (user.username not in existing_usernames) and (user.email not in existing_emails):
                 user.get_token()
-                users.append(user)
-                db.session.add(user)
-        db.session.commit()
+                
+    @dbinit.command()
+    def add_missing_guid():
+        """Fill table with missing guid"""
+        updated_by = 'flask add_missing_guid'
+            
+        # Fill table with missing guid
+        def class_add_missing_guid(UserClass):
+            instances = UserClass.query.filter(UserClass.guid.is_(None)).all()
+            
+            for instance in instances:
+                instance.db_updated_by = updated_by
+                instance.db_updated_at = datetime.utcnow()
+                instance.guid = uuid.uuid4();
+                
+            db.session.commit()
         
+        class_add_missing_guid(Event)
+        class_add_missing_guid(Thumbnail) 
+        class_add_missing_guid(BankAccount) 
+        class_add_missing_guid(Image) 
+        class_add_missing_guid(Currency) 
+        class_add_missing_guid(Event) 
+        class_add_missing_guid(Post) 
+        class_add_missing_guid(Expense) 
+        class_add_missing_guid(Settlement) 
+        class_add_missing_guid(User) 
+        class_add_missing_guid(Message) 
+        class_add_missing_guid(Notification)
+        class_add_missing_guid(Task)
