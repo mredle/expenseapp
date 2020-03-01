@@ -2,7 +2,7 @@
         <tr>
             <td width="64px">
                 {% if settlement.image %}
-                <a href="{{ url_for('main.image', image_id=settlement.image.id) }}">
+                <a href="{{ url_for('main.image', guid=settlement.image.guid) }}">
                     <img src="{{ settlement.avatar(64) }}" alt="" width="64" style="transform:rotate({{ settlement.image.rotate }}deg) scale({{ settlement.image.get_html_scale() }});">
                 </a>
                 {% endif %}
@@ -10,28 +10,28 @@
             <td>
                 {% set edit_link %}
                     <span>
-                        <a href="{{ url_for('event.edit_settlement', settlement_id=settlement.id) }}">
+                        <a href="{{ url_for('event.edit_settlement', guid=settlement.guid) }}">
                             {{ _('edit') }}
                         </a>
                     </span>
                 {% endset %}
                 {% set remove_link %}
                     <span>
-                        <a href="{{ url_for('event.remove_settlement', settlement_id=settlement.id) }}">
+                        <a href="{{ url_for('event.remove_settlement', guid=settlement.guid) }}">
                             {{ _('remove') }}
                         </a>
                     </span>
                 {% endset %}
                 {% set sender_link %}
                     <span class="settlement_popup">
-                        <a href="{{ url_for('main.user', username=settlement.sender.username) }}">
+                        <a href="{{ url_for('main.user', guid=settlement.sender.guid) }}">
                             {{ settlement.sender.username }}
                         </a>
                     </span>
                 {% endset %}
                 {% set recipient_link %}
                     <span class="settlement_popup">
-                        <a href="{{ url_for('main.user', username=settlement.recipient.username) }}">
+                        <a href="{{ url_for('main.user', guid=settlement.recipient.guid) }}">
                             {{ settlement.recipient.username }}
                         </a>
                     </span>

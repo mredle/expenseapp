@@ -3,7 +3,7 @@
             <td width="100px">
                 {% set user_link %}
                     <span class="user_popup">
-                        <a href="{{ url_for('main.user', username=balance[0].username) }}">
+                        <a href="{{ url_for('main.user', guid=balance[0].guid) }}">
                             {{ balance[0].username }}
                         </a>
                     </span>

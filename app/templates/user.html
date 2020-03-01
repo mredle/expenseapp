@@ -9,7 +9,7 @@
             <p>{{ _('Last seen on') }}: {{ moment(user.last_seen).format('LLL') }}</p>
             {% endif %}
             {% if user.profile_picture %}
-            <a href="{{ url_for('main.image', image_id=user.profile_picture.id) }}">
+            <a href="{{ url_for('main.image', guid=user.profile_picture.guid) }}">
                 <img src="{{ user.avatar(1024) }}" alt="" width="100%" style="transform:rotate({{ user.profile_picture.rotate }}deg) scale({{ user.profile_picture.get_html_scale() }});">
             </a>
             {% endif %}
@@ -18,13 +18,13 @@
             {% endif %}
 
             {% if current_user.is_admin and not user.is_admin %}
-            <p><a href="{{ url_for('main.set_admin', username=user.username) }}">{{ _('Set admin') }}</a></p>
+            <p><a href="{{ url_for('main.set_admin', guid=user.guid) }}">{{ _('Set admin') }}</a></p>
             {% elif current_user.is_admin and user.is_admin %}
-            <p><a href="{{ url_for('main.revoke_admin', username=user.username) }}">{{ _('Revoke admin') }}</a></p>
+            <p><a href="{{ url_for('main.revoke_admin', guid=user.guid) }}">{{ _('Revoke admin') }}</a></p>
             {% endif %}
             {% if user == current_user %}
             <p><a href="{{ url_for('main.edit_profile') }}">{{ _('Edit your profile') }}</a></p>
-            <p><a href="{{ url_for('main.bank_accounts', username=user.username) }}">{{ _('Manage bank accounts') }}</a></p>
+            <p><a href="{{ url_for('main.bank_accounts', guid=user.guid) }}">{{ _('Manage bank accounts') }}</a></p>
             {% if not current_user.get_task_in_progress('export_posts') %}
             <p><a href="{{ url_for('main.export_posts') }}">{{ _('Export your posts') }}</a></p>
             {% endif %}
@@ -33,7 +33,7 @@
             {% endif %}
             {% endif %}
             {% if user != current_user %}
-            <p><a href="{{ url_for('main.messages', recipient=user.username) }}">{{ _('Send private message') }}</a></p>
+            <p><a href="{{ url_for('main.messages', recipient=user.guid) }}">{{ _('Send private message') }}</a></p>
             {% endif %}
         </tr>
     </table>

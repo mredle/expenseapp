@@ -9,40 +9,40 @@
             <p>{{ event.description }}</p>
             {% endif %}
             {% if event.image %}
-            <a href="{{ url_for('main.image', image_id=event.image.id) }}">
+            <a href="{{ url_for('main.image', guid=event.image.guid) }}">
                 <img src="{{ event.avatar(1024) }}" alt="" width="100%" style="transform:rotate({{ event.image.rotate }}deg) scale({{ event.image.get_html_scale() }});">
             </a>
             {% endif %}
             {% if event.can_edit(current_user) %}
-            <p><a href="{{ url_for('event.edit_picture', event_id=event.id) }}">{{ _('Edit your event picture') }}</a></p>
+            <p><a href="{{ url_for('event.edit_picture', guid=event.guid) }}">{{ _('Edit your event picture') }}</a></p>
             {% endif %}
 
             <p>{{ _('Admin') }}: {{ event.admin.username }}</p>
             <p>{{ _('Accountant') }}: {{ event.accountant.username }}</p>
             <p>{{ _('Base Currency') }}: {{ event.base_currency.code }}</p>
-            <p><a href="{{ url_for('event.currencies', event_id=event.id) }}">{{ _('Allowed currencies') }}</a>: {{ event.get_allowed_currencies_str() }} </p>
+            <p><a href="{{ url_for('event.currencies', guid=event.guid) }}">{{ _('Allowed currencies') }}</a>: {{ event.get_allowed_currencies_str() }} </p>
             <p>{{ _('Exchange fee') }}: {{ event.exchange_fee }}%</p>
             <p>{{ _('From') }}: {{ moment(event.date).format('LL') }}</p>
             <p>{{ _('%(count)d users', count=stats['users']) }}, 
                {{ _('%(count)d posts', count=stats['posts']) }}, 
                {{ _('%(count)d expenses', count=stats['expenses']) }}, 
                {{ _('%(count)d settlements', count=stats['settlements']) }}</p>
-            <p><a href="{{ url_for('event.expenses', event_id=event.id) }}">{{ _('Expenses') }}</a></p>
-            <p><a href="{{ url_for('event.settlements', event_id=event.id) }}">{{ _('Settlements') }}</a></p>
-            <p><a href="{{ url_for('event.balance', event_id=event.id) }}">{{ _('Balance sheet') }} </a>
-            (<a href="{{ url_for('event.request_balance', event_id=event.id) }}">{{ _('Send balance sheet as PDF to my email') }}</a>)</p>
+            <p><a href="{{ url_for('event.expenses', guid=event.guid) }}">{{ _('Expenses') }}</a></p>
+            <p><a href="{{ url_for('event.settlements', guid=event.guid) }}">{{ _('Settlements') }}</a></p>
+            <p><a href="{{ url_for('event.balance', guid=event.guid) }}">{{ _('Balance sheet') }} </a>
+            (<a href="{{ url_for('event.request_balance', guid=event.guid) }}">{{ _('Send balance sheet as PDF to my email') }}</a>)</p>
             {% if event.fileshare_link %}
                 <p><a href="{{ event.fileshare_link }}" target="_blank">{{ _('Link to external fileshare') }}</a></p>
             {% endif %}
             {% if event.can_edit(current_user) %}
             {% if event.closed %}
-            <p><a href="{{ url_for('event.reopen', event_id=event.id) }}">{{ _('Reopen this event') }}</a></p>
+            <p><a href="{{ url_for('event.reopen', guid=event.guid) }}">{{ _('Reopen this event') }}</a></p>
             {% else %}
-            <p><a href="{{ url_for('event.send_payment_reminders', event_id=event.id) }}">{{ _('Send payment reminders') }}</a></p>
-            <p><a href="{{ url_for('event.convert_currencies', event_id=event.id) }}">{{ _('Convert all transactions of this event to the base currency') }}</a></p>
-            <p><a href="{{ url_for('event.close', event_id=event.id) }}">{{ _('Close this event') }}</a></p>
-            <p><a href="{{ url_for('event.edit', event_id=event.id) }}">{{ _('Edit this event') }}</a></p>
-            <p><a href="{{ url_for('event.users', event_id=event.id) }}">{{ _('Manage users') }}</a></p>
+            <p><a href="{{ url_for('event.send_payment_reminders', guid=event.guid) }}">{{ _('Send payment reminders') }}</a></p>
+            <p><a href="{{ url_for('event.convert_currencies', guid=event.guid) }}">{{ _('Convert all transactions of this event to the base currency') }}</a></p>
+            <p><a href="{{ url_for('event.close', guid=event.guid) }}">{{ _('Close this event') }}</a></p>
+            <p><a href="{{ url_for('event.edit', guid=event.guid) }}">{{ _('Edit this event') }}</a></p>
+            <p><a href="{{ url_for('event.users', guid=event.guid) }}">{{ _('Manage users') }}</a></p>
             {% endif %}
             {% endif %}
         </tr>

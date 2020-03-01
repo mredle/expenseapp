@@ -6,6 +6,7 @@ pyjwt
 gunicorn 
 pymysql 
 flask 
+Werkzeug==0.16
 flask-sqlalchemy 
 flask-migrate 
 flask-login 

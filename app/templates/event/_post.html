@@ -2,7 +2,7 @@
         <tr>
             <td width="64px">
                 {% if post.author.profile_picture %}
-                <a href="{{ url_for('main.image', image_id=post.author.profile_picture.id) }}">
+                <a href="{{ url_for('main.image', guid=post.author.profile_picture.guid) }}">
                     <img src="{{ post.author.avatar(64) }}" alt="" width="64" style="transform:rotate({{ post.author.profile_picture.rotate }}deg) scale({{ post.author.profile_picture.get_html_scale() }});">
                 </a>
                 {% endif %}
@@ -10,7 +10,7 @@
             <td>
                 {% set user_link %}
                     <span class="user_popup">
-                        <a href="{{ url_for('main.user', username=post.author.username) }}">
+                        <a href="{{ url_for('main.user', guid=post.author.guid) }}">
                             {{ post.author.username }}
                         </a>
                     </span>

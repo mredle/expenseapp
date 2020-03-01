@@ -2,7 +2,7 @@
         <tr>
             <td width="64px">
                 {% if user.profile_picture %}
-                <a href="{{ url_for('main.image', image_id=user.profile_picture.id) }}">
+                <a href="{{ url_for('main.image', guid=user.profile_picture.guid) }}">
                     <img src="{{ user.avatar(64) }}" alt="" width="64" style="transform:rotate({{ user.profile_picture.rotate }}deg) scale({{ user.profile_picture.get_html_scale() }});">
                 </a>
                 {% endif %}
@@ -10,14 +10,14 @@
             <td>
                 {% set user_link %}
                     <span class="user_popup">
-                        <a href="{{ url_for('main.user', username=user.username) }}">
+                        <a href="{{ url_for('main.user', guid=user.guid) }}">
                             {{ user.username }}
                         </a>
                     </span>
                 {% endset %}
                 {% set remove_link %}
                     <span>
-                        <a href="{{ url_for('event.expense_remove_user', username=user.username, expense_id=expense.id) }}">
+                        <a href="{{ url_for('event.expense_remove_user', guid=expense.guid, user_guid=user.guid) }}">
                             {{ _('remove') }}
                         </a>
                     </span>

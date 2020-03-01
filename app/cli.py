@@ -242,6 +242,8 @@ def register(app):
             user.set_password(user.username)
             if (user.username not in existing_usernames) and (user.email not in existing_emails):
                 user.get_token()
+                db.session.add(user)
+        db.session.commit()
                 
                 
     @app.cli.group()

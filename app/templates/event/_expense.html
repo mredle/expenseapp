@@ -2,7 +2,7 @@
         <tr>
             <td width="64px">
                 {% if expense.image %}
-                <a href="{{ url_for('main.image', image_id=expense.image.id) }}">
+                <a href="{{ url_for('main.image', guid=expense.image.guid) }}">
                     <img src="{{ expense.avatar(64) }}" alt="" width="64" style="transform:rotate({{ expense.image.rotate }}deg) scale({{ expense.image.get_html_scale() }});">
                 </a>
                 {% endif %}
@@ -10,35 +10,35 @@
             <td>
                 {% set add_receipt_link %}
                     <span>
-                        <a href="{{ url_for('event.add_receipt', expense_id=expense.id) }}">
+                        <a href="{{ url_for('event.add_receipt', guid=expense.guid) }}">
                             {{ _('add receipt') }}
                         </a>
                     </span>
                 {% endset %}
                 {% set edit_link %}
                     <span>
-                        <a href="{{ url_for('event.edit_expense', expense_id=expense.id) }}">
+                        <a href="{{ url_for('event.edit_expense', guid=expense.guid) }}">
                             {{ _('edit') }}
                         </a>
                     </span>
                 {% endset %}
                 {% set remove_link %}
                     <span>
-                        <a href="{{ url_for('event.remove_expense', expense_id=expense.id) }}">
+                        <a href="{{ url_for('event.remove_expense', guid=expense.guid) }}">
                             {{ _('remove') }}
                         </a>
                     </span>
                 {% endset %}
                 {% set user_link %}
                     <span class="user_popup">
-                        <a href="{{ url_for('main.user', username=expense.user.username) }}">
+                        <a href="{{ url_for('main.user', guid=expense.user.guid) }}">
                             {{ expense.user.username }}
                         </a>
                     </span>
                 {% endset %}
                 {% set users_link %}
                     <span class="user_popup">
-                        <a href="{{ url_for('event.expense_users', expense_id=expense.id) }}">
+                        <a href="{{ url_for('event.expense_users', guid=expense.guid) }}">
                             {{ _('%(affected_users)d User', affected_users=expense.affected_users.count()) }}
                         </a>
                     </span>

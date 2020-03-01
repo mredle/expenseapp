@@ -2,7 +2,7 @@
         <tr>
             <td width="64px">
                 {% if currency.image %}
-                <a href="{{ url_for('main.image', image_id=currency.image.id) }}">
+                <a href="{{ url_for('main.image', guid=currency.image.guid) }}">
                     <img src="{{ currency.avatar(64) }}" alt="" width="64"style="transform:rotate({{ currency.image.rotate }}deg) scale({{ currency.image.get_html_scale() }});">
                 </a>
                 {% endif %}
@@ -10,7 +10,7 @@
             <td>
                 {% set edit_link %}
                     <span>
-                        <a href="{{ url_for('main.edit_currency', currency_id=currency.id) }}">
+                        <a href="{{ url_for('main.edit_currency', guid=currency.guid) }}">
                             {{ _('edit') }}
                         </a>
                     </span>

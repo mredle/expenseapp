@@ -69,21 +69,21 @@ class ApiUserList(Resource):
         db.session.commit()
         response = user.to_dict()
         response.status_code = 201
-        response.headers['Location'] = api.url_for(ApiUserList, id=user.id)
+        response.headers['Location'] = api.url_for(ApiUserList, guid=user.guid)
         return response
 
 
-@api.route('/<int:id>')
+@api.route('/<guid>')
 class ApiUser(Resource):
     @token_auth.login_required
     @api.marshal_with(user)
-    def get(self, id):
-        return User.query.get_or_404(id).to_dict()
+    def get(self, guid):
+        return User.get_by_guid_or_404(guid).to_dict()
 
     @token_auth.login_required
     @api.expect(user)
-    def put(self, id):
-        user = User.query.get_or_404(id)
+    def put(self, guid):
+        user = User.get_by_guid_or_404(guid)
         data = request.get_json() or {}
         if 'username' in data and data['username'] != user.username and \
                 User.query.filter_by(username=data['username']).first():

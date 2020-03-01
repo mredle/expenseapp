@@ -2,7 +2,7 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    <p><a href="{{ url_for('event.main', event_id=event.id) }}">{{ _('Back to event') }}</a></p>
+    <p><a href="{{ url_for('event.main', guid=event.guid) }}">{{ _('Back to event') }}</a></p>
     {% if not event.closed %}
     {{ _('Add expense') }}
     {% if form %}

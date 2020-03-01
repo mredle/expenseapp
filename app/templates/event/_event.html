@@ -2,7 +2,7 @@
         <tr>
             <td width="64px">
                 {% if event.image %}
-                <a href="{{ url_for('main.image', image_id=event.image.id) }}">
+                <a href="{{ url_for('main.image', guid=event.image.guid) }}">
                     <img src="{{ event.avatar(64) }}" alt="" width="64" style="transform:rotate({{ event.image.rotate }}deg) scale({{ event.image.get_html_scale() }});">
                 </a>
                 {% endif %}
@@ -10,7 +10,7 @@
             <td>
                 {% set event_link %}
                     <span class="event_popup">
-                        <a href="{{ url_for('event.main', event_id=event.id) }}">
+                        <a href="{{ url_for('event.main', guid=event.guid) }}">
                             {{ event.name }}
                         </a>
                     </span>

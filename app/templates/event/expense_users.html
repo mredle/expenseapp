@@ -2,7 +2,7 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    <p><a href="{{ url_for('event.expenses', event_id=expense.event.id) }}">{{ _('Back to expenses') }}</a></p>
+    <p><a href="{{ url_for('event.expenses', guid=expense.event.guid) }}">{{ _('Back to expenses') }}</a></p>
     {% if form and can_edit %}
     {{ wtf.quick_form(form) }}
     <br>

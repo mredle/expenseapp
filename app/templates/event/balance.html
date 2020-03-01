@@ -2,8 +2,8 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    <p><a href="{{ url_for('event.main', event_id=event.id) }}">{{ _('Back to event') }}</a></p>
-    <p><a href="{{ url_for('event.request_balance', event_id=event.id) }}">{{ _('Send balance sheet as PDF to my email') }}</a></p>
+    <p><a href="{{ url_for('event.main', guid=event.guid) }}">{{ _('Back to event') }}</a></p>
+    <p><a href="{{ url_for('event.request_balance', guid=event.guid) }}">{{ _('Send balance sheet as PDF to my email') }}</a></p>
     <h3>{{ _('Summary') }}</h3>
     <p>{{ _('Total expenses ') }}: {{ total_expenses_str }}</p>
     <br>

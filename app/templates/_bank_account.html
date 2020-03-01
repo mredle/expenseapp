@@ -5,14 +5,14 @@
             <td>
                 {% set edit_link %}
                     <span>
-                        <a href="{{ url_for('main.edit_bank_account', bank_account_id=bank_account.id) }}">
+                        <a href="{{ url_for('main.edit_bank_account', guid=bank_account.guid) }}">
                             {{ _('edit') }}
                         </a>
                     </span>
                 {% endset %}
                 {% set remove_link %}
                     <span>
-                        <a href="{{ url_for('main.remove_bank_account', bank_account_id=bank_account.id) }}">
+                        <a href="{{ url_for('main.remove_bank_account', guid=bank_account.guid) }}">
                             {{ _('remove') }}
                         </a>
                     </span>

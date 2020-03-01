@@ -39,7 +39,7 @@
                     {% if current_user.is_admin %}
                     <li><a href="{{ url_for('main.administration') }}">{{ _('Administration') }}</a></li>
                     {% endif %}
-                    <li><a href="{{ url_for('main.user', username=current_user.username) }}">{{ _('Profile') }}</a></li>
+                    <li><a href="{{ url_for('main.user', guid=current_user.guid) }}">{{ _('Profile') }}</a></li>
                     <li><a href="{{ url_for('auth.logout') }}">{{ _('Logout') }}</a></li>
                     {% endif %}
                 </ul>

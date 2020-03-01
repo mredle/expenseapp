@@ -90,7 +90,7 @@ class Entity():
     db_updated_at = db.Column(db.DateTime)
     db_created_by = db.Column(db.String(64))
     db_updated_by = db.Column(db.String(64))
-    guid = db.Column(GUID(), index=True)
+    guid = db.Column(GUID(), index=True, unique=True)
 
     def __init__(self, db_created_by=''):
         self.db_created_at = datetime.utcnow()
@@ -98,6 +98,11 @@ class Entity():
         self.guid = uuid.uuid4()
         self.db_created_by = db_created_by
         self.db_updated_by = db_created_by
+        
+    @classmethod
+    def get_by_guid_or_404(cls, guid):
+        return cls.query.filter(cls.guid==guid).first_or_404()
+    
 
 class Log(db.Model):
     __tablename__ = 'log'

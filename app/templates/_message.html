@@ -2,7 +2,7 @@
         <tr>
             <td width="64px">
                 {% if message.author.profile_picture %}
-                <a href="{{ url_for('main.image', image_id=message.author.profile_picture.id) }}">
+                <a href="{{ url_for('main.image', guid=message.author.profile_picture.guid) }}">
                     <img src="{{ message.author.avatar(64) }}" alt="" width="64" style="transform:rotate({{ message.author.profile_picture.rotate }}deg) scale({{ message.author.profile_picture.get_html_scale() }});">
                 </a>
                 {% endif %}
@@ -11,7 +11,7 @@
                 {% if message.author == current_user %}
                 {% set recipient_link %}
                     <span class="user_popup">
-                        <a href="{{ url_for('main.user', username=message.recipient.username) }}">
+                        <a href="{{ url_for('main.user', guid=message.recipient.guid) }}">
                             {{ message.recipient.username }}
                         </a>
                     </span>
@@ -21,7 +21,7 @@
                 {% else %}
                 {% set sender_link %}
                     <span class="user_popup">
-                        <a href="{{ url_for('main.user', username=message.author.username) }}">
+                        <a href="{{ url_for('main.user', guid=message.author.guid) }}">
                             {{ message.author.username }}
                         </a>
                     </span>
@@ -30,7 +30,7 @@
                     username=sender_link, when=moment(message.timestamp).fromNow()) }}
                 {% endif %}
                 <br>
-                <span id="message{{ message.id }}">{{ message.body }}</span>
+                <span id="message{{ message.guid }}">{{ message.body }}</span>
             </td>
         </tr>
     </table>
