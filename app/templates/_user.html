@@ -10,7 +10,7 @@
             <td>
                 {% set user_link %}
                     <span class="user_popup">
-                        <div id="user_popup_guid", style="display: none;"> {{ user.guid }} </div>
+                        <div id="guid", style="display: none;"> {{ user.guid }} </div>
                         <a href="{{ url_for('main.user', guid=user.guid) }}">
                             {{ user.username }}
                         </a>

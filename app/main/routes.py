@@ -258,8 +258,8 @@ def user(guid):
     page = request.args.get('page', 1, type=int)
     events = user.events_admin.order_by(Event.date.desc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
-    next_url = url_for('main.user', username=user.username, page=events.next_num) if events.has_next else None
-    prev_url = url_for('main.user', username=user.username, page=events.prev_num) if events.has_prev else None
+    next_url = url_for('main.user', guid=user.guid, page=events.next_num) if events.has_next else None
+    prev_url = url_for('main.user', guid=user.guid, page=events.prev_num) if events.has_prev else None
     return render_template('user.html', 
                            title= _('User %(username)s', username = user.username), 
                            user=user, 

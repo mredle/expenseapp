@@ -11,6 +11,7 @@
                 {% if message.author == current_user %}
                 {% set recipient_link %}
                     <span class="user_popup">
+                        <div id="guid", style="display: none;"> {{ message.recipient.guid }} </div>
                         <a href="{{ url_for('main.user', guid=message.recipient.guid) }}">
                             {{ message.recipient.username }}
                         </a>
@@ -21,6 +22,7 @@
                 {% else %}
                 {% set sender_link %}
                     <span class="user_popup">
+                        <div id="guid", style="display: none;"> {{ message.author.guid }} </div>
                         <a href="{{ url_for('main.user', guid=message.author.guid) }}">
                             {{ message.author.username }}
                         </a>

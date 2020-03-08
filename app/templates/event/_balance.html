@@ -3,6 +3,7 @@
             <td width="100px">
                 {% set user_link %}
                     <span class="user_popup">
+                        <div id="guid", style="display: none;"> {{ balance[0].guid }} </div>
                         <a href="{{ url_for('main.user', guid=balance[0].guid) }}">
                             {{ balance[0].username }}
                         </a>

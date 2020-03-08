@@ -48,8 +48,8 @@ def main(guid):
     page = request.args.get('page', 1, type=int)
     posts = event.posts.order_by(Post.timestamp.desc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
-    next_url = url_for('event.main', event_id=event.id, page=posts.next_num) if posts.has_next else None
-    prev_url = url_for('event.main', event_id=event.id, page=posts.prev_num) if posts.has_prev else None
+    next_url = url_for('event.main', guid=event.guid, page=posts.next_num) if posts.has_next else None
+    prev_url = url_for('event.main', guid=event.guid, page=posts.prev_num) if posts.has_prev else None
     return render_template('event/main.html', 
                            form=form, 
                            event=event, 
@@ -325,8 +325,8 @@ def expenses(guid):
     page = request.args.get('page', 1, type=int)
     expenses = event.expenses.order_by(Expense.date.desc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
-    next_url = url_for('event.expenses', event_id=event.id, page=expenses.next_num) if expenses.has_next else None
-    prev_url = url_for('event.expenses', event_id=event.id, page=expenses.prev_num) if expenses.has_prev else None
+    next_url = url_for('event.expenses', guid=event.guid, page=expenses.next_num) if expenses.has_next else None
+    prev_url = url_for('event.expenses', guid=event.guid, page=expenses.prev_num) if expenses.has_prev else None
     return render_template('event/expenses.html', 
                            form=form, 
                            event=event, 
@@ -544,8 +544,8 @@ def settlements(guid):
     page = request.args.get('page', 1, type=int)
     settlements = event.settlements.filter_by(draft=False).order_by(Settlement.date.desc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
-    next_url = url_for('event.settlements', event_id=event.id, page=settlements.next_num) if settlements.has_next else None
-    prev_url = url_for('event.settlements', event_id=event.id, page=settlements.prev_num) if settlements.has_prev else None
+    next_url = url_for('event.settlements', guid=event.guid, page=settlements.next_num) if settlements.has_next else None
+    prev_url = url_for('event.settlements', guid=event.guid, page=settlements.prev_num) if settlements.has_prev else None
     return render_template('event/settlements.html', 
                            form=form, 
                            event=event, 
@@ -635,7 +635,7 @@ def send_payment_reminders(guid):
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to send payment reminders of your own event!'))
         log_page_access_denied(request, current_user)
-        return redirect(url_for('event.main', event_id=event.id))
+        return redirect(url_for('event.main', guid=event.guid))
     log_page_access(request, current_user)
     current_user.launch_task('send_reminders', _('Sending balance reports...'), guid=guid)
     db.session.commit()

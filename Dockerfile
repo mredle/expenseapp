@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.7-alpine
+FROM python:3.8-alpine
 SHELL ["/bin/sh", "-c"]
 
 # Setup python environment with pip

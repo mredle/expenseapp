@@ -1,12 +1,12 @@
 Pillow
 redis
 rq
-python-dotenv 
-pyjwt 
-gunicorn 
-pymysql 
-flask 
+python-dotenv
+pyjwt
+gunicorn
+pymysql
 Werkzeug==0.16
+flask
 flask-sqlalchemy 
 flask-migrate 
 flask-login 
