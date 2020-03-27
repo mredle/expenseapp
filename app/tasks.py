@@ -27,10 +27,10 @@ def _set_task_progress(progress):
             task.complete = True
         db.session.commit()
 
-def consume_time(user_id):
+def consume_time(guid):
     amount=10
     try:
-        user = User.query.get(user_id)
+        user = User.get_by_guid_or_404(guid)
         _set_task_progress(0)
         for i in range(amount):
             time.sleep(1)
@@ -71,10 +71,10 @@ def create_thumbnails(image, update_progress=False):
         _set_task_progress(100)
     db.session.commit()
 
-def import_image(user_id, path, add_to_class, add_to_id):
+def import_image(guid, path, add_to_class, add_to_id):
     try:
         # Saving the image to a new file
-        user = User.query.get(user_id)
+        user = User.get_by_guid_or_404(guid)
         image = Image(path)
         image.description = 'Image uploaded by {}'.format(user.username)
         
@@ -100,9 +100,9 @@ def import_image(user_id, path, add_to_class, add_to_id):
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
         
-def export_posts(user_id):
+def export_posts(guid):
     try:
-        user = User.query.get(user_id)
+        user = User.get_by_guid_or_404(guid)
         _set_task_progress(0)
         data = []
         i = 0
@@ -156,10 +156,10 @@ def get_balance_pdf(event, locale, timenow=None, recalculate=False):
     
     return pdf
     
-def request_balance(user_id, event_id):
+def request_balance(guid, event_guid):
     try:
-        user = User.query.get(user_id)
-        event = Event.query.get(event_id)
+        user = User.get_by_guid_or_404(guid)
+        event = Event.get_by_guid_or_404(event_guid)
         
         _set_task_progress(0)
         timenow=datetime.utcnow().replace(microsecond=0).isoformat()
@@ -184,10 +184,10 @@ def request_balance(user_id, event_id):
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
-def send_reminders(user_id, event_id):
+def send_reminders(guid, event_guid):
     try:
-        User.query.get(user_id)
-        event = Event.query.get(event_id)
+        #user = User.get_by_guid_or_404(guid)
+        event = Event.get_by_guid_or_404(event_guid)
         
         _set_task_progress(0)
         draft_settlements = event.calculate_balance()

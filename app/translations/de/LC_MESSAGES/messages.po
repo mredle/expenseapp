@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-11-17 16:59+0100\n"
+"POT-Creation-Date: 2020-03-27 16:50+0100\n"
 "PO-Revision-Date: 2018-08-29 22:41+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -16,7 +16,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.7.0\n"
+"Generated-By: Babel 2.8.0\n"
 
 #: app/__init__.py:26
 msgid "Please log in to access this page."
@@ -161,7 +161,7 @@ msgid "Description"
 msgstr "Beschreibung"
 
 #: app/event/forms.py:26 app/main/forms.py:88 app/main/forms.py:111
-#: app/templates/event/_user.html:21
+#: app/templates/event/_user.html:22
 msgid "Administrator"
 msgstr "Administrator"
 
@@ -253,8 +253,8 @@ msgstr "Du kannst nur eine geöffnete Veranstaltung bearbeiten!"
 
 #: app/event/routes.py:153 app/event/routes.py:185 app/event/routes.py:356
 #: app/event/routes.py:394 app/event/routes.py:583 app/main/routes.py:109
-#: app/main/routes.py:207 app/main/routes.py:320 app/main/routes.py:401
-#: app/main/routes.py:423
+#: app/main/routes.py:207 app/main/routes.py:320 app/main/routes.py:443
+#: app/main/routes.py:465
 msgid "Your changes have been saved."
 msgstr "Deine Änderungen wurden gespeichert."
 
@@ -262,12 +262,12 @@ msgstr "Deine Änderungen wurden gespeichert."
 msgid "Edit Event"
 msgstr "Veranstaltung bearbeiten"
 
-#: app/event/routes.py:183 app/event/routes.py:354 app/main/routes.py:421
+#: app/event/routes.py:183 app/event/routes.py:354 app/main/routes.py:463
 #, python-format
 msgid "Importing %(filename)s..."
 msgstr "Importiere %(filename)s..."
 
-#: app/event/routes.py:187 app/event/routes.py:358 app/main/routes.py:425
+#: app/event/routes.py:187 app/event/routes.py:358 app/main/routes.py:467
 msgid "Invalid or empty image."
 msgstr "Ungültiges oder leeres Bild."
 
@@ -595,51 +595,67 @@ msgstr "Nur ein Administrator kann Administratorenrechte zurücksetzen!"
 msgid "Only an admin can view the admin page!"
 msgstr "Nur ein Admin kann die Adminseite sehen!"
 
-#: app/main/routes.py:378 app/templates/base.html:40
+#: app/main/routes.py:370 app/templates/base.html:40
 msgid "Administration"
 msgstr "Administration"
 
-#: app/main/routes.py:409
+#: app/main/routes.py:376
+msgid "Only an admin can view the log page!"
+msgstr "Nur ein Admin kann die Logseite sehen!"
+
+#: app/main/routes.py:394 app/templates/administration.html:6
+msgid "Logs"
+msgstr "Logeinträge"
+
+#: app/main/routes.py:401
+msgid "Only an admin can view the task page!"
+msgstr "Nur ein Admin kann die Aufgabenseite sehen!"
+
+#: app/main/routes.py:420 app/templates/administration.html:7
+msgid "Tasks"
+msgstr "Aufgaben"
+
+#: app/main/routes.py:451
 msgid "Edit Profile"
 msgstr "Benutzerprofil bearbeiten"
 
-#: app/main/routes.py:428
+#: app/main/routes.py:470
 msgid "Profile Picture"
 msgstr "Benutzerprofilbild"
 
-#: app/main/routes.py:453
+#: app/main/routes.py:495
 msgid "Your message has been sent."
 msgstr "Deine Nachricht wurde versendet."
 
-#: app/main/routes.py:464 app/templates/base.html:30
+#: app/main/routes.py:506 app/templates/base.html:30
 msgid "Messages"
 msgstr "Nachrichten"
 
-#: app/main/routes.py:486
+#: app/main/routes.py:528
 msgid "An export task is currently in progress"
 msgstr "Ein Exportvorgang läuft schon zur Zeit"
 
-#: app/main/routes.py:488
+#: app/main/routes.py:530
 msgid "Exporting posts..."
 msgstr "Beiträge exportieren..."
 
-#: app/main/routes.py:497
+#: app/main/routes.py:539
 msgid "A time consuming task is currently in progress"
 msgstr "Eine zeitraubende Aufgabe ist im Gange"
 
-#: app/main/routes.py:499
+#: app/main/routes.py:541
 msgid "Consuming time..."
 msgstr "Verbrauche Zeit..."
 
 #: app/templates/_bank_account.html:9 app/templates/_currency.html:14
-#: app/templates/_user.html:21 app/templates/event/_expense.html:21
+#: app/templates/_user.html:22 app/templates/event/_expense.html:21
 #: app/templates/event/_settlement.html:14
 msgid "edit"
 msgstr "bearbeiten"
 
 #: app/templates/_bank_account.html:16 app/templates/event/_expense.html:28
-#: app/templates/event/_expense_user.html:21
-#: app/templates/event/_settlement.html:21 app/templates/event/_user.html:24
+#: app/templates/event/_expense_user.html:22
+#: app/templates/event/_settlement.html:21 app/templates/event/_user.html:25
 msgid "remove"
 msgstr "entfernen"
 
@@ -648,13 +664,13 @@ msgstr "entfernen"
 msgid "%(bank)s: %(iban)s"
 msgstr "%(bank)s: %(iban)s"
 
-#: app/templates/_bank_account.html:27 app/templates/_user.html:26
-#: app/templates/_user.html:28 app/templates/event/_draft_settlement.html:18
-#: app/templates/event/_expense.html:55
-#: app/templates/event/_expense_user.html:26
+#: app/templates/_bank_account.html:27 app/templates/_user.html:27
+#: app/templates/_user.html:29 app/templates/event/_draft_settlement.html:18
+#: app/templates/event/_expense.html:56
 #: app/templates/event/_expense_user.html:27
-#: app/templates/event/_settlement.html:48 app/templates/event/_user.html:30
-#: app/templates/event/_user.html:31
+#: app/templates/event/_expense_user.html:28
+#: app/templates/event/_settlement.html:50 app/templates/event/_user.html:31
+#: app/templates/event/_user.html:32
 #, python-format
 msgid "%(link)s"
 msgstr "%(link)s"
@@ -669,23 +685,15 @@ msgstr "%(name)s (%(edit_link)s)"
 msgid "%(code)s 1 equals CHF %(inCHF).4f"
 msgstr "%(code)s 1 entspricht CHF %(inCHF).4f"
 
-#: app/templates/_message.html:19
+#: app/templates/_message.html:20
 #, python-format
 msgid "You wrote %(username)s %(when)s:"
 msgstr "Du hast %(username)s %(when)s geschrieben:"
 
-#: app/templates/_message.html:29
+#: app/templates/_message.html:31
 #, python-format
 msgid "%(username)s wrote you %(when)s:"
 msgstr "%(username)s schrieb dir %(when)s:"
-
-#: app/templates/administration.html:13
-msgid "Newer logs"
-msgstr "Neuere Logeinträge"
-
-#: app/templates/administration.html:18
-msgid "Older logs"
-msgstr "Ältere Logeinträge"
 
 #: app/templates/bank_accounts.html:5
 msgid "Back to profile"
@@ -743,6 +751,34 @@ msgstr "Drehe das Bild um 90 Grad im GUZS"
 msgid "Turn image upside down"
 msgstr "Drehe das Bild auf den Kopf"
 
+#: app/templates/logs.html:6 app/templates/tasks.html:6
+msgid "Back to administration"
+msgstr "Zurück zur Administration"
+
+#: app/templates/logs.html:7 app/templates/tasks.html:7
+msgid "All"
+msgstr "Alle"
+
+#: app/templates/logs.html:8
+msgid "Error"
+msgstr "Fehler"
+
+#: app/templates/logs.html:9
+msgid "Warning"
+msgstr "Warnung"
+
+#: app/templates/logs.html:10
+msgid "Information"
+msgstr "Information"
+
+#: app/templates/logs.html:19
+msgid "Newer logs"
+msgstr "Neuere Logeinträge"
+
+#: app/templates/logs.html:24
+msgid "Older logs"
+msgstr "Ältere Logeinträge"
+
 #: app/templates/messages.html:17
 msgid "Newer messages"
 msgstr "Neuere Nachrichten"
@@ -750,6 +786,22 @@ msgstr "Neuere Nachrichten"
 #: app/templates/messages.html:22
 msgid "Older messages"
 msgstr "Ältere Nachrichten"
+
+#: app/templates/tasks.html:8
+msgid "Uncomplete"
+msgstr "Pendent"
+
+#: app/templates/tasks.html:9
+msgid "Complete"
+msgstr "Abgeschlossen"
+
+#: app/templates/tasks.html:18
+msgid "Newer tasks"
+msgstr "Neuere Aufgaben"
+
+#: app/templates/tasks.html:23
+msgid "Older tasks"
+msgstr "Ältere Aufgaben"
 
 #: app/templates/user.html:9 app/templates/user_popup.html:13
 msgid "Last seen on"
@@ -936,22 +988,22 @@ msgstr "%(event_name)s (%(when)s):"
 msgid "add receipt"
 msgstr "Beleg hinzufügen"
 
-#: app/templates/event/_expense.html:42
+#: app/templates/event/_expense.html:43
 #, python-format
 msgid "%(affected_users)d User"
 msgstr "%(affected_users)d Benutzer"
 
-#: app/templates/event/_expense.html:46
+#: app/templates/event/_expense.html:47
 #, python-format
 msgid "%(when)s, %(username)s spent %(amount_str)s for %(affected_users)s:"
 msgstr "%(when)s, gab %(username)s %(amount_str)s für %(affected_users)s aus:"
 
-#: app/templates/event/_post.html:18
+#: app/templates/event/_post.html:19
 #, python-format
 msgid "%(username)s said %(when)s:"
 msgstr "%(username)s sagte %(when)s:"
 
-#: app/templates/event/_settlement.html:39 app/templates/pdf/_settlement.html:9
+#: app/templates/event/_settlement.html:41 app/templates/pdf/_settlement.html:9
 #, python-format
 msgid "%(when)s, %(sender)s sent %(amount_str)s to %(recipient)s:"
 msgstr "%(when)s, %(sender)s hat %(amount_str)s für %(recipient)s überwiesen:"
@@ -1150,5 +1202,4 @@ msgstr "Offene Ausgleichzahlungen"
 
 #~ msgid "You cannot add the event admin as user!"
 #~ msgstr "Du kannst den Administrator nicht als Benutzer hinzufügen!"
-
 
