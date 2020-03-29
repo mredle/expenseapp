@@ -11,6 +11,11 @@ class PostForm(FlaskForm):
     post = TextAreaField(_l('Say something'), 
                          validators=[DataRequired(), Length(min=1, max=256)])
     submit = SubmitField(_l('Submit'))
+    
+class SetRateForm(FlaskForm):
+    inCHF = FloatField(_l('Value in CHF'), 
+                       validators=[DataRequired()])
+    submit = SubmitField(_l('Submit'))
 
 class EventForm(FlaskForm):
     name = StringField(_l('Name'), 
@@ -29,7 +34,7 @@ class EventForm(FlaskForm):
                           validators=[DataRequired()])
     base_currency_id = SelectField(_l('Base currency'), coerce=int,
                           validators=[DataRequired()])
-    allowed_currency_id = SelectMultipleField(_l('Allowed currencies'), coerce=int,
+    currency_id = SelectMultipleField(_l('Allowed currencies'), coerce=int,
                               validators=[DataRequired()])
     exchange_fee = FloatField(_l('Exchange fee (%)'), 
                        validators=[DataRequired()])

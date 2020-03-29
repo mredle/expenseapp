@@ -9,8 +9,8 @@ from flask_babel import _
 from app import db, images
 from app.event import bp
 from app.main.forms import ImageForm
-from app.event.forms import PostForm, EventForm, EventAddUserForm, ExpenseForm, SettlementForm
-from app.models import Currency, Event, Expense, Settlement, Post, User, Image
+from app.event.forms import PostForm, EventForm, EventAddUserForm, ExpenseForm, SettlementForm, SetRateForm
+from app.models import Currency, Event, EventCurrency, Expense, Settlement, Post, User, Image
 from app.db_logging import log_page_access, log_page_access_denied
 
 # routes for rendered pages
@@ -67,16 +67,43 @@ def currencies(guid):
         return redirect(url_for('event.index'))
     log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
-    currencies = event.allowed_currencies.order_by(Currency.code.asc()).paginate(
+    eventcurrencies = event.eventcurrencies.paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
-    next_url = url_for('event.currencies', page=currencies.next_num) if currencies.has_next else None
-    prev_url = url_for('event.currencies', page=currencies.prev_num) if currencies.has_prev else None
-    return render_template('currencies.html', 
+    next_url = url_for('event.currencies', page=eventcurrencies.next_num) if eventcurrencies.has_next else None
+    prev_url = url_for('event.currencies', page=eventcurrencies.prev_num) if eventcurrencies.has_prev else None
+    return render_template('event/eventcurrencies.html', 
                            title=_('Allowed currencies'), 
-                           currencies=currencies.items, 
-                           allow_new=False,
+                           event=event, 
+                           eventcurrencies=eventcurrencies.items, 
                            next_url=next_url, prev_url=prev_url)
+
+@bp.route('/set_rate/<guid>/<currency_guid>', methods=['GET', 'POST'])
+@login_required
+def set_rate(guid, currency_guid):
+    event = Event.get_by_guid_or_404(guid)
+    currency = Currency.get_by_guid_or_404(currency_guid)
+    eventcurrecy = EventCurrency.query.filter(EventCurrency.event==event, EventCurrency.currency==currency).first_or_404()
+    if not event.can_edit(current_user):
+        flash(_('Your are only allowed to edit your own event!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.currencies', guid=event.guid))
+    log_page_access(request, current_user)
+    if event.closed:
+        flash(_('Your are only allowed to edit an open event!'))
+        return redirect(url_for('event.main', guid=event.guid))
     
+    form = SetRateForm()
+    if form.validate_on_submit():
+        eventcurrecy.inCHF = form.inCHF.data
+        db.session.commit()
+        flash(_('Your changes have been saved.'))
+        return redirect(url_for('event.currencies', guid=event.guid))
+    elif request.method == 'GET':
+        form.inCHF.data = eventcurrecy.inCHF
+    return render_template('edit_form.html', 
+                           title=_('Set rate'), 
+                           form=form)
+  
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new():
@@ -91,17 +118,18 @@ def new():
     if current_user.username != 'admin':
         form.accountant_id.data = current_user.id
     form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by(Currency.code.asc())]
-    form.allowed_currency_id.choices = form.base_currency_id.choices
+    form.currency_id.choices = form.base_currency_id.choices
     if form.validate_on_submit():
         admin = User.query.get(form.admin_id.data)
         accountant = User.query.get(form.accountant_id.data)
         base_currency = Currency.query.get(form.base_currency_id.data)
+        currencies = [Currency.query.get(currency_id) for currency_id in form.currency_id.data]
         event = Event(name=form.name.data, 
                       date=form.date.data,
                       admin=admin,
                       accountant=accountant,
                       base_currency=base_currency,
-                      allowed_currencies=[Currency.query.get(currency_id) for currency_id in form.allowed_currency_id.data],
+                      currencies=currencies,
                       exchange_fee=form.exchange_fee.data,
                       closed=False,
                       fileshare_link=form.fileshare_link.data, 
@@ -117,7 +145,7 @@ def new():
     
     CHF = Currency.query.filter_by(code='CHF').first()
     form.base_currency_id.data = CHF.id
-    form.allowed_currency_id.data = [CHF.id]
+    form.currency_id.data = [CHF.id]
     return render_template('edit_form.html', 
                            title=_('New Event'), 
                            form=form)
@@ -137,8 +165,8 @@ def edit(guid):
     form = EventForm()
     form.admin_id.choices = [(u.id, u.username) for u in event.users.order_by(User.username.asc())]
     form.accountant_id.choices = [(u.id, u.username) for u in event.users.order_by(User.username.asc())]
-    form.base_currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by(Currency.code.asc())]
-    form.allowed_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by(Currency.code.asc())]
+    form.base_currency_id.choices = [(c.id, c.code) for c in event.currencies]
+    form.currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by(Currency.code.asc())]
     if form.validate_on_submit():
         event.name = form.name.data
         event.date = form.date.data
@@ -147,7 +175,7 @@ def edit(guid):
         event.admin = User.query.get(form.admin_id.data)
         event.accountant = User.query.get(form.accountant_id.data)
         event.base_currency = Currency.query.get(form.base_currency_id.data)
-        event.allowed_currencies = [Currency.query.get(currency_id) for currency_id in form.allowed_currency_id.data]
+        event.currencies = [Currency.query.get(currency_id) for currency_id in form.currency_id.data]
         event.exchange_fee = form.exchange_fee.data
         db.session.commit()
         flash(_('Your changes have been saved.'))
@@ -160,7 +188,7 @@ def edit(guid):
         form.admin_id.data = event.admin_id
         form.accountant_id.data = event.accountant_id
         form.base_currency_id.data = event.base_currency_id
-        form.allowed_currency_id.data = [c.id for c in event.allowed_currencies]
+        form.currency_id.data = [c.id for c in event.currencies]
         form.exchange_fee.data = event.exchange_fee
     return render_template('edit_form.html', 
                            title=_('Edit Event'), 
@@ -298,7 +326,7 @@ def expenses(guid):
         form.user_id.choices = [(u.id, u.username) for u in event.users]
     else:
         form.user_id.choices = [(current_user.id, current_user.username)]
-    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by(Currency.code.asc())]
+    form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         if event.closed:
@@ -381,7 +409,7 @@ def edit_expense(guid):
     else:
         form.user_id.choices = [(expense.user.id, expense.user.username)]
     
-    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by(Currency.code.asc())]
+    form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         expense.user=User.query.get(form.user_id.data)
@@ -516,7 +544,7 @@ def settlements(guid):
         form.sender_id.choices = [(u.id, u.username) for u in event.users]
     else:
         form.sender_id.choices = [(current_user.id, current_user.username)]
-    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by(Currency.code.asc())]
+    form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         if event.closed:
@@ -571,7 +599,7 @@ def edit_settlement(guid):
         form.sender_id.choices = [(u.id, u.username) for u in event.users]
     else:
         form.sender_id.choices = [(settlement.sender.id, settlement.sender.username)]
-    form.currency_id.choices = [(c.id, c.code) for c in event.allowed_currencies.order_by(Currency.code.asc())]
+    form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         settlement.sender=User.query.get(form.sender_id.data)

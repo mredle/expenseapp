@@ -3,6 +3,7 @@
 from sqlalchemy.orm import validates
 from sqlalchemy.types import TypeDecorator, CHAR
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.ext.associationproxy import association_proxy
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from hashlib import md5
@@ -329,11 +330,36 @@ class BankAccount(Entity, db.Model):
     def can_edit(self, user):
         return (user.is_admin or user==self.user)
 
-event_currencies = db.Table('event_currencies',
-    db.Column('event_id', db.Integer, db.ForeignKey('events.id')),
-    db.Column('currency_id', db.Integer, db.ForeignKey('currencies.id')),
-    db.PrimaryKeyConstraint('event_id', 'currency_id')
-)
+
+class EventCurrency(db.Model):
+    __tablename__ = 'event_currencies'
+    
+    event_id = db.Column(db.Integer, db.ForeignKey('events.id'), primary_key=True)
+    event = db.relationship('Event', back_populates='eventcurrencies')
+    currency_id = db.Column(db.Integer, db.ForeignKey('currencies.id'), primary_key=True)
+    currency = db.relationship('Currency', back_populates='eventcurrencies')
+    inCHF = db.Column(db.Float)
+
+    def __init__(self, currency):
+        self.currency = currency
+        self.inCHF = currency.inCHF
+        
+    def __repr__(self):
+        return '<EventCurrency {}>'.format(self.currency.code)
+        
+    def get_amount_in(self, amount, eventcurrency, exchange_fee):
+        if self == eventcurrency:
+            return amount
+        else:
+            return (1+exchange_fee/100)*amount*self.inCHF/eventcurrency.inCHF
+    
+    def get_amount_as_str(self, amount):
+        amount_str = ('{} {:.'+'{}'.format(self.currency.exponent)+'f}').format(self.currency.code, amount)
+        return amount_str
+    
+    def get_amount_as_str_in(self, amount, eventcurrency, exchange_fee):
+        amount_str = ('{} {:.'+'{}'.format(self.currency.exponent)+'f}').format(eventcurrency.currency.code, self.get_amount_in(amount, eventcurrency, exchange_fee))
+        return amount_str
 
 class Currency(Entity, db.Model):
     __tablename__ = 'currencies'
@@ -349,7 +375,9 @@ class Currency(Entity, db.Model):
     description = db.Column(db.String(256))
     expenses = db.relationship('Expense', back_populates='currency', lazy='dynamic')
     settlements = db.relationship('Settlement', back_populates='currency', lazy='dynamic')
-    events = db.relationship('Event', secondary=event_currencies, back_populates='allowed_currencies', lazy='dynamic')
+    eventcurrencies = db.relationship('EventCurrency', back_populates='currency', lazy='dynamic')
+    events = association_proxy('eventcurrencies', 'event')
+    #events = db.relationship('Event', secondary='event_currencies', back_populates='currencies', lazy='dynamic')
     events_base_currency = db.relationship('Event', foreign_keys='Event.base_currency_id', back_populates='base_currency', lazy='dynamic')
     
     def __init__(self, code, name, number, exponent, inCHF, description='', db_created_by=''):
@@ -373,25 +401,13 @@ class Currency(Entity, db.Model):
         else:
             return ''
         
-    def get_amount_in(self, amount, currency, exchange_fee):
-        if self == currency:
-            return amount
-        else:
-            return (1+exchange_fee/100)*amount*self.inCHF/currency.inCHF
-    
-    def get_amount_as_str(self, amount):
-        amount_str = ('{} {:.'+'{}'.format(self.exponent)+'f}').format(self.code, amount)
-        return amount_str
-    
-    def get_amount_as_str_in(self, amount, currency, exchange_fee):
-        amount_str = ('{} {:.'+'{}'.format(self.exponent)+'f}').format(currency.code, self.get_amount_in(amount, currency, exchange_fee))
-        return amount_str
 
 event_users = db.Table('event_users',
     db.Column('event_id', db.Integer, db.ForeignKey('events.id')),
     db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
     db.PrimaryKeyConstraint('event_id', 'user_id')
 )
+
 
 class Event(Entity, db.Model):
     __tablename__ = 'events'
@@ -405,9 +421,12 @@ class Event(Entity, db.Model):
     accountant = db.relationship('User', foreign_keys=accountant_id, back_populates='events_accountant')
     base_currency_id = db.Column(db.Integer, db.ForeignKey('currencies.id'))
     base_currency = db.relationship('Currency', foreign_keys=base_currency_id, back_populates='events_base_currency')
+    base_eventcurrency = db.relationship('EventCurrency', primaryjoin='and_(foreign(Event.id)==remote(EventCurrency.event_id), foreign(Event.base_currency_id)==remote(EventCurrency.currency_id))')
     exchange_fee = db.Column(db.Float)
     users = db.relationship('User', secondary=event_users, back_populates='events', lazy='dynamic')
-    allowed_currencies = db.relationship('Currency', secondary=event_currencies, back_populates='events', lazy='dynamic')
+    eventcurrencies = db.relationship('EventCurrency', back_populates='event', lazy='dynamic')
+    currencies = association_proxy('eventcurrencies', 'currency')
+    #currencies = db.relationship('Currency', secondary='event_currencies', back_populates='events', lazy='dynamic')
     closed = db.Column(db.Boolean)
     image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
     image = db.relationship('Image', foreign_keys=image_id)
@@ -417,14 +436,14 @@ class Event(Entity, db.Model):
     settlements = db.relationship('Settlement', back_populates='event', lazy='dynamic')
     posts = db.relationship('Post', back_populates='event', lazy='dynamic')
     
-    def __init__(self, name, date, admin, accountant, base_currency, allowed_currencies, exchange_fee, fileshare_link, closed=False, description='', db_created_by=''):
+    def __init__(self, name, date, admin, accountant, base_currency, currencies, exchange_fee, fileshare_link, closed=False, description='', db_created_by=''):
         Entity.__init__(self, db_created_by)
         self.name = name
         self.date = date
         self.admin = admin
         self.accountant = accountant
         self.base_currency = base_currency
-        self.allowed_currencies = allowed_currencies
+        self.currencies = currencies
         self.exchange_fee = exchange_fee
         self.closed = closed
         self.fileshare_link = fileshare_link
@@ -471,11 +490,11 @@ class Event(Entity, db.Model):
             return 1
         
     def has_currency(self, currency):
-        return (currency in self.allowed_currencies)
+        return (currency in self.currencies)
         
     def add_currency(self, currency):
         if not self.has_currency(currency):
-            self.allowed_currencies.append(currency)
+            self.currencies.append(currency)
 
     def remove_currency(self, currency):
         blocked_currencies = set([x.currency for x in self.expenses] +
@@ -483,25 +502,25 @@ class Event(Entity, db.Model):
                             [self.base_currency])
         
         if self.has_currency(currency) and currency not in blocked_currencies:
-            self.allowed_currencies.remove(currency)
+            self.currencies.remove(currency)
             return 0
         else:
             return 1
     
-    def convert_currencies(self):
+    def convert_currencies_to_base(self):
         expenses = self.expenses.all()
         settlements = self.settlements.all()
         
         for x in expenses:
-            x.amount = x.currency.get_amount_in(x.amount, self.base_currency, self.exchange_fee)
+            x.amount = x.eventcurrency.get_amount_in(x.amount, self.base_eventcurrency, self.exchange_fee)
             x.currency = self.base_currency
             
         for x in settlements:
-            x.amount = x.currency.get_amount_in(x.amount, self.base_currency, self.exchange_fee)
+            x.amount = x.eventcurrency.get_amount_in(x.amount, self.base_eventcurrency, self.exchange_fee)
             x.currency = self.base_currency
             
-    def get_allowed_currencies_str(self):
-        currency_codes = [c.code for c in self.allowed_currencies]
+    def get_currencies_str(self):
+        currency_codes = [c.code for c in self.currencies]
         currency_codes.sort()
         return ', '.join(currency_codes)
                          
@@ -567,15 +586,15 @@ class Event(Entity, db.Model):
     def get_balance(self):
         balances = [self.get_user_balance(u) for u in self.users]
         balances_str = list(map(lambda x: (x[0], 
-                                           self.base_currency.get_amount_as_str(x[1]), 
-                                           self.base_currency.get_amount_as_str(x[2]), 
-                                           self.base_currency.get_amount_as_str(x[3]), 
-                                           self.base_currency.get_amount_as_str(x[4]), 
-                                           self.base_currency.get_amount_as_str(x[5])) 
+                                           self.base_eventcurrency.get_amount_as_str(x[1]), 
+                                           self.base_eventcurrency.get_amount_as_str(x[2]), 
+                                           self.base_eventcurrency.get_amount_as_str(x[3]), 
+                                           self.base_eventcurrency.get_amount_as_str(x[4]), 
+                                           self.base_eventcurrency.get_amount_as_str(x[5])) 
                                            , balances))
         
         total_expenses = self.get_total_expenses()
-        total_expenses_str = self.base_currency.get_amount_as_str(total_expenses)
+        total_expenses_str = self.base_eventcurrency.get_amount_as_str(total_expenses)
         return (balances_str, total_expenses_str)
 
 expense_affected_users = db.Table('expense_affected_users',
@@ -594,6 +613,7 @@ class Expense(Entity, db.Model):
     event = db.relationship('Event', back_populates='expenses')
     currency_id = db.Column(db.Integer, db.ForeignKey('currencies.id'))
     currency = db.relationship('Currency', back_populates='expenses')
+    eventcurrency = db.relationship('EventCurrency', primaryjoin='and_(foreign(Expense.event_id)==remote(EventCurrency.event_id), foreign(Expense.currency_id)==remote(EventCurrency.currency_id))')
     amount = db.Column(db.Float)
     affected_users = db.relationship('User', secondary=expense_affected_users, back_populates='affected_by_expenses', lazy='dynamic')
     date = db.Column(db.DateTime, index=True)
@@ -641,15 +661,15 @@ class Expense(Entity, db.Model):
             return 1
         
     def get_amount(self):
-        return self.currency.get_amount_in(self.amount, self.event.base_currency, self.event.exchange_fee)
+        return self.eventcurrency.get_amount_in(self.amount, self.event.base_eventcurrency, self.event.exchange_fee)
     
     def get_amount_str(self):
-        amount_str = self.currency.get_amount_as_str(self.amount)
+        amount_str = self.eventcurrency.get_amount_as_str(self.amount)
         
         if self.currency == self.event.base_currency:
             return amount_str
         else:
-            amount_str_in = self.currency.get_amount_as_str_in(self.amount, self.event.base_currency, self.event.exchange_fee)
+            amount_str_in = self.eventcurrency.get_amount_as_str_in(self.amount, self.event.base_eventcurrency, self.event.exchange_fee)
             return '{} ({})'.format(amount_str, amount_str_in)
 
 class Settlement(Entity, db.Model):
@@ -664,6 +684,7 @@ class Settlement(Entity, db.Model):
     event = db.relationship('Event', back_populates='settlements')
     currency_id = db.Column(db.Integer, db.ForeignKey('currencies.id'))
     currency = db.relationship('Currency', back_populates='settlements')
+    eventcurrency = db.relationship('EventCurrency', primaryjoin='and_(foreign(Settlement.event_id)==remote(EventCurrency.event_id), foreign(Settlement.currency_id)==remote(EventCurrency.currency_id))')
     amount = db.Column(db.Float)
     draft = db.Column(db.Boolean)
     date = db.Column(db.DateTime, index=True)
@@ -701,15 +722,15 @@ class Settlement(Entity, db.Model):
             return ''
         
     def get_amount(self):
-        return self.currency.get_amount_in(self.amount, self.event.base_currency, self.event.exchange_fee)
+        return self.eventcurrency.get_amount_in(self.amount, self.event.base_eventcurrency, self.event.exchange_fee)
     
     def get_amount_str(self):
-        amount_str = self.currency.get_amount_as_str(self.amount)
+        amount_str = self.eventcurrency.get_amount_as_str(self.amount)
         
         if self.currency == self.event.base_currency:
             return amount_str
         else:
-            amount_str_in = self.currency.get_amount_as_str_in(self.amount, self.event.base_currency, self.event.exchange_fee)
+            amount_str_in = self.eventcurrency.get_amount_as_str_in(self.amount, self.event.base_eventcurrency, self.event.exchange_fee)
             return '{} ({})'.format(amount_str, amount_str_in)
 
 

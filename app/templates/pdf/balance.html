@@ -14,7 +14,7 @@
             <p>{{ _('Admin') }}: {{ event.admin.username }}</p>
             <p>{{ _('Accountant') }}: {{ event.accountant.username }}</p>
             <p>{{ _('Base Currency') }}: {{ event.base_currency.code }}</p>
-            <p>{{ _('Allowed currencies') }}: {{ event.get_allowed_currencies_str() }} </p>
+            <p>{{ _('Allowed currencies') }}: {{ event.get_currencies_str() }} </p>
             <p>{{ _('Exchange fee') }}: {{ event.exchange_fee }}%</p>
             <p>{{ _('Date') }}: {{ event.date }}</p>
             <p>{{ _('%(count)d users', count=stats['users']) }}, 

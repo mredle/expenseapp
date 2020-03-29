@@ -20,7 +20,7 @@
             <p>{{ _('Admin') }}: {{ event.admin.username }}</p>
             <p>{{ _('Accountant') }}: {{ event.accountant.username }}</p>
             <p>{{ _('Base Currency') }}: {{ event.base_currency.code }}</p>
-            <p><a href="{{ url_for('event.currencies', guid=event.guid) }}">{{ _('Allowed currencies') }}</a>: {{ event.get_allowed_currencies_str() }} </p>
+            <p><a href="{{ url_for('event.currencies', guid=event.guid) }}">{{ _('Allowed currencies') }}</a>: {{ event.get_currencies_str() }} </p>
             <p>{{ _('Exchange fee') }}: {{ event.exchange_fee }}%</p>
             <p>{{ _('From') }}: {{ moment(event.date).format('LL') }}</p>
             <p>{{ _('%(count)d users', count=stats['users']) }}, 
@@ -39,7 +39,6 @@
             <p><a href="{{ url_for('event.reopen', guid=event.guid) }}">{{ _('Reopen this event') }}</a></p>
             {% else %}
             <p><a href="{{ url_for('event.send_payment_reminders', guid=event.guid) }}">{{ _('Send payment reminders') }}</a></p>
-            <p><a href="{{ url_for('event.convert_currencies', guid=event.guid) }}">{{ _('Convert all transactions of this event to the base currency') }}</a></p>
             <p><a href="{{ url_for('event.close', guid=event.guid) }}">{{ _('Close this event') }}</a></p>
             <p><a href="{{ url_for('event.edit', guid=event.guid) }}">{{ _('Edit this event') }}</a></p>
             <p><a href="{{ url_for('event.users', guid=event.guid) }}">{{ _('Manage users') }}</a></p>

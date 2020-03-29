@@ -1,0 +1,34 @@
+    <table class="table table-hover">
+        <tr>
+            <td width="64px">
+                {% if eventcurrency.currency.image %}
+                <a href="{{ url_for('main.image', guid=eventcurrency.currency.image.guid) }}">
+                    <img src="{{ eventcurrency.currency.avatar(64) }}" alt="" width="64"style="transform:rotate({{ eventcurrency.currency.image.rotate }}deg) scale({{ eventcurrency.currency.image.get_html_scale() }});">
+                </a>
+                {% endif %}
+            </td>
+            <td>
+                {% set edit_link %}
+                    <span>
+                        <a href="{{ url_for('event.set_rate', guid=event.guid, currency_guid=eventcurrency.currency.guid) }}">
+                            {{ _('change rate') }}
+                        </a>
+                    </span>
+                {% endset %}
+                {{ eventcurrency.currency.name }}
+                <br>
+                {% if event.can_edit(current_user) %}
+                {{ _('%(code)s 1 equals CHF %(inCHF).4f (%(edit_link)s)',
+                    code=eventcurrency.currency.code,
+                    inCHF=eventcurrency.inCHF,
+                    edit_link=edit_link) }}
+                {% else %}
+                {{ _('%(code)s 1 equals CHF %(inCHF).4f',
+                    code=eventcurrency.currency.code,
+                    inCHF=eventcurrency.inCHF) }}
+                {% endif %}
+                <br>
+                {{ eventcurrency.currency.description }}
+            </td>
+        </tr>
+    </table>
