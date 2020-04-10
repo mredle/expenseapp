@@ -1,0 +1,15 @@
+<table class="table">
+    <tr>
+        <td width="64" style="border: 0px;"><img src="{{ user.avatar(64) }}" alt="Profile picture" width="64"></td>
+        <td style="border: 0px;">
+            <p>
+                <a href="{{ url_for('main.user', guid=user.guid) }}">
+                    {{ user.username }}
+                </a>
+            </p>
+            <small>
+                {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+            </small>
+        </td>
+    </tr>
+</table>

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <table class="table table-hover">
+        <tr>
+            <h1>{{ title }}</h1>
+            {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+            {% if user.profile_picture %}
+            <a href="{{ url_for('main.image', guid=user.profile_picture.guid) }}">
+                <img src="{{ user.avatar(1024) }}" alt="" width="100%" style="transform:rotate({{ user.profile_picture.rotate }}deg) scale({{ user.profile_picture.get_html_scale() }});">
+            </a>
+            {% endif %}
+            <p><a href="{{ url_for('event.edit_profile_picture', guid=user.guid) }}">{{ _('Edit your profile picture') }}</a></p>
+
+            <p><a href="{{ url_for('event.edit_profile', guid=user.guid) }}">{{ _('Edit your profile') }}</a></p>
+        </tr>
+    </table>
+{% endblock %}

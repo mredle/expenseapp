@@ -3,13 +3,15 @@
 from flask_wtf import FlaskForm
 from flask_babel import _, lazy_gettext as _l
 from wtforms import StringField, SubmitField, TextAreaField, SelectField, SelectMultipleField, FloatField
-from wtforms.validators import DataRequired, Length
+from wtforms.validators import DataRequired, Length, Email, Regexp
 from wtforms.fields.html5 import DateField
 
 
 class PostForm(FlaskForm):
     post = TextAreaField(_l('Say something'), 
                          validators=[DataRequired(), Length(min=1, max=256)])
+    user_id = SelectField(_l('From user'), coerce=int,
+                               validators=[DataRequired()])
     submit = SubmitField(_l('Submit'))
     
 class SetRateForm(FlaskForm):
@@ -28,10 +30,6 @@ class EventForm(FlaskForm):
                                 validators=[Length(min=0, max=256)])
     description = TextAreaField(_l('Description'), 
                                 validators=[Length(min=0, max=256)])
-    admin_id = SelectField(_l('Administrator'), coerce=int,
-                          validators=[DataRequired()])
-    accountant_id = SelectField(_l('Accountant'), coerce=int,
-                          validators=[DataRequired()])
     base_currency_id = SelectField(_l('Base currency'), coerce=int,
                           validators=[DataRequired()])
     currency_id = SelectMultipleField(_l('Allowed currencies'), coerce=int,
@@ -40,11 +38,19 @@ class EventForm(FlaskForm):
                        validators=[DataRequired()])
     submit = SubmitField(_l('Submit'))
     
-class EventAddUserForm(FlaskForm):
-    user_id = SelectField(_l('Add user'), coerce=int,
-                          validators=[DataRequired()])
+class EventUserForm(FlaskForm):
+    username = StringField(_l('Username'), validators=[DataRequired(), Regexp(r'^[\w.]+$')])
+    email = StringField(_l('Email'), validators=[DataRequired(), Email()])
+    about_me = TextAreaField(_l('About me'), 
+                             validators=[Length(min=0, max=256)])
+    locale = SelectField(_l('Language'), validators=[DataRequired()])
     submit = SubmitField(_l('Submit'))
- 
+
+class ExpenseAddUserForm(FlaskForm):
+    user_id = SelectMultipleField(_l('Add user'), coerce=int,
+                                  validators=[DataRequired()])
+    submit = SubmitField(_l('Submit'))
+    
 class ExpenseForm(FlaskForm):
     user_id = SelectField(_l('From user'), coerce=int,
                                validators=[DataRequired()])

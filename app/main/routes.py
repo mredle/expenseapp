@@ -9,7 +9,7 @@ from flask_babel import get_locale, _
 from app import db, images
 from app.main import bp
 from app.main.forms import ImageForm, EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm, BankAccountForm
-from app.models import Currency, User, Message, Notification, Event, Image, BankAccount, Log, Task
+from app.models import Currency, User, Message, Notification, Image, BankAccount, Log, Task
 from app.db_logging import log_page_access, log_page_access_denied
 
 @bp.before_app_request
@@ -255,16 +255,9 @@ def users():
 def user(guid):
     user = User.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
-    page = request.args.get('page', 1, type=int)
-    events = user.events_admin.order_by(Event.date.desc()).paginate(
-        page, current_app.config['ITEMS_PER_PAGE'], False)
-    next_url = url_for('main.user', guid=user.guid, page=events.next_num) if events.has_next else None
-    prev_url = url_for('main.user', guid=user.guid, page=events.prev_num) if events.has_prev else None
     return render_template('user.html', 
                            title= _('User %(username)s', username = user.username), 
-                           user=user, 
-                           events=events.items,
-                           next_url=next_url, prev_url=prev_url)
+                           user=user)
 
 @bp.route('/new_user', methods=['GET', 'POST'])
 def new_user():
@@ -275,12 +268,10 @@ def new_user():
     log_page_access(request, current_user)
     form = NewUserForm()
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
-    form.timezone.choices = [(x, x) for x in current_app.config['TIMEZONES']]
     if form.validate_on_submit():
         user = User(username=form.username.data, 
                     email=form.email.data,
                     locale=form.locale.data,
-                    timezone=form.timezone.data,
                     about_me=form.about_me.data)
         user.is_admin = form.is_admin.data
         user.set_password(form.password.data)
@@ -305,12 +296,10 @@ def edit_user(guid):
         return redirect(url_for('main.users'))
     form = EditUserForm(user.username, user.email)
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
-    form.timezone.choices = [(x, x) for x in current_app.config['TIMEZONES']]
     if form.validate_on_submit():
         user.username=form.username.data, 
         user.email=form.email.data,
         user.locale=form.locale.data,
-        user.timezone=form.timezone.data,
         user.about_me = form.about_me.data
         user.is_admin = form.is_admin.data
         if form.password.data:
@@ -323,7 +312,6 @@ def edit_user(guid):
         form.username.data = user.username
         form.email.data = user.email
         form.locale.data = user.locale
-        form.timezone.data = user.timezone
         form.about_me.data = user.about_me
         form.is_admin.data = user.is_admin
     return render_template('edit_form.html', title=_('Edit User'), form=form)
@@ -433,12 +421,10 @@ def edit_profile():
     log_page_access(request, current_user)
     form = EditProfileForm(current_user.username)
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
-    form.timezone.choices = [(x, x) for x in current_app.config['TIMEZONES']]
     if form.validate_on_submit():
         current_user.username = form.username.data
         current_user.about_me = form.about_me.data
         current_user.locale = form.locale.data
-        current_user.timezone = form.timezone.data
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.user', guid=current_user.guid))
@@ -446,7 +432,6 @@ def edit_profile():
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
         form.locale.data = current_user.locale
-        form.timezone.data = current_user.timezone
     return render_template('edit_form.html', 
                            title=_('Edit Profile'), 
                            form=form)

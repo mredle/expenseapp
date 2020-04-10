@@ -14,9 +14,7 @@
                     </span>
                 {% endset %}
                 {{ settlement.get_amount_str() }} 
-                {% if settlement.can_confirm(current_user) %}
                 ({{ _('%(link)s', link=paid_link) }})
-                {% endif %}
             </td>
         </tr>
     </table>

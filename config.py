@@ -38,5 +38,4 @@ class Config(object):
     ITEMS_PER_PAGE = 10
     MESSAGES_PER_PAGE = 10
     LANGUAGES = ['en', 'de']
-    TIMEZONES = ['Etc/UTC', 'Europe/Zurich']
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'

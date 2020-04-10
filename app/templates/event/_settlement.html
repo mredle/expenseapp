@@ -45,7 +45,7 @@
                     recipient=recipient_link, ) }}
                 <br>
                 {{ settlement.description }}
-                {% if not settlement.event.closed and settlement.can_edit(current_user) %}
+                {% if not settlement.event.closed %}
                 <br>
                 {{ _('%(link)s', link=edit_link) }}, {{ _('%(link)s', link=remove_link) }}
                 {% endif %}

@@ -375,7 +375,7 @@ class Currency(Entity, db.Model):
     description = db.Column(db.String(256))
     expenses = db.relationship('Expense', back_populates='currency', lazy='dynamic')
     settlements = db.relationship('Settlement', back_populates='currency', lazy='dynamic')
-    eventcurrencies = db.relationship('EventCurrency', back_populates='currency', lazy='dynamic')
+    eventcurrencies = db.relationship('EventCurrency', back_populates='currency', lazy='dynamic', cascade='all, delete-orphan')
     events = association_proxy('eventcurrencies', 'event')
     #events = db.relationship('Event', secondary='event_currencies', back_populates='currencies', lazy='dynamic')
     events_base_currency = db.relationship('Event', foreign_keys='Event.base_currency_id', back_populates='base_currency', lazy='dynamic')
@@ -402,13 +402,6 @@ class Currency(Entity, db.Model):
             return ''
         
 
-event_users = db.Table('event_users',
-    db.Column('event_id', db.Integer, db.ForeignKey('events.id')),
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
-    db.PrimaryKeyConstraint('event_id', 'user_id')
-)
-
-
 class Event(Entity, db.Model):
     __tablename__ = 'events'
     id = db.Column(db.Integer, primary_key=True)
@@ -417,14 +410,14 @@ class Event(Entity, db.Model):
     date = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     admin_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     admin = db.relationship('User', foreign_keys=admin_id, back_populates='events_admin')
-    accountant_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    accountant = db.relationship('User', foreign_keys=accountant_id, back_populates='events_accountant')
+    accountant_id = db.Column(db.Integer, db.ForeignKey('eventusers.id'))
+    accountant = db.relationship('EventUser', foreign_keys=accountant_id, back_populates='events_accountant')
     base_currency_id = db.Column(db.Integer, db.ForeignKey('currencies.id'))
     base_currency = db.relationship('Currency', foreign_keys=base_currency_id, back_populates='events_base_currency')
     base_eventcurrency = db.relationship('EventCurrency', primaryjoin='and_(foreign(Event.id)==remote(EventCurrency.event_id), foreign(Event.base_currency_id)==remote(EventCurrency.currency_id))')
     exchange_fee = db.Column(db.Float)
-    users = db.relationship('User', secondary=event_users, back_populates='events', lazy='dynamic')
-    eventcurrencies = db.relationship('EventCurrency', back_populates='event', lazy='dynamic')
+    users = db.relationship('EventUser', foreign_keys='EventUser.event_id', back_populates='event', lazy='dynamic')
+    eventcurrencies = db.relationship('EventCurrency', back_populates='event', lazy='dynamic', cascade='all, delete-orphan')
     currencies = association_proxy('eventcurrencies', 'currency')
     #currencies = db.relationship('Currency', secondary='event_currencies', back_populates='events', lazy='dynamic')
     closed = db.Column(db.Boolean)
@@ -436,14 +429,13 @@ class Event(Entity, db.Model):
     settlements = db.relationship('Settlement', back_populates='event', lazy='dynamic')
     posts = db.relationship('Post', back_populates='event', lazy='dynamic')
     
-    def __init__(self, name, date, admin, accountant, base_currency, currencies, exchange_fee, fileshare_link, closed=False, description='', db_created_by=''):
+    def __init__(self, name, date, admin, base_currency, currencies, exchange_fee, fileshare_link, closed=False, description='', db_created_by=''):
         Entity.__init__(self, db_created_by)
         self.name = name
         self.date = date
         self.admin = admin
-        self.accountant = accountant
         self.base_currency = base_currency
-        self.currencies = currencies
+        self.eventcurrencies = [EventCurrency(c) for c in currencies]
         self.exchange_fee = exchange_fee
         self.closed = closed
         self.fileshare_link = fileshare_link
@@ -452,11 +444,8 @@ class Event(Entity, db.Model):
     def __repr__(self):
         return '<Event {}>'.format(self.name)
     
-    def can_view(self, user):
-        return (user.is_admin or user in self.users)
-    
     def can_edit(self, user):
-        return (user.is_admin or user==self.admin)
+        return (user.is_admin or user==self.admin) if user.is_authenticated else False
         
     def avatar(self, size):
         if self.image:
@@ -599,7 +588,7 @@ class Event(Entity, db.Model):
 
 expense_affected_users = db.Table('expense_affected_users',
     db.Column('expense_id', db.Integer, db.ForeignKey('expenses.id')),
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
+    db.Column('user_id', db.Integer, db.ForeignKey('eventusers.id')),
     db.PrimaryKeyConstraint('expense_id', 'user_id')
 )   
 
@@ -607,15 +596,15 @@ class Expense(Entity, db.Model):
     __tablename__ = 'expenses'
     id = db.Column(db.Integer, primary_key=True)
     
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
-    user = db.relationship('User', back_populates='expenses')
+    user_id = db.Column(db.Integer, db.ForeignKey('eventusers.id'), index=True)
+    user = db.relationship('EventUser', back_populates='expenses')
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
     event = db.relationship('Event', back_populates='expenses')
     currency_id = db.Column(db.Integer, db.ForeignKey('currencies.id'))
     currency = db.relationship('Currency', back_populates='expenses')
     eventcurrency = db.relationship('EventCurrency', primaryjoin='and_(foreign(Expense.event_id)==remote(EventCurrency.event_id), foreign(Expense.currency_id)==remote(EventCurrency.currency_id))')
     amount = db.Column(db.Float)
-    affected_users = db.relationship('User', secondary=expense_affected_users, back_populates='affected_by_expenses', lazy='dynamic')
+    affected_users = db.relationship('EventUser', secondary=expense_affected_users, back_populates='affected_by_expenses', lazy='dynamic')
     date = db.Column(db.DateTime, index=True)
     image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
     image = db.relationship('Image', foreign_keys=image_id)
@@ -634,12 +623,6 @@ class Expense(Entity, db.Model):
     def __repr__(self):
         return '<Expense {}{}>'.format(self.amount, self.currency.code)
     
-    def can_view(self, user):
-        return self.event.can_view(user)
-    
-    def can_edit(self, user):
-        return (user.is_admin or self.event.can_edit(user) or user==self.user )
-    
     def avatar(self, size):
         if self.image:
             return self.image.get_thumbnail_url(size)
@@ -652,6 +635,10 @@ class Expense(Entity, db.Model):
     def add_user(self, user):
         if not self.has_user(user):
             self.affected_users.append(user)
+            
+    def add_users(self, users):
+        for user in users:
+            self.add_user(user)
 
     def remove_user(self, user):
         if self.has_user(user):
@@ -676,10 +663,10 @@ class Settlement(Entity, db.Model):
     __tablename__ = 'settlements'
     id = db.Column(db.Integer, primary_key=True)
     
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
-    sender = db.relationship('User', foreign_keys=sender_id, back_populates='settlements_sender')
-    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
-    recipient = db.relationship('User', foreign_keys=recipient_id, back_populates='settlements_recipient')
+    sender_id = db.Column(db.Integer, db.ForeignKey('eventusers.id'), index=True)
+    sender = db.relationship('EventUser', foreign_keys=sender_id, back_populates='settlements_sender')
+    recipient_id = db.Column(db.Integer, db.ForeignKey('eventusers.id'), index=True)
+    recipient = db.relationship('EventUser', foreign_keys=recipient_id, back_populates='settlements_recipient')
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
     event = db.relationship('Event', back_populates='settlements')
     currency_id = db.Column(db.Integer, db.ForeignKey('currencies.id'))
@@ -706,15 +693,6 @@ class Settlement(Entity, db.Model):
     def __repr__(self):
         return '<Settlement {}{}>'.format(self.amount, self.currency.code)
     
-    def can_view(self, user):
-        return self.event.can_view(user)
-    
-    def can_edit(self, user):
-        return (user.is_admin or self.event.can_edit(user) or user==self.sender )
-    
-    def can_confirm(self, user):
-        return (user.is_admin or self.event.can_edit(user) or user==self.recipient )
-    
     def avatar(self, size):
         if self.image:
             return self.image.get_thumbnail_url(size)
@@ -740,8 +718,8 @@ class Post(Entity, db.Model):
     
     body = db.Column(db.String(256))
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
-    author = db.relationship('User', back_populates='posts')
+    user_id = db.Column(db.Integer, db.ForeignKey('eventusers.id'), index=True)
+    author = db.relationship('EventUser', back_populates='posts')
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
     event = db.relationship('Event', back_populates='posts')
     
@@ -754,12 +732,6 @@ class Post(Entity, db.Model):
     
     def __repr__(self):
         return '<Post {}>'.format(self.body)
-    
-    def can_view(self, user):
-        return self.event.can_view(user)
-    
-    def can_edit(self, user):
-        return (user.is_admin or self.event.can_edit(user) or user==self.author )
 
 
 class Message(Entity, db.Model):
@@ -849,28 +821,20 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(128), index=True, unique=True)
     locale = db.Column(db.String(32))
-    timezone = db.Column(db.String(32))
     password_hash = db.Column(db.String(128))
     token = db.Column(db.String(32), index=True, unique=True)
     token_expiration = db.Column(db.DateTime)
     profile_picture_id = db.Column(db.Integer, db.ForeignKey('images.id'))
     profile_picture = db.relationship('Image', foreign_keys=profile_picture_id)
-    events = db.relationship('Event', secondary=event_users, back_populates='users', lazy='dynamic')
     events_admin = db.relationship('Event', foreign_keys='Event.admin_id', back_populates='admin', lazy='dynamic')
-    events_accountant = db.relationship('Event', foreign_keys='Event.accountant_id', back_populates='accountant', lazy='dynamic')
-    expenses = db.relationship('Expense', back_populates='user', lazy='dynamic')
-    settlements_sender = db.relationship('Settlement', foreign_keys='Settlement.sender_id', back_populates='sender', lazy='dynamic')
-    settlements_recipient = db.relationship('Settlement', foreign_keys='Settlement.recipient_id', back_populates='recipient', lazy='dynamic')
-    affected_by_expenses = db.relationship('Expense', secondary=expense_affected_users, back_populates='affected_users', lazy='dynamic')
-    posts = db.relationship('Post', back_populates='author', lazy='dynamic')
     messages_sent = db.relationship('Message', foreign_keys='Message.sender_id', back_populates='author', lazy='dynamic')
     messages_received = db.relationship('Message', foreign_keys='Message.recipient_id', back_populates='recipient', lazy='dynamic')
     last_message_read_time = db.Column(db.DateTime)
     notifications = db.relationship('Notification', back_populates='user', lazy='dynamic')
     tasks = db.relationship('Task', foreign_keys='Task.user_id', back_populates='user', lazy='dynamic')
-    bank_accounts = db.relationship('BankAccount', foreign_keys='BankAccount.user_id', back_populates='user', lazy='dynamic')
     logs = db.relationship('Log', foreign_keys='Log.user_id', back_populates='user', lazy='dynamic')
-
+    bank_accounts = db.relationship('BankAccount', foreign_keys='BankAccount.user_id', back_populates='user', lazy='dynamic')
+    
     is_admin = db.Column(db.Boolean)
     about_me = db.Column(db.String(256))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
@@ -882,12 +846,11 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         else:
             return value[0].lower()
     
-    def __init__(self, username, email, locale, timezone, about_me='', db_created_by=''):
+    def __init__(self, username, email, locale, about_me='', db_created_by=''):
         Entity.__init__(self, db_created_by)
         self.username = username
         self.email = email
         self.locale = locale
-        self.timezone = timezone
         self.password_hash = ''
         self.token = ''
         self.token_expiration = datetime.utcnow() - timedelta(seconds=1)
@@ -1002,6 +965,60 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
             return None
         return user
 
+event_users = db.Table('event_users',
+    db.Column('event_id', db.Integer, db.ForeignKey('events.id')),
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
+    db.PrimaryKeyConstraint('event_id', 'user_id')
+)
+
+class EventUser(Entity, db.Model):
+    __tablename__ = 'eventusers'
+    id = db.Column(db.Integer, primary_key=True)
+    
+    username = db.Column(db.String(64), index=True)
+    email = db.Column(db.String(128), index=True)
+    locale = db.Column(db.String(32))
+    about_me = db.Column(db.String(256))
+    event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
+    event = db.relationship('Event', foreign_keys=event_id, back_populates='users')
+    events_accountant = db.relationship('Event', foreign_keys='Event.accountant_id', back_populates='accountant', lazy='dynamic')
+    profile_picture_id = db.Column(db.Integer, db.ForeignKey('images.id'))
+    profile_picture = db.relationship('Image', foreign_keys=profile_picture_id)
+    expenses = db.relationship('Expense', back_populates='user', lazy='dynamic')
+    settlements_sender = db.relationship('Settlement', foreign_keys='Settlement.sender_id', back_populates='sender', lazy='dynamic')
+    settlements_recipient = db.relationship('Settlement', foreign_keys='Settlement.recipient_id', back_populates='recipient', lazy='dynamic')
+    affected_by_expenses = db.relationship('Expense', secondary=expense_affected_users, back_populates='affected_users', lazy='dynamic')
+    posts = db.relationship('Post', back_populates='author', lazy='dynamic')
+    
+    @validates('email')
+    def convert_lower(self, field, value):
+        if isinstance(value, str):
+            return value.lower()
+        else:
+            return value[0].lower()
+    
+    def __init__(self, username, email, locale, about_me='', db_created_by=''):
+        Entity.__init__(self, db_created_by)
+        self.username = username
+        self.email = email
+        self.locale = locale
+        self.about_me = about_me
+        
+    def __repr__(self):
+        return '<EventUser {}>'.format(self.username)
+    
+    
+    def avatar(self, size):
+        if self.profile_picture:
+            return self.profile_picture.get_thumbnail_url(size)
+        else:
+            return self.gravatar(size)
+    
+    def gravatar(self, size):
+        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+        return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
+            digest, size)
+    
 @login.user_loader
 def load_user(id):
     return User.query.get(int(id))

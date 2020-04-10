@@ -9,7 +9,7 @@ from flask import render_template, current_app
 from flask_babel import _, force_locale
 from rq import get_current_job
 from app import db, create_app
-from app.models import Expense, Settlement, Task, User, Event, Post, Image, Thumbnail
+from app.models import Expense, Settlement, Task, User, Event, EventUser, Post, Image, Thumbnail
 from app.email import send_email
 
 app = create_app()
@@ -84,6 +84,9 @@ def import_image(guid, path, add_to_class, add_to_id):
             add_to_user.profile_picture = image  
         elif add_to_class == 'Event':
             add_to_event = Event.query.get(add_to_id)
+            add_to_event.image = image
+        elif add_to_class == 'EventUser':
+            add_to_event = EventUser.query.get(add_to_id)
             add_to_event.image = image
         elif add_to_class == 'Expense':
             add_to_expense = Expense.query.get(add_to_id)

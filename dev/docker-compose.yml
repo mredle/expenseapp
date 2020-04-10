@@ -64,8 +64,8 @@ volumes:
   mariadb-data:
     driver: local
     external: false
-    name: expenseapp-mariadb-data-dev
+    name: expenseapp-mariadb-data
   redis-data:
     driver: local
     external: false
-    name: expenseapp-redis-data-dev
+    name: expenseapp-redis-data

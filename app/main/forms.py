@@ -84,7 +84,6 @@ class NewUserForm(FlaskForm):
     about_me = TextAreaField(_l('About me'), 
                              validators=[Length(min=0, max=256)])
     locale = SelectField(_l('Language'), validators=[DataRequired()])
-    timezone = SelectField(_l('Timezone'), validators=[DataRequired()])
     is_admin = BooleanField(_l('Administrator'))
     submit = SubmitField(_l('Submit'))
 
@@ -107,7 +106,6 @@ class EditUserForm(FlaskForm):
     about_me = TextAreaField(_l('About me'), 
                              validators=[Length(min=0, max=256)])
     locale = SelectField(_l('Language'), validators=[DataRequired()])
-    timezone = SelectField(_l('Timezone'), validators=[DataRequired()])
     is_admin = BooleanField(_l('Administrator'))
     submit = SubmitField(_l('Submit'))
 

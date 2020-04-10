@@ -11,7 +11,7 @@
                 {% set user_link %}
                     <span class="user_popup">
                         <div id="guid", style="display: none;"> {{ post.author.guid }} </div>
-                        <a href="{{ url_for('main.user', guid=post.author.guid) }}">
+                        <a href="{{ url_for('event.user', guid=post.author.guid) }}">
                             {{ post.author.username }}
                         </a>
                     </span>

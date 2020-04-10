@@ -8,7 +8,7 @@ import csv
 import uuid
 from datetime import datetime, timedelta
 from app import create_app, db
-from app.models import Log, BankAccount, Thumbnail, Image, Currency, Event, Post, Expense, Settlement, User, Message, Notification, Task
+from app.models import Log, BankAccount, Thumbnail, Image, Currency, Event, EventUser, Post, Expense, Settlement, User, Message, Notification, Task
 from app.tasks import create_thumbnails
 from config import Config
 
@@ -197,6 +197,29 @@ def register(app):
         created_by = 'flask dbinit admin'
         app = create_app(Config)
         
+        # look for existing anonymous account
+        existing_anonymous_user = User.query.filter_by(username='anonymous').first()
+        
+        if existing_anonymous_user:
+            if overwrite:
+                existing_anonymous_user.username ='anonymous'
+                existing_anonymous_user.email = 'anonymous@mystery.ch'
+                existing_anonymous_user.db_created_by = created_by
+                existing_anonymous_user.is_admin = False
+                existing_anonymous_user.set_random_password()
+                existing_anonymous_user.get_token()
+                db.session.commit()
+        else:
+            anonymous_user = User(username = 'anonymous', 
+                                  email = 'anonymous@mystery.ch', 
+                                  locale = app.config['LANGUAGES'][0],
+                                  about_me = 'I am the unknown user!', 
+                                  db_created_by = created_by)
+            anonymous_user.is_admin = False
+            anonymous_user.set_random_password()
+            anonymous_user.get_token()
+            db.session.add(anonymous_user)
+            
         # look for existing admin account
         existing_admin_user = User.query.filter_by(username='admin').first()
         
@@ -213,7 +236,6 @@ def register(app):
             admin_user = User(username = app.config['ADMIN_USERNAME'], 
                               email = app.config['ADMIN_EMAIL'], 
                               locale = app.config['LANGUAGES'][0],
-                              timezone = app.config['TIMEZONES'][0],
                               about_me = 'I am the mighty admin!', 
                               db_created_by = created_by)
             admin_user.is_admin = True
@@ -236,7 +258,6 @@ def register(app):
             user = User(username = 'User'+str(i_user), 
                         email = 'user'+str(i_user)+'@email.net', 
                         locale = 'en', 
-                        timezone = 'Etc/UTC',
                         about_me = 'blablablabla from the life of User'+str(i_user), 
                         db_created_by = created_by)
             user.set_password(user.username)
@@ -292,6 +313,7 @@ def register(app):
         class_add_missing_guid(Expense) 
         class_add_missing_guid(Settlement) 
         class_add_missing_guid(User) 
+        class_add_missing_guid(EventUser) 
         class_add_missing_guid(Message) 
         class_add_missing_guid(Notification)
         class_add_missing_guid(Task)

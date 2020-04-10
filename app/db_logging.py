@@ -4,6 +4,8 @@ from app import db
 from app.models import User, Log
 
 def log_add(severity, module, msg_type, msg, user, trace=None):
+    if user.is_anonymous:
+        user = User.query.filter_by(username='anonymous').first()
     log = Log(severity, module, msg_type, msg, user, trace)
     db.session.add(log)
     db.session.commit()
@@ -12,7 +14,7 @@ def log_login(path, user):
     log_add('INFORMATION', path, 'login successful', 'User {} logs in successfully'.format(user.username), user)
     
 def log_login_denied(path, username):
-    user = User.query.filter_by(username='admin').first()
+    user = User.query.filter_by(username='anonymous').first()
     log_add('WARNING', path, 'login denied', 'User with user name {} tried to log in'.format(username), user)
     
 def log_logout(path, user):
