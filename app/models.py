@@ -580,7 +580,7 @@ class Event(Entity, db.Model):
     
     def get_amount_spent(self, user):
         expenses = self.expenses.all()
-        expenses_num = [x.get_amount()/x.affected_users.count() for x in expenses if user in x.affected_users]
+        expenses_num = [user.weighting*x.get_amount()/sum([u.weighting for u in x.affected_users.all()]) for x in expenses if user in x.affected_users]
         return sum(expenses_num)
     
     def get_amount_sent(self, user):
@@ -1095,6 +1095,7 @@ class EventUser(Entity, db.Model):
     
     username = db.Column(db.String(64), index=True)
     email = db.Column(db.String(128), index=True)
+    weighting = db.Column(db.Float)
     locale = db.Column(db.String(32))
     about_me = db.Column(db.String(256))
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
@@ -1115,10 +1116,11 @@ class EventUser(Entity, db.Model):
         else:
             return value[0].lower()
     
-    def __init__(self, username, email, locale, about_me='', db_created_by=''):
+    def __init__(self, username, email, weighting, locale, about_me='', db_created_by=''):
         Entity.__init__(self, db_created_by)
         self.username = username
         self.email = email
+        self.weighting = weighting
         self.locale = locale
         self.about_me = about_me
         

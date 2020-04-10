@@ -133,6 +133,7 @@ def new():
                       db_created_by=current_user.username)
         user = EventUser(username=current_user.username,
                          email=current_user.email, 
+                         weighting=1.0,
                          locale=current_user.locale, 
                          about_me=current_user.about_me, 
                          db_created_by=current_user.username)
@@ -240,6 +241,7 @@ def users(guid):
             return redirect(url_for('main.event', guid=event.guid))
         user = EventUser(username=form.username.data, 
                          email=form.email.data,
+                         weighting=form.weighting.data,
                          locale=form.locale.data,
                          about_me=form.about_me.data)
         event.add_user(user)
@@ -306,6 +308,7 @@ def edit_profile(guid):
     if form.validate_on_submit():
         eventuser.username = form.username.data
         eventuser.email = form.email.data
+        eventuser.weighting = form.weighting.data
         eventuser.about_me = form.about_me.data
         eventuser.locale = form.locale.data
         db.session.commit()
@@ -314,6 +317,7 @@ def edit_profile(guid):
     elif request.method == 'GET':
         form.username.data = eventuser.username
         form.email.data = eventuser.email
+        form.weighting.data = eventuser.weighting
         form.about_me.data = eventuser.about_me
         form.locale.data = eventuser.locale
     return render_template('edit_form.html', 

@@ -35,12 +35,16 @@ class EventForm(FlaskForm):
     currency_id = SelectMultipleField(_l('Allowed currencies'), coerce=int,
                               validators=[DataRequired()])
     exchange_fee = FloatField(_l('Exchange fee (%)'), 
-                       validators=[DataRequired()])
+                              default=2.0,
+                              validators=[DataRequired()])
     submit = SubmitField(_l('Submit'))
     
 class EventUserForm(FlaskForm):
     username = StringField(_l('Username'), validators=[DataRequired(), Regexp(r'^[\w.]+$')])
     email = StringField(_l('Email'), validators=[DataRequired(), Email()])
+    weighting = FloatField(_l('Weighting'), 
+                           default=1.0,
+                           validators=[DataRequired()])
     about_me = TextAreaField(_l('About me'), 
                              validators=[Length(min=0, max=256)])
     locale = SelectField(_l('Language'), validators=[DataRequired()])

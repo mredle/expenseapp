@@ -86,8 +86,8 @@ def import_image(guid, path, add_to_class, add_to_id):
             add_to_event = Event.query.get(add_to_id)
             add_to_event.image = image
         elif add_to_class == 'EventUser':
-            add_to_event = EventUser.query.get(add_to_id)
-            add_to_event.image = image
+            add_to_eventuser = EventUser.query.get(add_to_id)
+            add_to_eventuser.profile_picture = image
         elif add_to_class == 'Expense':
             add_to_expense = Expense.query.get(add_to_id)
             add_to_expense.image = image

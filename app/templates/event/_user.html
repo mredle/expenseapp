@@ -28,8 +28,9 @@
                     </span>
                 {% endset %}
                 <br>
-                {{ _('%(link)s', link=user_link) }}
-                {% if can_edit %}, {{ _('%(link)s', link=remove_link) }}{% endif %}
+                {{ _('%(link)s', link=user_link) }} ({{ _('Weighting: %(weight)0.1f', weight=user.weighting) }})
+                <br>
+                {% if can_edit %}{{ _('%(link)s', link=remove_link) }}{% endif %}
             </td>
         </tr>
     </table>

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block app_content %}
+    <p><a href="{{ url_for('event.users', guid=user.event.guid) }}">{{ _('Back to user page') }}</a></p>
     <table class="table table-hover">
         <tr>
             <h1>{{ title }}</h1>
