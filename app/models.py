@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from flask_babel import _
 from sqlalchemy.orm import validates
 from sqlalchemy.types import TypeDecorator, CHAR
 from sqlalchemy.dialects.postgresql import UUID
@@ -99,7 +100,7 @@ class Entity():
         self.guid = uuid.uuid4()
         self.db_created_by = db_created_by
         self.db_updated_by = db_created_by
-        
+    
     @classmethod
     def get_by_guid_or_404(cls, guid):
         return cls.query.filter(cls.guid==guid).first_or_404()
@@ -130,7 +131,15 @@ class Log(db.Model):
     def __repr__(self):
         return '<{} log from {} at {}: {}>'.format(self.severity, self.user.username, self.date, self.msg)
         
-
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Log entries')
+        filters = []
+        if not (user is None or user.is_admin):
+            filters.append(cls.user==user)
+        number = cls.query.filter(*filters).count()
+        return [(description, number)]
+        
 class Thumbnail(Entity, db.Model):
     __tablename__ = 'thumbnails'
     id = db.Column(db.Integer, primary_key=True)
@@ -169,6 +178,12 @@ class Thumbnail(Entity, db.Model):
     
     def __repr__(self):
         return '<Thumbnail {}px>'.format(self.name, self.size)
+        
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Thumbnails')
+        number = cls.query.count()
+        return [(description, number)]
     
     def get_path(self):
         return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
@@ -235,7 +250,27 @@ class Image(Entity, db.Model):
             shutil.copy(path, self.get_path())
         else:
             shutil.move(path, self.get_path())
+    
+    def __repr__(self):
+        return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
         
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Images')
+        number = cls.query.count()
+        return [(description, number)]
+       
+    def rotate_image(self, degree):
+        self.rotate = (self.rotate+degree)%360
+        
+    def get_html_scale(self):
+        if self.rotate in (90,270) and self.width>self.height:
+            return self.height/self.width
+        elif self.rotate in (90,270) and self.width<self.height:
+            return self.width/self.height
+        else:
+            return 1
+       
     def update(self, path, keep_original=False, name=None):
         # Remove old file
         os.remove(self.get_path())
@@ -250,21 +285,7 @@ class Image(Entity, db.Model):
             shutil.copy(path, self.get_path())
         else:
             shutil.move(path, self.get_path())
-        
-    def __repr__(self):
-        return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
-        
-    def rotate_image(self, degree):
-        self.rotate = (self.rotate+degree)%360
-        
-    def get_html_scale(self):
-        if self.rotate in (90,270) and self.width>self.height:
-            return self.height/self.width
-        elif self.rotate in (90,270) and self.width<self.height:
-            return self.width/self.height
-        else:
-            return 1
-        
+     
     def get_path(self):
         if self.name:
             return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
@@ -326,7 +347,16 @@ class BankAccount(Entity, db.Model):
     
     def __repr__(self):
         return '<BankAccount {}>'.format(self.iban)
-    
+        
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Bank accounts')
+        filters = []
+        if not (user is None or user.is_admin):
+            filters.append(cls.user==user)
+        number = cls.query.filter(*filters).count()
+        return [(description, number)]
+     
     def can_edit(self, user):
         return (user.is_admin or user==self.user)
 
@@ -347,6 +377,16 @@ class EventCurrency(db.Model):
     def __repr__(self):
         return '<EventCurrency {}>'.format(self.currency.code)
         
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Event currencies')
+        filters = []
+        if not (user is None or user.is_admin):
+            events = Event.query.filter(Event.admin==user).all()
+            filters.append(cls.event_id.in_([e.id for e in events]))
+        number = cls.query.filter(*filters).count()
+        return [(description, number)]
+     
     def get_amount_in(self, amount, eventcurrency, exchange_fee):
         if self == eventcurrency:
             return amount
@@ -391,6 +431,12 @@ class Currency(Entity, db.Model):
     
     def __repr__(self):
         return '<Currency {}>'.format(self.code)
+        
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Currencies')
+        number = cls.query.count()
+        return [(description, number)]
     
     def can_edit(self, user):
         return user.is_admin
@@ -443,6 +489,15 @@ class Event(Entity, db.Model):
     
     def __repr__(self):
         return '<Event {}>'.format(self.name)
+        
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Events')
+        filters = []
+        if not (user is None or user.is_admin):
+            filters.append(cls.admin==user)
+        number = cls.query.filter(*filters).count()
+        return [(description, number)]
     
     def can_edit(self, user):
         return (user.is_admin or user==self.admin) if user.is_authenticated else False
@@ -622,6 +677,15 @@ class Expense(Entity, db.Model):
     
     def __repr__(self):
         return '<Expense {}{}>'.format(self.amount, self.currency.code)
+        
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Expenses')
+        filters = []
+        if not (user is None or user.is_admin):
+            filters.append(cls.user==user)
+        number = cls.query.filter(*filters).count()
+        return [(description, number)]
     
     def avatar(self, size):
         if self.image:
@@ -692,6 +756,18 @@ class Settlement(Entity, db.Model):
     
     def __repr__(self):
         return '<Settlement {}{}>'.format(self.amount, self.currency.code)
+        
+    @classmethod
+    def get_class_stats(cls, user=None):
+        filters = []
+        if not (user is None or user.is_admin):
+            filters.append(cls.sender==user)
+        number_s = cls.query.filter(*filters).count()
+        filters = []
+        if not (user is None or user.is_admin):
+            filters.append(cls.recipient==user)
+        number_r = cls.query.filter(*filters).count()
+        return [(_('Settlements as sender'), number_s), (_('Settlements as recipient'), number_r)]
     
     def avatar(self, size):
         if self.image:
@@ -732,7 +808,16 @@ class Post(Entity, db.Model):
     
     def __repr__(self):
         return '<Post {}>'.format(self.body)
-
+        
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Posts')
+        filters = []
+        if not (user is None or user.is_admin):
+            filters.append(cls.author==user)
+        number = cls.query.filter(*filters).count()
+        return [(description, number)]
+    
 
 class Message(Entity, db.Model):
     __tablename__ = 'messages'
@@ -754,7 +839,19 @@ class Message(Entity, db.Model):
         
     def __repr__(self):
         return '<Message {}>'.format(self.body)
-
+        
+    @classmethod
+    def get_class_stats(cls, user=None):
+        filters = []
+        if not (user is None or user.is_admin):
+            filters.append(cls.author==user)
+        number_s = cls.query.filter(*filters).count()
+        filters = []
+        if not (user is None or user.is_admin):
+            filters.append(cls.recipient==user)
+        number_r = cls.query.filter(*filters).count()
+        return [(_('Messages sent'), number_s), (_('Messages received'), number_r)]
+    
 
 class Notification(Entity, db.Model):
     __tablename__ = 'notifications'
@@ -775,6 +872,15 @@ class Notification(Entity, db.Model):
         
     def __repr__(self):
         return '<Notification {}>'.format(self.name)
+        
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Notifications')
+        filters = []
+        if not (user is None or user.is_admin):
+            filters.append(cls.user==user)
+        number = cls.query.filter(*filters).count()
+        return [(description, number)]
     
     def get_data(self):
         return json.loads(str(self.payload_json))
@@ -801,6 +907,18 @@ class Task(Entity, db.Model):
         
     def __repr__(self):
         return '<Task {} from {}: {}>'.format(self.id, self.user.username, ('Done' if self.complete else 'Unfinished'))
+        
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Tasks')
+        filters = []
+        if not (user is None or user.is_admin):
+            filters.append(cls.user==user)
+        number = cls.query.filter(*filters).count()
+        return [(description, number)]
+    
+    def can_edit(self, user):
+        return (not self.complete and ((user.is_admin or user==self.user) if user.is_authenticated else False))
     
     def get_rq_job(self):
         try:
@@ -861,6 +979,12 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         
     def __repr__(self):
         return '<User {}>'.format(self.username)
+        
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Users')
+        number = cls.query.count()
+        return [(description, number)]
     
     def to_dict(self, include_email=False):
         data = {
@@ -965,12 +1089,6 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
             return None
         return user
 
-event_users = db.Table('event_users',
-    db.Column('event_id', db.Integer, db.ForeignKey('events.id')),
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
-    db.PrimaryKeyConstraint('event_id', 'user_id')
-)
-
 class EventUser(Entity, db.Model):
     __tablename__ = 'eventusers'
     id = db.Column(db.Integer, primary_key=True)
@@ -1006,7 +1124,16 @@ class EventUser(Entity, db.Model):
         
     def __repr__(self):
         return '<EventUser {}>'.format(self.username)
-    
+        
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Event users')
+        filters = []
+        if not (user is None or user.is_admin):
+            events = Event.query.filter(Event.admin==user).all()
+            filters.append(cls.event_id.in_([e.id for e in events]))
+        number = cls.query.filter(*filters).count()
+        return [(description, number)]
     
     def avatar(self, size):
         if self.profile_picture:

@@ -9,7 +9,7 @@ from flask_babel import get_locale, _
 from app import db, images
 from app.main import bp
 from app.main.forms import ImageForm, EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm, BankAccountForm
-from app.models import Currency, User, Message, Notification, Image, BankAccount, Log, Task
+from app.models import Currency, User, Message, Notification, Image, BankAccount, Log, Task, Event, EventUser, EventCurrency, Expense, Settlement, Post
 from app.db_logging import log_page_access, log_page_access_denied
 
 @bp.before_app_request
@@ -349,10 +349,6 @@ def revoke_admin(guid):
 @bp.route('/administration')
 @login_required
 def administration():
-    if not current_user.is_admin:
-        flash(_('Only an admin can view the admin page!'))
-        log_page_access_denied(request, current_user)
-        return redirect(url_for('main.index'))
     log_page_access(request, current_user)
     return render_template('administration.html',
                            title= _('Administration'))
@@ -360,19 +356,16 @@ def administration():
 @bp.route('/logs')
 @login_required
 def logs():
-    if not current_user.is_admin:
-        flash(_('Only an admin can view the log page!'))
-        log_page_access_denied(request, current_user)
-        return redirect(url_for('main.index'))
     log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
     severity = request.args.get('severity', None, type=str)
-    if severity is None:
-        logs = Log.query.order_by(Log.date.desc()).paginate(
-            page, 100, False)
-    else:
-        logs = Log.query.filter(Log.severity==severity.upper()).order_by(Log.date.desc()).paginate(
-            page, 100, False)
+    filters = []
+    if severity is not None:
+        filters.append(Log.severity==severity.upper())
+    if not current_user.is_admin:
+        filters.append(Log.user==current_user)
+    logs = Log.query.filter(*filters).order_by(Log.date.desc()).paginate(
+        page, current_app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('main.logs', page=logs.next_num) \
         if logs.has_next else None
     prev_url = url_for('main.logs', page=logs.prev_num) \
@@ -385,20 +378,17 @@ def logs():
 @bp.route('/tasks')
 @login_required
 def tasks():
-    if not current_user.is_admin:
-        flash(_('Only an admin can view the task page!'))
-        log_page_access_denied(request, current_user)
-        return redirect(url_for('main.index'))
     log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
     complete_str = request.args.get('complete', None, type=str)
     complete = (False if complete_str=='False' else True if complete_str=='True' else None)
-    if complete is None:
-        tasks = Task.query.order_by(Task.db_created_at.desc()).paginate(
-            page, 100, False)
-    else:
-        tasks = Task.query.filter(Task.complete==complete).order_by(Task.db_created_at.desc()).paginate(
-            page, 100, False)
+    filters = []
+    if complete is not None:
+        filters.append(Task.complete==complete)
+    if not current_user.is_admin:
+        filters.append(Task.user==current_user)
+    tasks = Task.query.filter(*filters).order_by(Task.db_created_at.desc()).paginate(
+        page, current_app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('main.tasks', page=tasks.next_num) \
         if tasks.has_next else None
     prev_url = url_for('main.tasks', page=tasks.prev_num) \
@@ -407,6 +397,39 @@ def tasks():
                            tasks=tasks.items,
                            title= _('Tasks'),
                            next_url=next_url, prev_url=prev_url)
+
+@bp.route('/remove_task/<guid>')
+@login_required
+def remove_task(guid):
+    task = Task.get_by_guid_or_404(guid)
+    if not task.can_edit(current_user):
+        flash(_('Your are only allowed to delete your own task!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('main.tasks'))
+    log_page_access(request, current_user)
+    task_name = task.name
+    task_username = task.user.username
+    db.session.delete(task)
+    db.session.commit()
+    flash(_('Task %(name)s from user %(username)s has been removed', name=task_name, username=task_username))
+    return redirect(url_for('main.tasks'))
+
+@bp.route('/statistics')
+@login_required
+def statistics():
+    log_page_access(request, current_user)
+    if current_user.is_admin:
+        classes = [Currency, User, Message, Notification, Image, BankAccount, Log, Task, Event, EventUser, EventCurrency, Expense, Settlement, Post]
+    else:
+        classes = [Message, Notification, BankAccount, Log, Task, Expense, Settlement, Event, EventUser, EventCurrency, Post]
+
+    statistics = []
+    for c in classes:
+        statistics.extend(c.get_class_stats(current_user))
+    
+    return render_template('statistics.html',
+                           statistics=statistics,
+                           title= _('Statistics'))
 
 @bp.route('/user/<guid>/popup')
 @login_required

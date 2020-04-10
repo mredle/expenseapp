@@ -1,0 +1,27 @@
+    <table class="table table-hover">
+        <tr>
+            <td>
+                {% set remove_link %}
+                    <span>
+                        <a href="{{ url_for('main.remove_task', guid=task.guid) }}">
+                            {{ _('remove') }}
+                        </a>
+                    </span>
+                {% endset %}
+                {{ _('Task %(name)s from user %(username)s',
+                    name=task.name, 
+                    username=task.user.username) }}
+                <br>
+                {% if task.complete %}
+                {{ _('(Complete)') }}: 
+                {% else %}
+                {{ _('(Pending)') }}: 
+                {% endif %}
+                {{ task.description }}
+                {% if task.can_edit(current_user) %}
+                <br>
+                {{ _('%(link)s', link=remove_link) }}
+                {% endif %}
+            </td>
+        </tr>
+    </table>

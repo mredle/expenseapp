@@ -8,8 +8,8 @@
     <a href="{{ url_for('main.tasks', complete=False) }}">{{ _('Uncomplete') }}</a> 
     <a href="{{ url_for('main.tasks', complete=True) }}">{{ _('Complete') }}</a></p>
     <br>
-    {% for item in tasks %}
-        {% include '_generic_item.html' %}
+    {% for task in tasks %}
+        {% include '_task.html' %}
     {% endfor %}
     <nav aria-label="...">
         <ul class="pager">
