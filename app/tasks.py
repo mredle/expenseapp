@@ -10,9 +10,13 @@ from flask import render_template, current_app
 from flask_babel import _, force_locale
 from rq import get_current_job
 from app import db, create_app, scheduler
-from app.models import Expense, Settlement, Task, User, Event, EventUser, Post, Image, Thumbnail, Log
+from app.models import Currency, Expense, Settlement, Task, User, Event, EventUser, Post, Image, Thumbnail, Log
 from app.db_logging import log_add
 from app.email import send_email
+
+from yahoofinancials import YahooFinancials
+# from forex_python.converter import CurrencyRates
+# import pandas_datareader.data as web
 
 app = create_app()
 app.app_context().push()
@@ -238,6 +242,93 @@ def clean_log(error, keepdays):
     else:
         Log.query.filter(Log.date<=keydate, Log.severity!='ERROR').delete()
     db.session.commit()
+   
+def update_rates_yahoo(guid):
+    """Update rates from yahoo"""
+    user = User.get_by_guid_or_404(guid)
+    _set_task_progress(0)
+    
+    start = datetime.utcnow()
+    end = datetime.utcnow()
+    
+    # CHF -> USD
+    yahoo_currencies = 'CHF=X'
+    yahoo_financials_currencies = YahooFinancials(yahoo_currencies)
+    daily_currency_prices = yahoo_financials_currencies.get_historical_price_data(start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), 'daily')
+    USD_inCHF = daily_currency_prices['CHF=X']['prices'][0]['adjclose']
+    
+    existing_currencies = Currency.query.filter(Currency.source=='yahoo').all()
+    yahoo_currencies = ['{}=X'.format(c.code) for c in existing_currencies]
+    n = len(existing_currencies)
+    # def chunks(lst, n):
+    #     """Yield successive n-sized chunks from lst."""
+    #     for i in range(0, len(lst), n):
+    #         yield lst[i:i + n]
+    
+    try:
+        yahoo_financials_currencies = YahooFinancials(yahoo_currencies)
+        daily_currency_prices = yahoo_financials_currencies.get_historical_price_data(start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), 'daily')
+        
+        exchange_rates = {v['currency']: USD_inCHF/daily_currency_prices[k]['prices'][0]['adjclose'] 
+                          for k, v in daily_currency_prices.items() 
+                          if 'currency' in v}
+        
+        for c in existing_currencies:
+            if c.code in exchange_rates:
+                c.inCHF = exchange_rates[c.code]
+                c.db_updated_at = start
+                c.db_updated_by = 'update_rates_yahoo'
+        
+        message = '{} currencies updated successfully from yahoo.'.format(n)
+        log_add('INFORMATION', 'scheduler.task', 'get_rates_yahoo', message, user)
+        db.session.commit()
+    except:
+        message = '{} currencies could not be updated from yahoo.'.format(n)
+        log_add('WARNING', 'scheduler.task', 'get_rates_yahoo', message, user)
+        
+    _set_task_progress(100)
+    
+            
+def check_rates_yahoo(guid):
+    """Check if rates are available on yahoo"""
+    user = User.get_by_guid_or_404(guid)
+    _set_task_progress(0)
+        
+    start = datetime.utcnow()
+    end = datetime.utcnow()
+    
+    # CHF -> USD
+    yahoo_currencies = 'CHF=X'
+    yahoo_financials_currencies = YahooFinancials(yahoo_currencies)
+    daily_currency_prices = yahoo_financials_currencies.get_historical_price_data(start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), 'daily')
+    USD_inCHF = daily_currency_prices['CHF=X']['prices'][0]['adjclose']
+    
+    existing_currencies = Currency.query.all()
+    i = 0
+    n = len(existing_currencies)
+    for c in existing_currencies:
+        try:
+            yahoo_currency = '{}=X'.format(c.code)
+            yahoo_financials_currencies = YahooFinancials(yahoo_currency)
+            daily_currency_prices = yahoo_financials_currencies.get_historical_price_data(start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), 'daily')
+            exchange_rate = USD_inCHF/daily_currency_prices[yahoo_currency]['prices'][0]['adjclose'] 
+            
+            c.inCHF = exchange_rate
+            c.source = 'yahoo'
+            c.db_updated_at = start
+            c.db_updated_by = 'check_rates_yahoo'
+            message = 'Currency {} updated successfully from yahoo with rate {}.'.format(c.code, c.inCHF)
+            log_add('INFORMATION', 'scheduler.task', 'check_rates_yahoo', message, user)
+            db.session.commit()
+        except:
+            message = 'Currency {} could not be updated from yahoo'.format(c.code)
+            log_add('WARNING', 'scheduler.task', 'check_rates_yahoo', message, user)
+            
+        i += 1
+        _set_task_progress(100*i//n)
+        
+    _set_task_progress(100)
+        
 
 def housekeeping(guid):
     try:
@@ -252,11 +343,25 @@ def housekeeping(guid):
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
         
-# cron examples
-@scheduler.task('cron', id='j_housekeeping', day='*', hour='4')
+# cron jobs
+@scheduler.task('cron', id='j_housekeeping', day='15', hour='3')
 def j_housekeeping():
     with scheduler.app.app_context():
-        admin = User.query.filter_by(username='admin').first()
+        admin = User.query.filter(User.username=='admin').first()
         admin.launch_task('housekeeping', _('Performing housekeeping jobs...'))
+        db.session.commit()
+
+@scheduler.task('cron', id='j_check_currencies', day='15', hour='4')
+def j_check_currencies():
+    with scheduler.app.app_context():
+        admin = User.query.filter(User.username=='admin').first()
+        admin.launch_task('check_rates_yahoo', _('Checking currencies...'))
+        db.session.commit()
+
+@scheduler.task('cron', id='j_update_currencies', day='*', hour='5')
+def j_update_currencies():
+    with scheduler.app.app_context():
+        admin = User.query.filter(User.username=='admin').first()
+        admin.launch_task('update_rates_yahoo', _('Updating currencies...'))
         db.session.commit()
         

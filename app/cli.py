@@ -302,3 +302,4 @@ def register(app):
         class_add_missing_guid(Message) 
         class_add_missing_guid(Notification)
         class_add_missing_guid(Task)
+    

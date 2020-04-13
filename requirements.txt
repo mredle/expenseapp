@@ -6,6 +6,8 @@ pyjwt
 gunicorn
 pymysql
 Werkzeug==0.16
+forex-python
+yahoofinancials
 flask
 flask-sqlalchemy 
 flask-migrate 

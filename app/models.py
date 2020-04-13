@@ -412,6 +412,7 @@ class Currency(Entity, db.Model):
     inCHF = db.Column(db.Float)
     image_id = db.Column(db.Integer, db.ForeignKey('images.id'))
     image = db.relationship('Image', foreign_keys=image_id)
+    source = db.Column(db.String(32))
     description = db.Column(db.String(256))
     expenses = db.relationship('Expense', back_populates='currency', lazy='dynamic')
     settlements = db.relationship('Settlement', back_populates='currency', lazy='dynamic')

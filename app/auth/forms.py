@@ -17,7 +17,6 @@ class RegistrationForm(FlaskForm):
     username = StringField(_l('Username'), validators=[DataRequired(), Regexp(r'^[\w.]+$')])
     email = StringField(_l('Email'), validators=[DataRequired(), Email()])
     locale = SelectField(_l('Language'), validators=[DataRequired()])
-    timezone = SelectField(_l('Timezone'), validators=[DataRequired()])
     submit = SubmitField(_l('Register'))
 
     def validate_username(self, username):

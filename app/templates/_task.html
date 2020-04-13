@@ -13,9 +13,10 @@
                     username=task.user.username) }}
                 <br>
                 {% if task.complete %}
-                {{ _('(Complete)') }}: 
+                {{ (_('Complete')) }}: 
                 {% else %}
-                {{ _('(Pending)') }}: 
+                {{ (_('Pending, progress: %(progress)s', 
+                    progress=task.get_progress())) }}: 
                 {% endif %}
                 {{ task.description }}
                 {% if task.can_edit(current_user) %}

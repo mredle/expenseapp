@@ -46,12 +46,10 @@ def register():
         return redirect(url_for('main.index'))
     form = RegistrationForm()
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
-    form.timezone.choices = [(x, x) for x in current_app.config['TIMEZONES']]
     if form.validate_on_submit():
         user = User(username=form.username.data, 
                     email=form.email.data,
-                    locale=form.locale.data,
-                    timezone=form.timezone.data)
+                    locale=form.locale.data)
         user.set_random_password()
         user.get_token()
         db.session.add(user)
