@@ -6,9 +6,9 @@ import click
 import time
 import csv
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 from app import create_app, db
-from app.models import Log, BankAccount, Thumbnail, Image, Currency, Event, EventUser, Post, Expense, Settlement, User, Message, Notification, Task
+from app.models import BankAccount, Thumbnail, Image, Currency, Event, EventUser, Post, Expense, Settlement, User, Message, Notification, Task
 from app.tasks import create_thumbnails
 from config import Config
 
@@ -271,21 +271,6 @@ def register(app):
     def dbmaint():
         """Commands for database maintenance."""
         pass
-    
-    @dbmaint.command()
-    @click.option('--error/--no-error', default=False, help='Dont delete ERROR entries.')
-    @click.option('--keepdays', default=30, help='Keep number of days.')
-    def clean_log(error, keepdays):
-        """Clean log entries older than certain days"""
-            
-        # find log entries
-        keydate = datetime.utcnow() - timedelta(days=keepdays)
-        if error:
-            Log.query.filter(Log.date<=keydate).delete()
-        else:
-            Log.query.filter(Log.date<=keydate, Log.severity!='ERROR').delete()
-            
-        db.session.commit()
     
     @dbmaint.command()
     def add_missing_guid():

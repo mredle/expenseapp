@@ -8,6 +8,7 @@ from redis import Redis
 import rq
 import os
 import time
+import atexit
 
 from flask import Flask, request, current_app
 from flask_sqlalchemy import SQLAlchemy
@@ -18,6 +19,7 @@ from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_babel import Babel, lazy_gettext as _l
 from flask_uploads import UploadSet, IMAGES, configure_uploads
+from flask_apscheduler import APScheduler
 
 from config import Config
 
@@ -38,7 +40,8 @@ mail = Mail()
 bootstrap = Bootstrap()
 moment = Moment()
 babel = Babel()
-
+scheduler = APScheduler()
+    
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -51,6 +54,15 @@ def create_app(config_class=Config):
     bootstrap.init_app(app)
     moment.init_app(app)
     babel.init_app(app)
+    scheduler.init_app(app)
+    
+    @app.before_first_request
+    def init_scheduler():
+        scheduler.start()
+        from app import models, tasks
+        # Shut down the scheduler when exiting the app
+        atexit.register(lambda: scheduler.shutdown())
+    
     app.redis = Redis.from_url(app.config['REDIS_URL'])
     app.task_queue = rq.Queue('expenseapp-tasks', connection=app.redis)
     
@@ -96,7 +108,7 @@ def create_app(config_class=Config):
         
             app.logger.setLevel(logging.INFO)
             app.logger.info('App startup')
-            
+    
     return app
 
 @babel.localeselector
@@ -104,17 +116,13 @@ def get_locale():
     # if a user is logged in, use the locale from the user settings
     # otherwise try to guess the language from the user accept
     # header the browser transmits. The best match wins.
-    if current_user.is_authenticated:
-        return current_user.locale
-    else:
-        return request.accept_languages.best_match(current_app.config['LANGUAGES'])
-
-@babel.timezoneselector
-def get_timezone():
-    if current_user.is_authenticated:
-        return current_user.timezone
-    else: 
-        return 'Etc/UTC'
+    try:
+        if current_user.is_authenticated:
+            return current_user.locale
+        else:
+            return request.accept_languages.best_match(current_app.config['LANGUAGES'])
+    except:
+        return 'en'
 
 # logging.basicConfig()
 # logger = logging.getLogger("myapp.sqltime")
@@ -133,4 +141,3 @@ def get_timezone():
 #     logger.debug("Query Complete!")
 #     logger.debug("Total Time: %f", total)
     
-from app import models, tasks

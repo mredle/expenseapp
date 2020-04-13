@@ -3,13 +3,15 @@
 import sys
 import time
 import json
-from datetime import datetime
+
+from datetime import datetime, timedelta
 from weasyprint import HTML
 from flask import render_template, current_app
 from flask_babel import _, force_locale
 from rq import get_current_job
-from app import db, create_app
-from app.models import Expense, Settlement, Task, User, Event, EventUser, Post, Image, Thumbnail
+from app import db, create_app, scheduler
+from app.models import Expense, Settlement, Task, User, Event, EventUser, Post, Image, Thumbnail, Log
+from app.db_logging import log_add
 from app.email import send_email
 
 app = create_app()
@@ -27,8 +29,7 @@ def _set_task_progress(progress):
             task.complete = True
         db.session.commit()
 
-def consume_time(guid):
-    amount=10
+def consume_time(guid, amount):
     try:
         user = User.get_by_guid_or_404(guid)
         _set_task_progress(0)
@@ -226,4 +227,36 @@ def send_reminders(guid, event_guid):
     except:
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
+   
+def clean_log(error, keepdays):
+    """Clean log entries older than certain days"""
+    
+    # find log entries
+    keydate = datetime.utcnow() - timedelta(days=keepdays)
+    if error:
+        Log.query.filter(Log.date<=keydate).delete()
+    else:
+        Log.query.filter(Log.date<=keydate, Log.severity!='ERROR').delete()
+    db.session.commit()
+
+def housekeeping(guid):
+    try:
+        user = User.get_by_guid_or_404(guid)
+        _set_task_progress(0)
+        clean_log(False, 360)
+        message = 'clean_log job started successfully'
+        log_add('INFORMATION', 'scheduler.task', 'housekeeping', message, user)
+        _set_task_progress(100)
+        
+    except:
+        _set_task_progress(100)
+        app.logger.error('Unhandled exception', exc_info=sys.exc_info())
+        
+# cron examples
+@scheduler.task('cron', id='j_housekeeping', day='*', hour='4')
+def j_housekeeping():
+    with scheduler.app.app_context():
+        admin = User.query.filter_by(username='admin').first()
+        admin.launch_task('housekeeping', _('Performing housekeeping jobs...'))
+        db.session.commit()
         

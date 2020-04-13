@@ -546,6 +546,6 @@ def consume_time(amount):
     if current_user.get_task_in_progress('consume_time'):
         flash(_('A time consuming task is currently in progress'))
     else:
-        current_user.launch_task('consume_time', _('Consuming time...'))
+        current_user.launch_task('consume_time', _('Consuming %(amount)s s of time...', amount=amount), amount=amount)
         db.session.commit()
     return redirect(url_for('main.user', guid=current_user.guid))

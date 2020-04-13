@@ -36,7 +36,22 @@ services:
       - "8080:8080"
     networks:
      - expenseapp
-
+     
+  phpredisadmin:
+    image: erikdubbelboer/phpredisadmin
+    restart: on-failure
+    container_name: expenseapp-phpredisadmin-dev
+    environment:
+      REDIS_1_HOST: redis
+      REDIS_1_NAME: redis
+      REDIS_1_PORT: 6379
+    depends_on:
+      - redis
+    ports:
+      - "8081:80"
+    networks:
+     - expenseapp
+     
   mailhog:
     image: mailhog/mailhog
     restart: on-failure
@@ -90,7 +105,9 @@ services:
       ADMIN_USERNAME: 'admin'
       ADMIN_PASSWORD: 'pw'
       ADMIN_EMAIL: 'admin@expenseapp'
-      REDIS_URL: 'redis://redis:6379/0'
+      REDIS_HOST: 'redis'
+      REDIS_PORT: 6379
+      REDIS_DB: 0
     networks:
      - expenseapp
     depends_on:
@@ -126,7 +143,9 @@ services:
       ADMIN_USERNAME: 'admin'
       ADMIN_PASSWORD: 'pw'
       ADMIN_EMAIL: 'admin@expenseapp'
-      REDIS_URL: 'redis://redis:6379/0'
+      REDIS_HOST: 'redis'
+      REDIS_PORT: 6379
+      REDIS_DB: 0
     networks:
      - expenseapp
     depends_on:

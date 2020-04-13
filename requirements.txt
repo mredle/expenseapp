@@ -19,3 +19,4 @@ flask-bootstrap
 flask-uploads
 flask-restplus
 flask-weasyprint
+flask-apscheduler

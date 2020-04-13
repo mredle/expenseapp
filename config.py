@@ -2,7 +2,9 @@
 
 import os
 from dotenv import load_dotenv
+from apscheduler.jobstores.redis import RedisJobStore
 
+os.environ['TZ']= 'Europe/Zurich'
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
 
@@ -34,8 +36,17 @@ class Config(object):
     IMAGE_TIMG_PATH = os.environ.get('IMAGE_TIMG_PATH') or 'static/timg/'
     UPLOADS_DEFAULT_DEST = os.path.join(IMAGE_ROOT_PATH, IMAGE_TMP_PATH)
     UPLOADED_IMAGES_DEST = os.path.join(IMAGE_ROOT_PATH, IMAGE_TMP_PATH)
-    THUMBNAIL_SIZES = [32, 64, 128, 256, 512, 1024]
+    THUMBNAIL_SIZES = [32, 64, 128, 256, 512, 1024, 2048]
     ITEMS_PER_PAGE = 10
     MESSAGES_PER_PAGE = 10
     LANGUAGES = ['en', 'de']
-    REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379/0'
+    REDIS_HOST = os.environ.get('REDIS_HOST') or 'localhost'
+    REDIS_PORT = os.environ.get('REDIS_PORT') or 6379
+    REDIS_DB = os.environ.get('REDIS_DB') or 0
+    REDIS_URL = os.environ.get('REDIS_URL') or 'redis://{}:{}/{}'.format(REDIS_HOST, REDIS_PORT, REDIS_DB)
+    SCHEDULER_API_ENABLED = True
+    SCHEDULER_JOBSTORES = {
+        'default': RedisJobStore(db=REDIS_DB, jobs_key='housekeeping_jobs', run_times_key='housekeeping_jobs_running', host=REDIS_HOST, port=REDIS_PORT)
+    }
+
+    
