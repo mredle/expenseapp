@@ -130,7 +130,10 @@ class Log(db.Model):
     
     def __repr__(self):
         return '<{} log from {} at {}: {}>'.format(self.severity, self.user.username, self.date, self.msg)
-        
+    
+    def can_view(self, user):
+        return (user.is_admin or user==self.user) if user.is_authenticated else False
+    
     @classmethod
     def get_class_stats(cls, user=None):
         description = _('Log entries')

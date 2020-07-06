@@ -9,8 +9,8 @@
     <a href="{{ url_for('main.logs', severity='Warning') }}">{{ _('Warning') }}</a> 
     <a href="{{ url_for('main.logs', severity='Information') }}">{{ _('Information') }}</a></p>
     <br>
-    {% for item in logs %}
-        {% include '_generic_item.html' %}
+    {% for log in logs %}
+        {% include '_log.html' %}
     {% endfor %}
     <nav aria-label="...">
         <ul class="pager">

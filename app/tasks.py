@@ -249,7 +249,7 @@ def update_rates_yahoo(guid):
     _set_task_progress(0)
     
     start = datetime.utcnow()
-    end = datetime.utcnow()
+    end = start
     
     # CHF -> USD
     yahoo_currencies = 'CHF=X'
@@ -265,9 +265,15 @@ def update_rates_yahoo(guid):
     #     for i in range(0, len(lst), n):
     #         yield lst[i:i + n]
     
+    _set_task_progress(1)
+    
+    trace = None
     try:
         yahoo_financials_currencies = YahooFinancials(yahoo_currencies)
         daily_currency_prices = yahoo_financials_currencies.get_historical_price_data(start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), 'daily')
+        trace = str(daily_currency_prices)
+        if len(trace)>4000:
+            trace = trace[0:4000]
         
         exchange_rates = {v['currency']: USD_inCHF/daily_currency_prices[k]['prices'][0]['adjclose'] 
                           for k, v in daily_currency_prices.items() 
@@ -280,11 +286,12 @@ def update_rates_yahoo(guid):
                 c.db_updated_by = 'update_rates_yahoo'
         
         message = '{} currencies updated successfully from yahoo.'.format(n)
-        log_add('INFORMATION', 'scheduler.task', 'get_rates_yahoo', message, user)
+        
+        log_add('INFORMATION', 'scheduler.task', 'get_rates_yahoo', message, user, trace=trace)
         db.session.commit()
     except:
         message = '{} currencies could not be updated from yahoo.'.format(n)
-        log_add('WARNING', 'scheduler.task', 'get_rates_yahoo', message, user)
+        log_add('WARNING', 'scheduler.task', 'get_rates_yahoo', message, user, trace=(trace if trace is not None else str(sys.exc_info())))
         
     _set_task_progress(100)
     
@@ -295,7 +302,7 @@ def check_rates_yahoo(guid):
     _set_task_progress(0)
         
     start = datetime.utcnow()
-    end = datetime.utcnow()
+    end = start
     
     # CHF -> USD
     yahoo_currencies = 'CHF=X'
@@ -304,13 +311,26 @@ def check_rates_yahoo(guid):
     USD_inCHF = daily_currency_prices['CHF=X']['prices'][0]['adjclose']
     
     existing_currencies = Currency.query.all()
+    
+    # reset source flag
+    for c in existing_currencies:
+        c.source = None
+    log_add('INFORMATION', 'scheduler.task', 'check_rates_yahoo', 'flags reset', user)
+    db.session.commit()
+    
+    # search an dupdate on yahoo
     i = 0
     n = len(existing_currencies)
     for c in existing_currencies:
+        trace = None
         try:
             yahoo_currency = '{}=X'.format(c.code)
             yahoo_financials_currencies = YahooFinancials(yahoo_currency)
             daily_currency_prices = yahoo_financials_currencies.get_historical_price_data(start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), 'daily')
+            trace = str(daily_currency_prices)
+            if len(trace)>4000:
+                trace = trace[0:4000]
+            
             exchange_rate = USD_inCHF/daily_currency_prices[yahoo_currency]['prices'][0]['adjclose'] 
             
             c.inCHF = exchange_rate
@@ -318,11 +338,12 @@ def check_rates_yahoo(guid):
             c.db_updated_at = start
             c.db_updated_by = 'check_rates_yahoo'
             message = 'Currency {} updated successfully from yahoo with rate {}.'.format(c.code, c.inCHF)
-            log_add('INFORMATION', 'scheduler.task', 'check_rates_yahoo', message, user)
+            
+            log_add('INFORMATION', 'scheduler.task', 'check_rates_yahoo', message, user, trace=trace)
             db.session.commit()
         except:
             message = 'Currency {} could not be updated from yahoo'.format(c.code)
-            log_add('WARNING', 'scheduler.task', 'check_rates_yahoo', message, user)
+            log_add('WARNING', 'scheduler.task', 'check_rates_yahoo', message, user, trace=(trace if trace is not None else str(sys.exc_info())))
             
         i += 1
         _set_task_progress(100*i//n)
@@ -344,14 +365,14 @@ def housekeeping(guid):
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
         
 # cron jobs
-@scheduler.task('cron', id='j_housekeeping', day='15', hour='3')
+@scheduler.task('cron', id='j_housekeeping', day='2', hour='3')
 def j_housekeeping():
     with scheduler.app.app_context():
         admin = User.query.filter(User.username=='admin').first()
         admin.launch_task('housekeeping', _('Performing housekeeping jobs...'))
         db.session.commit()
 
-@scheduler.task('cron', id='j_check_currencies', day='15', hour='4')
+@scheduler.task('cron', id='j_check_currencies', day_of_week='2', hour='4')
 def j_check_currencies():
     with scheduler.app.app_context():
         admin = User.query.filter(User.username=='admin').first()

@@ -375,6 +375,20 @@ def logs():
                            title= _('Logs'),
                            next_url=next_url, prev_url=prev_url)
 
+
+@bp.route('/log_trace/<id>')
+@login_required
+def log_trace(id):
+    log = Log.query.get_or_404(id)
+    if not log.can_view(current_user):
+        flash(_('Your are only allowed to view your own logs!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('main.logs'))
+    log_page_access(request, current_user)
+    return render_template('trace.html',
+                           log=log,
+                           title= _('Trace'))
+
 @bp.route('/tasks')
 @login_required
 def tasks():
@@ -412,6 +426,32 @@ def remove_task(guid):
     db.session.delete(task)
     db.session.commit()
     flash(_('Task %(name)s from user %(username)s has been removed', name=task_name, username=task_username))
+    return redirect(url_for('main.tasks'))
+
+@bp.route('/start_task')
+@login_required
+def start_task():
+    if not current_user.is_admin:
+        flash(_('Only an admin can start tasks!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('main.tasks'))
+    log_page_access(request, current_user)
+    
+    key = request.args.get('key', 'WASTE_TIME', type=str)
+    
+    if key=='WASTE_TIME':
+        amount = request.args.get('amount', 10, type=int)
+        current_user.launch_task('consume_time', _('Consuming %(amount)s s of time...', amount=amount), amount=amount)
+        flash(_('A time consuming task is currently in progress'))
+    elif key=='CHECK_CURRENCIES':
+        current_user.launch_task('check_rates_yahoo', _('Checking currencies...'))
+        flash(_('Checking online sources for currencie rates'))
+    elif key=='UPDATE_CURRENCIES':
+        source = request.args.get('source', 'yahoo', type=str)
+        if source=='yahoo':
+            current_user.launch_task('update_rates_yahoo', _('Updating currencies...'))
+        flash(_('Updating currencie rates from known sources'))
+    db.session.commit()
     return redirect(url_for('main.tasks'))
 
 @bp.route('/statistics')
