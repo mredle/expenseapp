@@ -20,6 +20,8 @@ from flask_moment import Moment
 from flask_babel import Babel, lazy_gettext as _l
 from flask_uploads import UploadSet, IMAGES, configure_uploads
 from flask_apscheduler import APScheduler
+from prometheus_flask_exporter import PrometheusMetrics
+from prometheus_client import CollectorRegistry
 
 from config import Config
 
@@ -41,6 +43,7 @@ bootstrap = Bootstrap()
 moment = Moment()
 babel = Babel()
 scheduler = APScheduler()
+#metrics = PrometheusMetrics.for_app_factory()
     
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -54,7 +57,10 @@ def create_app(config_class=Config):
     bootstrap.init_app(app)
     moment.init_app(app)
     babel.init_app(app)
+    #metrics.init_app(app)
     scheduler.init_app(app)
+    
+    PrometheusMetrics(app, registry=CollectorRegistry())
     
     @app.before_first_request
     def init_scheduler():
