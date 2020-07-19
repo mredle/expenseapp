@@ -9,6 +9,10 @@
     <a href="{{ url_for('main.logs', severity='Warning') }}">{{ _('Warning') }}</a> 
     <a href="{{ url_for('main.logs', severity='Information') }}">{{ _('Information') }}</a></p>
     <br>
+    {% if current_user.is_admin %}
+    <p><a href="{{ url_for('main.create_error', key='TYPE_ERROR', amount=1) }}">{{ _('Create TypeError') }}</a></p>
+    <p><a href="{{ url_for('main.start_task', key='TYPE_ERROR', amount=1) }}">{{ _('Create TypeError in task') }}</a></p>
+    {% endif %}
     {% for log in logs %}
         {% include '_log.html' %}
     {% endfor %}

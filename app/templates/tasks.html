@@ -9,6 +9,7 @@
     <p><a href="{{ url_for('main.start_task', key='WASTE_TIME', amount=10) }}">{{ _('Waste time') }}</a></p>
     <p><a href="{{ url_for('main.start_task', key='CHECK_CURRENCIES') }}">{{ _('Check currencies') }}</a></p>
     <p><a href="{{ url_for('main.start_task', key='UPDATE_CURRENCIES', source='yahoo') }}">{{ _('Update currencies') }}</a></p>
+    <p><a href="{{ url_for('main.start_task', key='TYPE_ERROR', amount=1) }}">{{ _('Create TypeError in task') }}</a></p>
     {% endif %}
     <h2>{{ _('History') }}</h2>
     <p><a href="{{ url_for('main.tasks') }}">{{ _('All') }}</a> 

@@ -58,6 +58,18 @@ def consume_time(guid, amount):
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
+def type_error(guid):
+    try:
+        user = User.get_by_guid_or_404(guid)
+        _set_task_progress(0)
+        test_str = 'asdf'
+        test_number = test_str + 5
+        _set_task_progress(100)
+    
+    except:
+        _set_task_progress(100)
+        app.logger.error('Unhandled exception', exc_info=sys.exc_info())
+        
 def create_thumbnails(image, update_progress=False):
     sizes = list(app.config['THUMBNAIL_SIZES'])
     total = len(app.config['THUMBNAIL_SIZES'])+1

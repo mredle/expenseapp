@@ -45,7 +45,7 @@ def rotate_image(guid):
     image = Image.get_by_guid_or_404(guid)
     image.rotate_image(degree)
     log_page_access(request, current_user)
-    return redirect(url_for('main.image', image_id=image.guid))
+    return redirect(url_for('main.image', guid=image.guid))
 
 @bp.route('/currencies')
 @login_required
@@ -389,6 +389,25 @@ def log_trace(id):
                            log=log,
                            title= _('Trace'))
 
+@bp.route('/create_error')
+@login_required
+def create_error():
+    if not current_user.is_admin:
+        flash(_('Only an admin can create errors!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('main.logs'))
+    log_page_access(request, current_user)
+    
+    key = request.args.get('key', 'TYPE_ERROR', type=str)
+    amount = request.args.get('amount', 1, type=int)
+    
+    if key=='TYPE_ERROR':
+        test_str = 'asdf'
+        test_number = test_str + 5
+        flash(_('An error has been created'))
+    db.session.commit()
+    return redirect(url_for('main.logs'))
+    
 @bp.route('/tasks')
 @login_required
 def tasks():
@@ -451,6 +470,11 @@ def start_task():
         if source=='yahoo':
             current_user.launch_task('update_rates_yahoo', _('Updating currencies...'))
         flash(_('Updating currencie rates from known sources'))
+    elif key=='TYPE_ERROR':
+        amount = request.args.get('amount', 1, type=int)
+        for count in range(0, amount):
+          current_user.launch_task(key.lower(), _('Creating %(count)s/%(amount)s errors of type %(error_type)s ...', count=count+1, amount=amount, error_type=key))
+        flash(_('%(amount)s tasks with TypeErrors have been created', amount=amount))
     db.session.commit()
     return redirect(url_for('main.tasks'))
 

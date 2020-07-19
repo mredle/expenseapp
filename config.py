@@ -21,8 +21,8 @@ class Config(object):
     SQLALCHEMY_POOL_RECYCLE = 480
     MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'localhost'
     MAIL_PORT = int(os.environ.get('MAIL_PORT') or 1025)
-    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS') is not None
-    MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL') is not None
+    MAIL_USE_TLS = (os.environ.get('MAIL_USE_TLS') is not None) and (os.environ.get('MAIL_USE_SSL') is None)
+    MAIL_USE_SSL = (os.environ.get('MAIL_USE_SSL') is not None) and (os.environ.get('MAIL_USE_TLS') is None)
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     ADMIN_NOREPLY_SENDER = os.environ.get('ADMIN_NOREPLY_SENDER') or 'no-reply@expenseapp'
