@@ -1,19 +1,88 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-    <p><a href="{{ url_for('event.users', guid=user.event.guid) }}">{{ _('Back to user page') }}</a></p>
+    <p><a href="{{ url_for('event.main', guid=eventuser.event.guid) }}">{{ _('Back to event') }}</a></p>
     <table class="table table-hover">
         <tr>
             <h1>{{ title }}</h1>
-            {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
-            {% if user.profile_picture %}
-            <a href="{{ url_for('main.image', guid=user.profile_picture.guid) }}">
-                <img src="{{ user.avatar(1024) }}" alt="" width="100%" style="transform:rotate({{ user.profile_picture.rotate }}deg) scale({{ user.profile_picture.get_html_scale() }});">
+            {% if eventuser.about_me %}<p>{{ eventuser.about_me }}</p>{% endif %}
+            {% if eventuser.profile_picture %}
+            <a href="{{ url_for('main.image', guid=eventuser.profile_picture.guid) }}">
+                <img src="{{ eventuser.avatar(1024) }}" alt="" width="100%" style="transform:rotate({{ eventuser.profile_picture.rotate }}deg) scale({{ eventuser.profile_picture.get_html_scale() }});">
             </a>
             {% endif %}
-            <p><a href="{{ url_for('event.edit_profile_picture', guid=user.guid) }}">{{ _('Edit your profile picture') }}</a></p>
+            {% if can_edit %}
+            <p><a href="{{ url_for('event.edit_profile_picture', guid=eventuser.guid) }}">{{ _('Edit your profile picture') }}</a></p>
 
-            <p><a href="{{ url_for('event.edit_profile', guid=user.guid) }}">{{ _('Edit your profile') }}</a></p>
+            <p><a href="{{ url_for('event.edit_profile', guid=eventuser.guid) }}">{{ _('Edit your profile') }}</a></p>
+            {% endif %}
+            
+            <h2>{{ _('Bank account') }}</h2>
+            {% if can_edit %}
+            <p><a href="{{ url_for('event.edit_bank_account', guid=eventuser.guid) }}">{{ _('Edit bank account') }}</a></p>
+            {% endif %}
+            <table class="table table-hover">
+                <tr>
+                    <td width="200px">
+                    {{ _('IBAN') }}
+                    </td>
+                    <td width="300px">
+                    {{ eventuser.iban }}
+                </tr>
+                <tr>
+                    </td>
+                    <td width="200px">
+                    {{ _('Bank name') }}
+                    </td>
+                    <td width="300px">
+                    {{ eventuser.bank }}
+                </tr>
+                <tr>
+                    </td>
+                    <td width="200px">
+                    {{ _('Account name') }}
+                    </td>
+                    <td width="300px">
+                    {{ eventuser.name }}
+                </tr>
+                <tr>
+                    </td>
+                    <td width="200px">
+                    {{ _('Address') }}
+                    </td>
+                    <td width="300px">
+                    {{ eventuser.address }}
+                </tr>
+                <tr>
+                    </td>
+                    <td width="200px">
+                    {{ _('Address suffix') }}
+                    </td>
+                    <td width="300px">
+                    {{ eventuser.address_suffix }}
+                </tr>
+                <tr>
+                    </td>
+                    <td width="200px">
+                    {{ _('ZIP/city') }}
+                    </td>
+                    <td width="300px">
+                    {{ eventuser.zip_code }}/{{ eventuser.city }}
+                </tr>
+                <tr>
+                    </td>
+                    <td width="200px">
+                    {{ _('Country') }}
+                    </td>
+                    <td width="300px">
+                    {{ eventuser.country }}
+                    </td>
+                </tr>
+            </table>
+            <br>
+            {% if can_edit %}
+                {{ _('%(link)s', link=edit_link) }}
+            {% endif %}
         </tr>
     </table>
 {% endblock %}

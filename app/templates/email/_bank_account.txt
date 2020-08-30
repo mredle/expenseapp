@@ -1,7 +1,0 @@
-{{ _('IBAN') }}:           {{ bank_account.iban }}
-{{ _('Bank name') }}:      {{ bank_account.bank }}
-{{ _('Account name') }}:   {{ bank_account.name }}
-{{ _('Address') }}:        {{ bank_account.address }}
-{{ _('Address suffix') }}: {{ bank_account.address_suffix }}
-{{ _('ZIP/city') }}:       {{ bank_account.zip_code }}/{{ bank_account.city }}
-{{ _('Country') }}:        {{ bank_account.country }}

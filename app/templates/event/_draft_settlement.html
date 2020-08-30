@@ -14,7 +14,9 @@
                     </span>
                 {% endset %}
                 {{ settlement.get_amount_str() }} 
+                {% if eventuser==settlement.recipient %}
                 ({{ _('%(link)s', link=paid_link) }})
+                {% endif %}
             </td>
         </tr>
     </table>

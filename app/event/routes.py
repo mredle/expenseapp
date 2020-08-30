@@ -1,7 +1,7 @@
 # coding=utf-8
 
 from datetime import datetime
-from flask import request, render_template, flash, redirect, url_for, current_app
+from flask import request, render_template, make_response, flash, redirect, url_for, current_app
 from flask_login import current_user, login_required
 from flask_uploads import UploadNotAllowed
 from flask_babel import _
@@ -9,9 +9,27 @@ from flask_babel import _
 from app import db, images
 from app.event import bp
 from app.main.forms import ImageForm
-from app.event.forms import PostForm, EventForm, EventUserForm, ExpenseAddUserForm, ExpenseForm, SettlementForm, SetRateForm
+from app.event.forms import PostForm, EventForm, EventUserForm, BankAccountForm, ExpenseAddUserForm, SelectUserForm, ExpenseForm, SettlementForm, SetRateForm
 from app.models import Currency, Event, EventUser, EventCurrency, Expense, Settlement, Post, Image
 from app.db_logging import log_page_access, log_page_access_denied
+
+# helper function
+def session_can_edit(request, event, author):
+    eventuser_guid_cookie = request.cookies.get('{}.eventuser'.format(event.guid))
+    eventuser_cookie = EventUser.get_by_guid_or_404(eventuser_guid_cookie)
+    
+    return (author==eventuser_cookie) or event.can_edit(current_user)
+   
+def get_eventuser_from_cookie(event, request):
+    eventuser_guid = request.cookies.get('{}.eventuser'.format(event.guid))
+    if eventuser_guid is None:
+        return None
+    
+    eventuser = EventUser.get_by_guid_or_404(eventuser_guid)
+    if eventuser not in event.users:
+        return None
+    else:
+        return eventuser
 
 # routes for rendered pages
 @bp.route('/index')
@@ -34,21 +52,44 @@ def index():
 
 @bp.route('/user/<guid>')
 def user(guid):
-    user = EventUser.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
+    eventuser = EventUser.get_by_guid_or_404(guid)
+    
     return render_template('event/user.html', 
-                           title= _('User %(username)s', username = user.username), 
-                           user=user)
+                           title = _('User %(username)s', username = eventuser.username), 
+                           eventuser = eventuser,
+                           can_edit = session_can_edit(request, eventuser.event, eventuser))
+
+@bp.route('/select_user/<event_guid>', methods=['GET', 'POST'])
+def select_user(event_guid):
+    event = Event.get_by_guid_or_404(event_guid)
+    log_page_access(request, current_user)
+    
+    form = SelectUserForm()
+    form.user_id.choices = [(u.id, u.username) for u in event.users]
+    if form.validate_on_submit():
+        eventuser = EventUser.query.get(form.user_id.data)
+        flash(_('You selected user %(username)s as context', username=eventuser.username))
+        response = make_response(redirect(url_for('event.main', guid=event.guid)))
+        response.set_cookie('{}.eventuser'.format(event_guid), str(eventuser.guid))
+        return response
+    
+    return render_template('edit_form.html', 
+                           title=_('Select user'), 
+                           form=form)
 
 @bp.route('/main/<guid>', methods=['GET', 'POST'])
 def main(guid):
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
+    eventuser = get_eventuser_from_cookie(event, request)
+    if eventuser is None:
+        return redirect(url_for('event.select_user', event_guid=guid))
+    
     form = PostForm()
-    form.user_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         post = Post(body=form.post.data, 
-                    author=EventUser.query.get(form.user_id.data), 
+                    author=eventuser, 
                     timestamp=datetime.utcnow(), 
                     event=event)
         db.session.add(post)
@@ -64,6 +105,7 @@ def main(guid):
     return render_template('event/main.html', 
                            form=form, 
                            event=event, 
+                           eventuser=eventuser, 
                            stats=event.get_stats(),
                            posts=posts.items,
                            next_url=next_url, prev_url=prev_url)
@@ -302,7 +344,12 @@ def remove_user(guid, user_guid):
 @bp.route('/edit_profile/<guid>', methods=['GET', 'POST'])
 def edit_profile(guid):
     eventuser = EventUser.get_by_guid_or_404(guid)
+    if not session_can_edit(request, eventuser.event, eventuser):
+        flash(_('Your are only allowed to edit your own user!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.main', guid=eventuser.event.guid))
     log_page_access(request, current_user)
+    
     form = EventUserForm()
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
     if form.validate_on_submit():
@@ -324,10 +371,50 @@ def edit_profile(guid):
                            title=_('Edit Profile'), 
                            form=form)
 
+@bp.route('/edit_bank_account/<guid>', methods=['GET', 'POST'])
+def edit_bank_account(guid):
+    eventuser = EventUser.get_by_guid_or_404(guid)
+    if not session_can_edit(request, eventuser.event, eventuser):
+        flash(_('Your are only allowed to edit your own user!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.main', guid=eventuser.event.guid))
+    log_page_access(request, current_user)
+    
+    form = BankAccountForm()
+    if form.validate_on_submit():
+        eventuser.iban = form.iban.data, 
+        eventuser.bank = form.bank.data, 
+        eventuser.name = form.name.data, 
+        eventuser.address = form.address.data, 
+        eventuser.address_suffix = form.address_suffix.data, 
+        eventuser.zip_code = form.zip_code.data, 
+        eventuser.city = form.city.data, 
+        eventuser.country = form.country.data, 
+        db.session.commit()
+        flash(_('Your changes have been saved.'))
+        return redirect(url_for('event.user', guid=eventuser.guid))
+    elif request.method == 'GET':
+        form.iban.data = eventuser.iban
+        form.bank.data = eventuser.bank
+        form.name.data = eventuser.name
+        form.address.data = eventuser.address
+        form.address_suffix.data = eventuser.address_suffix
+        form.zip_code.data = eventuser.zip_code
+        form.city.data = eventuser.city
+        form.country.data = eventuser.country
+    return render_template('edit_form.html', 
+                           title=_('Edit Bank Account'), 
+                           form=form)
+
 @bp.route('/edit_profile_picture/<guid>', methods=['GET', 'POST'])
 def edit_profile_picture(guid):
     eventuser = EventUser.get_by_guid_or_404(guid)
+    if not session_can_edit(request, eventuser.event, eventuser):
+        flash(_('Your are only allowed to edit your own user!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.main', guid=eventuser.event.guid))
     log_page_access(request, current_user)
+    
     form = ImageForm()
     if form.validate_on_submit():
         try:
@@ -347,11 +434,13 @@ def edit_profile_picture(guid):
 def balance(guid):
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
+    eventuser = get_eventuser_from_cookie(event, request)
     
     draft_settlements = event.calculate_balance()
     balances_str, total_expenses_str = event.get_balance()
     return render_template('event/balance.html', 
                            event=event, 
+                           eventuser=eventuser,
                            draft_settlements=draft_settlements,
                            balances_str=balances_str, 
                            total_expenses_str=total_expenses_str)
@@ -360,15 +449,16 @@ def balance(guid):
 def expenses(guid):
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
+    eventuser = get_eventuser_from_cookie(event, request)
+    
     form = ExpenseForm()
-    form.user_id.choices = [(u.id, u.username) for u in event.users]
     form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))
             return redirect(url_for('main.event', guid=event.guid))
-        expense = Expense(user=EventUser.query.get(form.user_id.data), 
+        expense = Expense(user=eventuser, 
                           event=event, 
                           currency=Currency.query.get(form.currency_id.data), 
                           amount=form.amount.data, 
@@ -393,6 +483,7 @@ def expenses(guid):
     return render_template('event/expenses.html', 
                            form=form, 
                            event=event, 
+                           eventuser=eventuser,
                            expenses=expenses.items,
                            next_url=next_url, prev_url=prev_url)
 
@@ -404,6 +495,10 @@ def add_receipt(guid):
     if expense.event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', guid=expense.event.guid))
+    if not session_can_edit(request, event, expense.user):
+        flash(_('Your are only allowed to edit your own expense!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.expenses', guid=expense.event.guid))
     
     form = ImageForm()
     if form.validate_on_submit():
@@ -428,13 +523,15 @@ def edit_expense(guid):
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', guid=event.guid))
+    if not session_can_edit(request, event, expense.user):
+        flash(_('Your are only allowed to edit your own expense!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.expenses', guid=expense.event.guid))
     
     form = ExpenseForm()
-    form.user_id.choices = [(expense.user.id, expense.user.username)]
     form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
-        expense.user=EventUser.query.get(form.user_id.data)
         expense.currency = Currency.query.get(form.currency_id.data)
         expense.amount = form.amount.data
         expense.affected_users = [EventUser.query.get(user_id) for user_id in form.affected_users_id.data]
@@ -444,7 +541,6 @@ def edit_expense(guid):
         flash(_('Your changes have been saved.'))
         return redirect(url_for('event.expenses', guid=event.guid))
     elif request.method == 'GET':
-        form.user_id.data = expense.user.id
         form.currency_id.data = expense.currency.id
         form.amount.data = expense.amount
         form.affected_users_id.data = [u.id for u in expense.affected_users]
@@ -462,6 +558,10 @@ def remove_expense(guid):
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', guid=event.guid))
+    if not session_can_edit(request, event, expense.user):
+        flash(_('Your are only allowed to edit your own expense!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.expenses', guid=expense.event.guid))
     
     if expense in event.expenses:
         amount_str = expense.get_amount_str()
@@ -475,12 +575,18 @@ def expense_users(guid):
     expense = Expense.get_by_guid_or_404(guid)
     event = expense.event
     log_page_access(request, current_user)
+    
     form = ExpenseAddUserForm()
     form.user_id.choices = [(u.id, u.username) for u in event.users.order_by(EventUser.username.asc()) if u not in expense.affected_users]
     if form.validate_on_submit():
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))
             return redirect(url_for('main.event', guid=event.guid))
+        if not session_can_edit(request, event, expense.user):
+            flash(_('Your are only allowed to edit your own expense!'))
+            log_page_access_denied(request, current_user)
+            return redirect(url_for('event.expenses', guid=expense.event.guid))
+    
         users = [EventUser.query.get(user_id) for user_id in form.user_id.data]
         expense.add_users(users)
         db.session.commit()
@@ -495,7 +601,7 @@ def expense_users(guid):
     return render_template('event/expense_users.html', 
                            form=form,
                            expense=expense,
-                           can_edit=True,
+                           can_edit=session_can_edit(request, event, expense.user),
                            users=users.items,
                            next_url=next_url, prev_url=prev_url)
 
@@ -507,6 +613,10 @@ def expense_add_user(guid, user_guid):
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', guid=event.guid))
+    if not session_can_edit(request, event, expense.user):
+        flash(_('Your are only allowed to edit your own expense!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.expenses', guid=expense.event.guid))
     
     user = EventUser.get_by_guid_or_404(user_guid)
     expense.add_user(user)
@@ -522,6 +632,10 @@ def expense_remove_user(guid, user_guid):
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', guid=event.guid))
+    if not session_can_edit(request, event, expense.user):
+        flash(_('Your are only allowed to edit your own expense!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.expenses', guid=expense.event.guid))
     
     user = EventUser.get_by_guid_or_404(user_guid)
     if expense.remove_user(user):
@@ -535,15 +649,16 @@ def expense_remove_user(guid, user_guid):
 def settlements(guid):
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
+    eventuser = get_eventuser_from_cookie(event, request)
+    
     form = SettlementForm()
-    form.sender_id.choices = [(u.id, u.username) for u in event.users]
     form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))
             return redirect(url_for('main.event', guid=event.guid))
-        settlement = Settlement(sender=EventUser.query.get(form.sender_id.data), 
+        settlement = Settlement(sender=eventuser, 
                                 recipient=EventUser.query.get(form.recipient_id.data), 
                                 event=event, 
                                 currency=Currency.query.get(form.currency_id.data), 
@@ -569,6 +684,7 @@ def settlements(guid):
     return render_template('event/settlements.html', 
                            form=form, 
                            event=event, 
+                           eventuser=eventuser,
                            settlements=settlements.items,
                            next_url=next_url, prev_url=prev_url)
 
@@ -580,13 +696,15 @@ def edit_settlement(guid):
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', guid=event.guid))
+    if not session_can_edit(request, event, settlement.sender):
+        flash(_('Your are only allowed to edit your own settlements!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.settlements', guid=settlement.event.guid))
     
     form = SettlementForm()
-    form.sender_id.choices = [(u.id, u.username) for u in event.users]
     form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
-        settlement.sender=EventUser.query.get(form.sender_id.data)
         settlement.currency = Currency.query.get(form.currency_id.data)
         settlement.amount = form.amount.data
         settlement.recipient = EventUser.query.get(form.recipient_id.data)
@@ -595,7 +713,6 @@ def edit_settlement(guid):
         flash(_('Your changes have been saved.'))
         return redirect(url_for('event.settlements', guid=event.guid))
     elif request.method == 'GET':
-        form.sender_id.data = settlement.sender.id
         form.currency_id.data = settlement.currency.id
         form.amount.data = settlement.amount
         form.recipient_id.data = settlement.recipient.id
@@ -608,9 +725,14 @@ def edit_settlement(guid):
 def settlement_execute(guid):
     settlement = Settlement.get_by_guid_or_404(guid)
     event = settlement.event
+    if not session_can_edit(request, event, settlement.recipient):
+        flash(_('Your are only allowed to confirm a settlement directed to you!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.settlements', guid=settlement.event.guid))
     log_page_access(request, current_user)
+    eventuser = get_eventuser_from_cookie(event, request)
     settlement.draft = False
-    settlement.description = _('Confirmed by user %(username)s', username = current_user.username)
+    settlement.description = _('Confirmed by user %(username)s', username = eventuser.username)
     db.session.commit()
     return redirect(url_for('event.balance', guid=event.guid))
     
@@ -622,6 +744,10 @@ def remove_settlement(guid):
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', guid=event.guid))
+    if not session_can_edit(request, event, settlement.sender):
+        flash(_('Your are only allowed to edit your own settlements!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('event.settlements', guid=settlement.event.guid))
     
     if settlement in event.settlements:
         amount_str = settlement.get_amount_str()
@@ -648,7 +774,9 @@ def send_payment_reminders(guid):
 def request_balance(guid):
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
-    event.admin.launch_task('request_balance', _('Sending balance reports...'), event_guid=guid)
+    eventuser_guid = request.cookies.get('{}.eventuser'.format(guid))
+    
+    event.admin.launch_task('request_balance', _('Sending balance reports...'), event_guid=guid, eventuser_guid=eventuser_guid)
     db.session.commit()
     flash(_('The balance has been sent to your email'))
     return redirect(url_for('event.main', guid=event.guid))

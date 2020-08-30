@@ -3,10 +3,14 @@
 {{ _('To settle all your depts, you have to make the following payment to me') }}:
 {{ settlement.get_amount_str() }}
 
-{{ _('You can pay directly to one of my bank accounts') }}:
-{% for bank_account in bank_accounts %}
-{% include 'email/_bank_account.txt' %}
-{% endfor %}
+{{ _('You can pay directly to my bank account') }}:
+{{ _('IBAN') }}:           {{ settlement.recipient.iban }}
+{{ _('Bank name') }}:      {{ settlement.recipient.bank }}
+{{ _('Account name') }}:   {{ settlement.recipient.name }}
+{{ _('Address') }}:        {{ settlement.recipient.address }}
+{{ _('Address suffix') }}: {{ settlement.recipient.address_suffix }}
+{{ _('ZIP/city') }}:       {{ settlement.recipient.zip_code }}/{{ settlement.recipient.city }}
+{{ _('Country') }}:        {{ settlement.recipient.country }}
 
 {{ _('Attached you find the balance of event %(eventname)s at time %(timenow)s', eventname=settlement.event.name, timenow=timenow) }}.
 

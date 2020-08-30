@@ -32,7 +32,7 @@
                 {% set user_link %}
                     <span class="user_popup">
                         <div id="guid", style="display: none;"> {{ expense.user.guid }} </div>
-                        <a href="{{ url_for('main.user', guid=expense.user.guid) }}">
+                        <a href="{{ url_for('event.user', guid=expense.user.guid) }}">
                             {{ expense.user.username }}
                         </a>
                     </span>
@@ -51,7 +51,7 @@
                     affected_users=users_link) }}
                 <br>
                 {{ expense.description }}
-                {% if not expense.event.closed %}
+                {% if not expense.event.closed and eventuser==expense.user %}
                 <br>
                 {{ _('%(link)s', link=add_receipt_link) }}, {{ _('%(link)s', link=edit_link) }}, {{ _('%(link)s', link=remove_link) }}
                 {% endif %}

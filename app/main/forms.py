@@ -38,27 +38,6 @@ class MessageForm(FlaskForm):
     message = TextAreaField(_l('Message'), 
                             validators=[DataRequired(), Length(min=0, max=256)])
     submit = SubmitField(_l('Submit'))
-
-class BankAccountForm(FlaskForm):
-    iban = StringField(_l('IBAN'), 
-                       validators=[DataRequired(), Length(min=0, max=34)])
-    bank = StringField(_l('Bank name'), 
-                       validators=[Length(min=0, max=64)])
-    name = StringField(_l('Account owner name'), 
-                       validators=[DataRequired(), Length(min=0, max=64)])
-    address = StringField(_l('Address line'), 
-                       validators=[DataRequired(), Length(min=0, max=128)])
-    address_suffix = StringField(_l('Address suffix'), 
-                       validators=[Length(min=0, max=128)])
-    zip_code = IntegerField(_l('ZIP'), 
-                          validators=[DataRequired()])
-    city = StringField(_l('City'), 
-                       validators=[DataRequired(), Length(min=0, max=64)])
-    country = StringField(_l('Country'), 
-                       validators=[Length(min=0, max=64)])
-    description = TextAreaField(_l('Description'), 
-                                validators=[Length(min=0, max=256)])
-    submit = SubmitField(_l('Submit'))
     
 class CurrencyForm(FlaskForm):
     name = StringField(_l('Name'), 

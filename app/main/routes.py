@@ -1,15 +1,15 @@
 # coding=utf-8
 
 from datetime import datetime
-from flask import request, render_template, flash, redirect, url_for, jsonify, g, current_app
+from flask import request, render_template, make_response, flash, redirect, url_for, jsonify, g, current_app
 from flask_login import current_user, login_required
 from flask_uploads import UploadNotAllowed
 from flask_babel import get_locale, _
 
 from app import db, images
 from app.main import bp
-from app.main.forms import ImageForm, EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm, BankAccountForm
-from app.models import Currency, User, Message, Notification, Image, BankAccount, Log, Task, Event, EventUser, EventCurrency, Expense, Settlement, Post
+from app.main.forms import ImageForm, EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm
+from app.models import Currency, User, Message, Notification, Image, Log, Task, Event, EventUser, EventCurrency, Expense, Settlement, Post
 from app.db_logging import log_page_access, log_page_access_denied
 
 @bp.before_app_request
@@ -118,123 +118,6 @@ def edit_currency(guid):
     return render_template('edit_form.html', 
                            title=_('Edit Currency'), 
                            form=form)
-
-@bp.route('/new_bank_account', methods=['GET', 'POST'])
-@login_required
-def new_bank_account():
-    log_page_access(request, current_user)
-    form = BankAccountForm()
-    if form.validate_on_submit():
-        bank_account = BankAccount(user=current_user, 
-                                   iban=form.iban.data, 
-                                   bank=form.bank.data, 
-                                   name=form.name.data, 
-                                   address=form.address.data, 
-                                   address_suffix=form.address_suffix.data, 
-                                   zip_code=form.zip_code.data, 
-                                   city=form.city.data, 
-                                   country=form.country.data, 
-                                   description=form.description.data, 
-                                   db_created_by=current_user.username)
-        
-        db.session.add(bank_account)
-        db.session.commit()
-        flash(_('Your new bank account has been added.'))
-        return redirect(url_for('main.user', username=current_user.username))
-    return render_template('edit_form.html', 
-                           title=_('New Bank Account'), 
-                           form=form)
-
-@bp.route('/bank_accounts/<guid>', methods=['GET', 'POST'])
-@login_required
-def bank_accounts(guid):
-    user = User.get_by_guid_or_404(guid)
-    if current_user != user and not current_user.is_admin:
-        flash(_('Your are only allowed to view your own bank accounts!'))
-        log_page_access_denied(request, current_user)
-        return redirect(url_for('main.user', username=current_user.username))
-    log_page_access(request, current_user)
-    form = BankAccountForm()
-    if form.validate_on_submit():
-        bank_account = BankAccount(user=current_user, 
-                                   iban=form.iban.data, 
-                                   bank=form.bank.data, 
-                                   name=form.name.data, 
-                                   address=form.address.data, 
-                                   address_suffix=form.address_suffix.data, 
-                                   zip_code=form.zip_code.data, 
-                                   city=form.city.data, 
-                                   country=form.country.data, 
-                                   description=form.description.data, 
-                                   db_created_by=current_user.username)
-        
-        db.session.add(bank_account)
-        db.session.commit()
-        flash(_('Your new bank account has been added.'))
-        return redirect(url_for('main.bank_accounts', guid=user.guid))
-    
-    page = request.args.get('page', 1, type=int)
-    bank_accounts = current_user.bank_accounts.order_by(BankAccount.iban.asc()).paginate(
-        page, current_app.config['ITEMS_PER_PAGE'], False)
-    next_url = url_for('main.bank_accounts', username=current_user.username, page=users.next_num) if bank_accounts.has_next else None
-    prev_url = url_for('main.bank_accounts', username=current_user.username, page=users.prev_num) if bank_accounts.has_prev else None
-    return render_template('bank_accounts.html', 
-                           form=form, 
-                           bank_accounts=bank_accounts.items,
-                           next_url=next_url, prev_url=prev_url)
-
-@bp.route('/edit_bank_account/<guid>', methods=['GET', 'POST'])
-@login_required
-def edit_bank_account(guid):
-    bank_account = BankAccount.get_by_guid_or_404(guid)
-    if not bank_account.can_edit(current_user):
-        flash(_('Your are only allowed to edit your own bank accounts!'))
-        log_page_access_denied(request, current_user)
-        return redirect(url_for('main.user', username=current_user.username))
-    log_page_access(request, current_user)
-    form = BankAccountForm()
-    if form.validate_on_submit():
-        bank_account.iban = form.iban.data, 
-        bank_account.bank = form.bank.data, 
-        bank_account.name = form.name.data, 
-        bank_account.address = form.address.data, 
-        bank_account.address_suffix = form.address_suffix.data, 
-        bank_account.zip_code = form.zip_code.data, 
-        bank_account.city = form.city.data, 
-        bank_account.country = form.country.data, 
-        bank_account.description = form.description.data
-        db.session.commit()
-        flash(_('Your changes have been saved.'))
-        return redirect(url_for('main.bank_accounts', guid=current_user.guid))
-    elif request.method == 'GET':
-        form.iban.data = bank_account.iban
-        form.bank.data = bank_account.bank
-        form.name.data = bank_account.name
-        form.address.data = bank_account.address
-        form.address_suffix.data = bank_account.address_suffix
-        form.zip_code.data = bank_account.zip_code
-        form.city.data = bank_account.city
-        form.country.data = bank_account.country
-        form.description.data = bank_account.description
-    return render_template('edit_form.html', 
-                           title=_('Edit Bank Account'), 
-                           form=form)
-
-@bp.route('/remove_bank_account/<guid>')
-@login_required
-def remove_bank_account(guid):
-    bank_account = BankAccount.get_by_guid_or_404(guid)
-    user = bank_account.user
-    if not bank_account.can_edit(current_user):
-        flash(_('Your are only allowed to remove your own bank accounts!'))
-        log_page_access_denied(request, current_user)
-        return redirect(url_for('main.user', guid=current_user.guid))
-    log_page_access(request, current_user)
-    if bank_account in user.bank_accounts:
-        user.bank_accounts.remove(bank_account)
-        db.session.commit()
-        flash(_('Bank account %(iban_str)s has been removed from user %(username)s.', iban_str=bank_account.iban, username=user.username))
-    return redirect(url_for('main.bank_accounts', guid=user.guid))
 
 @bp.route('/users')
 @login_required
@@ -399,12 +282,11 @@ def create_error():
     log_page_access(request, current_user)
     
     key = request.args.get('key', 'TYPE_ERROR', type=str)
-    amount = request.args.get('amount', 1, type=int)
     
     if key=='TYPE_ERROR':
         test_str = 'asdf'
         test_number = test_str + 5
-        flash(_('An error has been created'))
+        flash(_('This flash should never show up: %(test_number)s', test_number=test_number))
     db.session.commit()
     return redirect(url_for('main.logs'))
     
@@ -483,16 +365,16 @@ def start_task():
 def statistics():
     log_page_access(request, current_user)
     if current_user.is_admin:
-        classes = [Currency, User, Message, Notification, Image, BankAccount, Log, Task, Event, EventUser, EventCurrency, Expense, Settlement, Post]
+        classes = [Currency, User, Message, Notification, Image, Log, Task, Event, EventUser, EventCurrency, Expense, Settlement, Post]
     else:
-        classes = [Message, Notification, BankAccount, Log, Task, Expense, Settlement, Event, EventUser, EventCurrency, Post]
+        classes = [Message, Notification, Log, Task, Expense, Settlement, Event, EventUser, EventCurrency, Post]
 
     statistics = []
     for c in classes:
         statistics.extend(c.get_class_stats(current_user))
     
     return render_template('statistics.html',
-                           statistics=statistics,
+                           rows=statistics,
                            title= _('Statistics'))
 
 @bp.route('/user/<guid>/popup')
@@ -613,3 +495,30 @@ def consume_time(amount):
         current_user.launch_task('consume_time', _('Consuming %(amount)s s of time...', amount=amount), amount=int(amount))
         db.session.commit()
     return redirect(url_for('main.user', guid=current_user.guid))
+
+@bp.route('/cookies')
+@login_required
+def cookies():
+    log_page_access(request, current_user)
+    
+    cookies = [(k, v) for k, v in request.cookies.items()]
+    print(cookies)
+    return render_template('statistics.html',
+                           rows=cookies,
+                           title= _('Cookies'))
+
+@bp.route('/setcookie/<text>')
+@login_required
+def setcookie(text):
+    log_page_access(request, current_user)
+    response = make_response('<h1>Text from the cookie: </h1><br>' + text)
+    response.set_cookie('TESTtext', text)
+    return response
+
+@bp.route('/getcookie')
+@login_required
+def getcookie():
+    log_page_access(request, current_user)
+    text = request.cookies.get('TESTtext')
+    response = make_response(('<h1>Text from the cookie: </h1><br>' + text) if text is not None else '<h1>No cookie found</h1>')
+    return response

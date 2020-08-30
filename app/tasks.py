@@ -176,25 +176,25 @@ def get_balance_pdf(event, locale, timenow=None, recalculate=False):
     
     return pdf
     
-def request_balance(guid, event_guid):
+def request_balance(guid, event_guid, eventuser_guid):
     try:
-        user = User.get_by_guid_or_404(guid)
         event = Event.get_by_guid_or_404(event_guid)
+        eventuser = EventUser.get_by_guid_or_404(eventuser_guid)
         
         _set_task_progress(0)
         timenow=datetime.utcnow().replace(microsecond=0).isoformat()
-        pdf = get_balance_pdf(event, user.locale, timenow, recalculate=True)
+        pdf = get_balance_pdf(event, eventuser.locale, timenow, recalculate=True)
         
-        with force_locale(user.locale):
+        with force_locale(eventuser.locale):
             send_email(_('Your balance of event %(eventname)s', eventname=event.name),
                        sender=current_app.config['ADMIN_NOREPLY_SENDER'],
-                       recipients=[user.email],
+                       recipients=[eventuser.email],
                        text_body=render_template('email/balance_email.txt',
-                                                 username=user.username,
+                                                 username=eventuser.username,
                                                  eventname=event.name,
                                                  timenow=timenow),
                        html_body=render_template('email/balance_email.html',
-                                                 username=user.username,
+                                                 username=eventuser.username,
                                                  eventname=event.name,
                                                  timenow=timenow),
                        attachments=[('balance.pdf', 'application/pdf', pdf)],
@@ -206,7 +206,6 @@ def request_balance(guid, event_guid):
 
 def send_reminders(guid, event_guid):
     try:
-        #user = User.get_by_guid_or_404(guid)
         event = Event.get_by_guid_or_404(event_guid)
         
         _set_task_progress(0)
@@ -216,24 +215,21 @@ def send_reminders(guid, event_guid):
         
         i = 0
         for settlement in draft_settlements:
-            with force_locale(settlement.sender.locale):
-                bank_accounts = settlement.recipient.bank_accounts
-                
-                pdf = get_balance_pdf(event, settlement.sender.locale, timenow)
-                
-                send_email(_('Please settle your depts!'),
-                           sender=current_app.config['ADMIN_NOREPLY_SENDER'],
-                           recipients=[settlement.sender.email],
-                           text_body=render_template('email/reminder_email.txt',
-                                                     settlement=settlement,
-                                                     bank_accounts=bank_accounts,
-                                                     timenow=timenow),
-                           html_body=render_template('email/reminder_email.html',
-                                                     settlement=settlement,
-                                                     bank_accounts=bank_accounts,
-                                                     timenow=timenow),
-                           attachments=[('balance.pdf', 'application/pdf', pdf)],
-                           sync=True)
+            if settlement.sender.email:
+                with force_locale(settlement.sender.locale):
+                    pdf = get_balance_pdf(event, settlement.sender.locale, timenow)
+                    
+                    send_email(_('Please settle your depts!'),
+                               sender=current_app.config['ADMIN_NOREPLY_SENDER'],
+                               recipients=[settlement.sender.email],
+                               text_body=render_template('email/reminder_email.txt',
+                                                         settlement=settlement,
+                                                         timenow=timenow),
+                               html_body=render_template('email/reminder_email.html',
+                                                         settlement=settlement,
+                                                         timenow=timenow),
+                               attachments=[('balance.pdf', 'application/pdf', pdf)],
+                               sync=True)
             i += 1
             _set_task_progress(100*i//total_payments)
         

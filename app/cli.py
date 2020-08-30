@@ -8,7 +8,7 @@ import csv
 import uuid
 from datetime import datetime
 from app import create_app, db
-from app.models import BankAccount, Thumbnail, Image, Currency, Event, EventUser, Post, Expense, Settlement, User, Message, Notification, Task
+from app.models import Thumbnail, Image, Currency, Event, EventUser, Post, Expense, Settlement, User, Message, Notification, Task
 from app.tasks import create_thumbnails
 from config import Config
 
@@ -290,7 +290,6 @@ def register(app):
         
         class_add_missing_guid(Event)
         class_add_missing_guid(Thumbnail) 
-        class_add_missing_guid(BankAccount) 
         class_add_missing_guid(Image) 
         class_add_missing_guid(Currency) 
         class_add_missing_guid(Event) 

@@ -318,50 +318,6 @@ class Image(Entity, db.Model):
             return thumbnail.get_url()
         else:
             return self.get_url()
-    
-class BankAccount(Entity, db.Model):
-    __tablename__ = 'bank_account'
-    id = db.Column(db.Integer, primary_key=True)
-    
-    iban = db.Column(db.String(34))
-    bank = db.Column(db.String(64))
-    name = db.Column(db.String(64))
-    address = db.Column(db.String(128))
-    address_suffix = db.Column(db.String(128))
-    zip_code = db.Column(db.Integer)
-    city = db.Column(db.String(64))
-    country = db.Column(db.String(64))
-    description = db.Column(db.String(256))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
-    user = db.relationship('User', back_populates='bank_accounts')
-    
-    def __init__(self, user, iban, bank, name, address, address_suffix, zip_code, city, country, description='', db_created_by=''):
-        Entity.__init__(self, db_created_by)
-        self.user = user
-        self.iban = iban
-        self.bank = bank
-        self.name = name
-        self.address = address
-        self.address_suffix = address_suffix
-        self.zip_code = zip_code
-        self.city = city
-        self.country = country
-        self.description = description
-    
-    def __repr__(self):
-        return '<BankAccount {}>'.format(self.iban)
-        
-    @classmethod
-    def get_class_stats(cls, user=None):
-        description = _('Bank accounts')
-        filters = []
-        if not (user is None or user.is_admin):
-            filters.append(cls.user==user)
-        number = cls.query.filter(*filters).count()
-        return [(description, number)]
-     
-    def can_edit(self, user):
-        return (user.is_admin or user==self.user)
 
 
 class EventCurrency(db.Model):
@@ -955,7 +911,6 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     notifications = db.relationship('Notification', back_populates='user', lazy='dynamic')
     tasks = db.relationship('Task', foreign_keys='Task.user_id', back_populates='user', lazy='dynamic')
     logs = db.relationship('Log', foreign_keys='Log.user_id', back_populates='user', lazy='dynamic')
-    bank_accounts = db.relationship('BankAccount', foreign_keys='BankAccount.user_id', back_populates='user', lazy='dynamic')
     
     is_admin = db.Column(db.Boolean)
     about_me = db.Column(db.String(256))
@@ -1097,11 +1052,26 @@ class EventUser(Entity, db.Model):
     __tablename__ = 'eventusers'
     id = db.Column(db.Integer, primary_key=True)
     
+    # user data
     username = db.Column(db.String(64), index=True)
     email = db.Column(db.String(128), index=True)
     weighting = db.Column(db.Float)
     locale = db.Column(db.String(32))
     about_me = db.Column(db.String(256))
+    
+    # bank account data
+    iban = db.Column(db.String(34))
+    bank = db.Column(db.String(64))
+    name = db.Column(db.String(64))
+    address = db.Column(db.String(128))
+    address_suffix = db.Column(db.String(128))
+    zip_code = db.Column(db.Integer)
+    city = db.Column(db.String(64))
+    country = db.Column(db.String(64))
+    
+    # twint data
+    
+    # relationships
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
     event = db.relationship('Event', foreign_keys=event_id, back_populates='users')
     events_accountant = db.relationship('Event', foreign_keys='Event.accountant_id', back_populates='accountant', lazy='dynamic')

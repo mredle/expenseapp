@@ -5,7 +5,7 @@
     <h1>{{ title }}</h1>
     <p><a href="{{ url_for('main.administration') }}">{{ _('Back to administration') }}</a></p>
     <br>
-    {% for statistic in statistics %}
-        {% include '_statistic.html' %}
+    {% for row in rows %}
+        {% include '_2rowtable.html' %}
     {% endfor %}
 {% endblock %}

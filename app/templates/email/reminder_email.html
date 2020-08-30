@@ -3,10 +3,66 @@
     {{ _('To settle all your depts, you have to make the following payment to me') }}: <br>
     {{ settlement.get_amount_str() }} <br>
     <br>
-    {{ _('You can pay directly to one of my bank accounts') }}: <br>
-    {% for bank_account in bank_accounts %}
-        {% include 'email/_bank_account.html' %}
-    {% endfor %}
+    {{ _('You can pay directly my bank account') }}: <br>
+    <table class="table table-hover">
+    <tr>
+        <td width="200px">
+        {{ _('IBAN') }}
+        </td>
+        <td width="300px">
+        {{ settlement.recipient.iban }}
+    </tr>
+    <tr>
+        </td>
+        <td width="200px">
+        {{ _('Bank name') }}
+        </td>
+        <td width="300px">
+        {{ settlement.recipient.bank }}
+    </tr>
+    <tr>
+        </td>
+        <td width="200px">
+        {{ _('Account name') }}
+        </td>
+        <td width="300px">
+        {{ settlement.recipient.name }}
+    </tr>
+    <tr>
+        </td>
+        <td width="200px">
+        {{ _('Address') }}
+        </td>
+        <td width="300px">
+        {{ settlement.recipient.address }}
+    </tr>
+    <tr>
+        </td>
+        <td width="200px">
+        {{ _('Address suffix') }}
+        </td>
+        <td width="300px">
+        {{ settlement.recipient.address_suffix }}
+    </tr>
+    <tr>
+        </td>
+        <td width="200px">
+        {{ _('ZIP/city') }}
+        </td>
+        <td width="300px">
+        {{ settlement.recipient.zip_code }}/{{ settlement.recipient.city }}
+    </tr>
+    <tr>
+        </td>
+        <td width="200px">
+        {{ _('Country') }}
+        </td>
+        <td width="300px">
+        {{ settlement.recipient.country }}
+        </td>
+    </tr>
+</table>
+<br>
 </p>
 <br>
 {{ _('Attached you find the balance of event %(eventname)s at time %(timenow)s', eventname=settlement.event.name, timenow=timenow) }}. <br>
