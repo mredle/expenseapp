@@ -346,12 +346,12 @@ def start_task():
         flash(_('A time consuming task is currently in progress'))
     elif key=='CHECK_CURRENCIES':
         current_user.launch_task('check_rates_yahoo', _('Checking currencies...'))
-        flash(_('Checking online sources for currencie rates'))
+        flash(_('Checking online sources for currency rates'))
     elif key=='UPDATE_CURRENCIES':
         source = request.args.get('source', 'yahoo', type=str)
         if source=='yahoo':
             current_user.launch_task('update_rates_yahoo', _('Updating currencies...'))
-        flash(_('Updating currencie rates from known sources'))
+        flash(_('Updating currency rates from known sources'))
     elif key=='TYPE_ERROR':
         amount = request.args.get('amount', 1, type=int)
         for count in range(0, amount):

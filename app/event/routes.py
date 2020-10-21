@@ -9,7 +9,7 @@ from flask_babel import _
 from app import db, images
 from app.event import bp
 from app.main.forms import ImageForm
-from app.event.forms import PostForm, EventForm, EventUserForm, BankAccountForm, ExpenseAddUserForm, SelectUserForm, ExpenseForm, SettlementForm, SetRateForm
+from app.event.forms import PostForm, EventForm, EventEditForm, EventUserForm, BankAccountForm, ExpenseAddUserForm, SelectUserForm, ExpenseForm, SettlementForm, SetRateForm
 from app.models import Currency, Event, EventUser, EventCurrency, Expense, Settlement, Post, Image
 from app.db_logging import log_page_access, log_page_access_denied
 
@@ -208,9 +208,10 @@ def edit(guid):
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', guid=event.guid))
-    form = EventForm()
+    form = EventEditForm()
     form.base_currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by(Currency.code.asc())]
+    form.accountant_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         event.name = form.name.data
         event.date = form.date.data
@@ -218,6 +219,7 @@ def edit(guid):
         event.description = form.description.data
         event.base_currency = Currency.query.get(form.base_currency_id.data)
         event.exchange_fee = form.exchange_fee.data
+        event.accountant = EventUser.query.get(form.accountant_id.data)
         
         # add new currencies
         for currency_id in form.currency_id.data:
@@ -243,6 +245,7 @@ def edit(guid):
         form.base_currency_id.data = event.base_currency_id
         form.currency_id.data = [c.id for c in event.currencies]
         form.exchange_fee.data = event.exchange_fee
+        form.accountant_id.data = event.accountant_id
     return render_template('edit_form.html', 
                            title=_('Edit Event'), 
                            form=form)
@@ -450,6 +453,8 @@ def expenses(guid):
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
     eventuser = get_eventuser_from_cookie(event, request)
+    if eventuser is None:
+        return redirect(url_for('event.select_user', event_guid=guid))
     
     form = ExpenseForm()
     form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
@@ -650,6 +655,8 @@ def settlements(guid):
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
     eventuser = get_eventuser_from_cookie(event, request)
+    if eventuser is None:
+        return redirect(url_for('event.select_user', event_guid=guid))
     
     form = SettlementForm()
     form.currency_id.choices = [(c.id, c.code) for c in event.currencies]

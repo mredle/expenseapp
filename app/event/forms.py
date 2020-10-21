@@ -3,7 +3,7 @@
 from flask_wtf import FlaskForm
 from flask_babel import _, lazy_gettext as _l
 from wtforms import StringField, SubmitField, TextAreaField, SelectField, SelectMultipleField, IntegerField, FloatField
-from wtforms.validators import DataRequired, Length, Email, Regexp
+from wtforms.validators import DataRequired, Optional, Length, Email, Regexp
 from wtforms.fields.html5 import DateField
 
 
@@ -37,9 +37,31 @@ class EventForm(FlaskForm):
                               validators=[DataRequired()])
     submit = SubmitField(_l('Submit'))
     
+class EventEditForm(FlaskForm):
+    name = StringField(_l('Name'), 
+                       validators=[DataRequired(), Length(min=0, max=256)])
+    date = DateField(_l('Date in Y-m-d'), 
+                        format='%Y-%m-%d', 
+                        validators=[DataRequired()])
+    
+    fileshare_link = TextAreaField(_l('Link to external fileshare'), 
+                                validators=[Length(min=0, max=256)])
+    description = TextAreaField(_l('Description'), 
+                                validators=[Length(min=0, max=256)])
+    base_currency_id = SelectField(_l('Base currency'), coerce=int,
+                          validators=[DataRequired()])
+    currency_id = SelectMultipleField(_l('Allowed currencies'), coerce=int,
+                              validators=[DataRequired()])
+    exchange_fee = FloatField(_l('Exchange fee (%)'), 
+                              default=2.0,
+                              validators=[DataRequired()])
+    accountant_id = SelectField(_l('Select accountant'), coerce=int,
+                          validators=[DataRequired()])
+    submit = SubmitField(_l('Submit'))
+    
 class EventUserForm(FlaskForm):
     username = StringField(_l('Username'), validators=[DataRequired(), Regexp(r'^[\w.]+$')])
-    email = StringField(_l('Email'), validators=[DataRequired(), Email()])
+    email = StringField(_l('Email'), validators=[Optional(), Email()])
     weighting = FloatField(_l('Weighting'), 
                            default=1.0,
                            validators=[DataRequired()])

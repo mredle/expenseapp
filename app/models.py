@@ -652,6 +652,9 @@ class Expense(Entity, db.Model):
             return self.image.get_thumbnail_url(size)
         else:
             return ''
+    
+    def can_edit(self, user, eventuser):
+        return (user==eventuser.event.admin) if user.is_authenticated else (eventuser==self.user and not eventuser.event.is_closed)
         
     def has_user(self, user):
         return (user in self.affected_users)
@@ -734,6 +737,9 @@ class Settlement(Entity, db.Model):
             return self.image.get_thumbnail_url(size)
         else:
             return ''
+    
+    def can_edit(self, user, eventuser):
+        return (user==eventuser.event.admin) if user.is_authenticated else (eventuser==self.recipient and not eventuser.event.is_closed)
         
     def get_amount(self):
         return self.eventcurrency.get_amount_in(self.amount, self.event.base_eventcurrency, self.event.exchange_fee)

@@ -51,7 +51,7 @@
                     affected_users=users_link) }}
                 <br>
                 {{ expense.description }}
-                {% if not expense.event.closed and eventuser==expense.user %}
+                {% if expense.can_edit(current_user, eventuser) %}
                 <br>
                 {{ _('%(link)s', link=add_receipt_link) }}, {{ _('%(link)s', link=edit_link) }}, {{ _('%(link)s', link=remove_link) }}
                 {% endif %}
