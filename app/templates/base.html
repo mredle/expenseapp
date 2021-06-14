@@ -79,7 +79,6 @@
 {% block scripts %}
     {{ super() }}
     {{ moment.include_moment() }}
-    {{ moment.include_jquery() }}
     {{ moment.lang(g.locale) }}
     <script>
         function set_message_count(n) {

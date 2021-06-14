@@ -2,9 +2,12 @@
 ENVNAME=flask_app
 
 # create environment
-conda create -n $ENVNAME -y python=3.8
+conda create -n $ENVNAME -y python=3.9
 conda install -n $ENVNAME -y ipython spyder
-source activate $ENVNAME
+
+eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
+conda activate $ENVNAME
+
 pip install --no-cache-dir --upgrade pip
 
 # add pip packages for prod environment
