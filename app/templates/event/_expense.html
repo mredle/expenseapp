@@ -44,8 +44,8 @@
                         </a>
                     </span>
                 {% endset %}
-                {{ _('%(when)s, %(username)s spent %(amount_str)s for %(affected_users)s:',
-                    when=moment(expense.date).fromNow(),
+                {{ _('%(when)s: %(username)s spent %(amount_str)s for %(affected_users)s:',
+                    when=expense.date.strftime('%a, %-d. %b %Y'),
                     username=user_link, 
                     amount_str=expense.get_amount_str(),
                     affected_users=users_link) }}

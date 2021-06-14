@@ -71,7 +71,9 @@ def select_user(event_guid):
         eventuser = EventUser.query.get(form.user_id.data)
         flash(_('You selected user %(username)s as context', username=eventuser.username))
         response = make_response(redirect(url_for('event.main', guid=event.guid)))
-        response.set_cookie('{}.eventuser'.format(event_guid), str(eventuser.guid))
+        response.set_cookie(key = '{}.eventuser'.format(event_guid), 
+                            value = str(eventuser.guid),
+                            max_age = 31536000)
         return response
     
     return render_template('edit_form.html', 
@@ -192,6 +194,7 @@ def new():
     CHF = Currency.query.filter_by(code='CHF').first()
     form.base_currency_id.data = CHF.id
     form.currency_id.data = [CHF.id]
+    form.date.data = datetime.utcnow()
     return render_template('edit_form.html', 
                            title=_('New Event'), 
                            form=form)
@@ -480,8 +483,16 @@ def expenses(guid):
         return redirect(url_for('event.expenses', guid=guid))
     
     form.currency_id.data = event.base_currency.id
+    form.date.data = datetime.utcnow()
+    form.affected_users_id.data = [u.id for u in event.users]
     page = request.args.get('page', 1, type=int)
-    expenses = event.expenses.order_by(Expense.date.desc()).paginate(
+    
+    filter_eventuser = request.args.get('filter', '', type=str)
+    filters = []
+    if filter_eventuser.upper()=='OWN':
+        filters.append(Expense.user==eventuser)
+    
+    expenses = event.expenses.filter(*filters).order_by(Expense.date.desc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
     next_url = url_for('event.expenses', guid=event.guid, page=expenses.next_num) if expenses.has_next else None
     prev_url = url_for('event.expenses', guid=event.guid, page=expenses.prev_num) if expenses.has_prev else None

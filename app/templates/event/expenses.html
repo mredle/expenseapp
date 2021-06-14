@@ -10,6 +10,9 @@
     <br>
     {% endif %}
     {% endif %}
+    <p><a href="{{ url_for('event.expenses', guid=event.guid) }}">{{ _('All') }}</a>
+    <a href="{{ url_for('event.expenses', guid=event.guid, filter='Own') }}">{{ _('Own') }}</a></p>
+    <br>
     {% for expense in expenses %}
         {% include 'event/_expense.html' %}
     {% endfor %}

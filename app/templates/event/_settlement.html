@@ -38,8 +38,8 @@
                         </a>
                     </span>
                 {% endset %}
-                {{ _('%(when)s, %(sender)s sent %(amount_str)s to %(recipient)s:',
-                    when=moment(settlement.date).fromNow(),
+                {{ _('%(when)s: %(sender)s sent %(amount_str)s to %(recipient)s:',
+                    when=settlement.date.strftime('%a, %-d. %b %Y'),
                     sender=sender_link, 
                     amount_str=settlement.get_amount_str(),
                     recipient=recipient_link, ) }}
