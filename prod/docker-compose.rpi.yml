@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.8'
 services:
   db:
     image: linuxserver/mariadb
@@ -41,9 +41,10 @@ services:
      - expenseapp
 
   redis:
-    image: redis:5-alpine
+    image: redis:7-alpine
     restart: always
     container_name: expenseapp-redis
+    command: '--requirepass pw'
     networks:
      - expenseapp
     volumes:
@@ -57,7 +58,7 @@ services:
     image: mredle/expenseapp:latest
     restart: always
     entrypoint: rq
-    command: ['worker', '-u', 'redis://redis:6379/0', 'expenseapp-tasks']
+    command: ['worker', '-u', 'redis://:pw@redis:6379/0', 'expenseapp-tasks']
     container_name: expenseapp-rq-worker
     environment:
       SECRET_KEY: 'you-will-never-guess'
@@ -75,7 +76,10 @@ services:
       ADMIN_USERNAME: 'admin'
       ADMIN_PASSWORD: 'pw'
       ADMIN_EMAIL: 'admin@expenseapp'
-      REDIS_URL: 'redis://redis:6379/0'
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      REDIS_PASSWORD: pw 
     networks:
      - expenseapp
     depends_on:
@@ -110,7 +114,10 @@ services:
       ADMIN_USERNAME: 'admin'
       ADMIN_PASSWORD: 'pw'
       ADMIN_EMAIL: 'admin@expenseapp'
-      REDIS_URL: 'redis://redis:6379/0'
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      REDIS_PASSWORD: pw 
     networks:
      - expenseapp
     depends_on:

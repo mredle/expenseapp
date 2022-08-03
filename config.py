@@ -49,5 +49,4 @@ class Config(object):
     SCHEDULER_JOBSTORES = {
         'default': RedisJobStore(db=REDIS_DB, jobs_key='housekeeping_jobs', run_times_key='housekeeping_jobs_running', host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD)
     }
-
     

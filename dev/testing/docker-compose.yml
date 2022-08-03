@@ -1,7 +1,7 @@
-version: '3.7'
+version: '3.8'
 services:
   db:
-    image: mariadb:10.4
+    image: mariadb:10.8
     container_name: expenseapp-db-dev
     command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
     restart: on-failure
@@ -66,9 +66,10 @@ services:
      - expenseapp
 
   redis:
-    image: redis:5-alpine
+    image: redis:7-alpine
     restart: on-failure
     container_name: expenseapp-redis-dev
+    command: '--requirepass pw'
     networks:
      - expenseapp
     volumes:
@@ -80,14 +81,9 @@ services:
 
   rq-worker:
     image: expenseapp:latest
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        DUMMY: 'date:${DUMMY}'
     restart: on-failure
     entrypoint: rq
-    command: ['worker', '-u', 'redis://redis:6379/0', 'expenseapp-tasks']
+    command: ['worker', '-u', 'redis://:pw@redis:6379/0', 'expenseapp-tasks']
     container_name: expenseapp-rq-worker-dev
     environment:
       SECRET_KEY: 'you-will-never-guess'
@@ -105,9 +101,10 @@ services:
       ADMIN_USERNAME: 'admin'
       ADMIN_PASSWORD: 'pw'
       ADMIN_EMAIL: 'admin@expenseapp'
-      REDIS_HOST: 'redis'
+      REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_DB: 0
+      REDIS_PASSWORD: pw 
     networks:
      - expenseapp
     depends_on:
@@ -143,9 +140,10 @@ services:
       ADMIN_USERNAME: 'admin'
       ADMIN_PASSWORD: 'pw'
       ADMIN_EMAIL: 'admin@expenseapp'
-      REDIS_HOST: 'redis'
+      REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_DB: 0
+      REDIS_PASSWORD: pw 
     networks:
      - expenseapp
     depends_on:

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-docker-compose up -d
+sudo docker-compose up -d
 
 cd ..
 eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"

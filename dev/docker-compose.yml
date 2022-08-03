@@ -1,7 +1,7 @@
-version: '3.7'
+version: '3.8'
 services:
   db:
-    image: mariadb:10.4
+    image: mariadb:10.8
     container_name: expenseapp-db-dev
     command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
     restart: on-failure
@@ -48,9 +48,10 @@ services:
       MH_STORAGE: memory
 
   redis:
-    image: redis:5-alpine
+    image: redis:7-alpine
     restart: on-failure
     container_name: expenseapp-redis-dev
+    command: '--requirepass pw'
     ports:
       - "6379:6379"
     volumes:

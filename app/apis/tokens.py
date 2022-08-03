@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from flask import g
-from flask_restplus import Namespace, Resource, fields
+from flask_restx import Namespace, Resource, fields
 from app import db
 from app.apis.auth import basic_auth, token_auth
 

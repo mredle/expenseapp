@@ -1,6 +1,6 @@
 #!/bin/bash
-docker-compose down
+sudo docker-compose down
 #docker volume prune
-docker pull python:3.9-alpine
-DUMMY=$(date +%s) docker-compose up -d --build
+sudo docker pull python:3.10-alpine
+sudo docker build --no-cache -t expenseapp:latest ../.. && sudo docker-compose up -d
 

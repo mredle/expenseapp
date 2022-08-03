@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from flask import Blueprint
-from flask_restplus import Api
+from flask_restx import Api
 
 from .users import api as users
 from .tokens import api as tokens
