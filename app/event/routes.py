@@ -494,8 +494,8 @@ def expenses(guid):
     
     expenses = event.expenses.filter(*filters).order_by(Expense.date.desc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
-    next_url = url_for('event.expenses', guid=event.guid, page=expenses.next_num) if expenses.has_next else None
-    prev_url = url_for('event.expenses', guid=event.guid, page=expenses.prev_num) if expenses.has_prev else None
+    next_url = url_for('event.expenses', guid=event.guid, filter=filter_eventuser, page=expenses.next_num) if expenses.has_next else None
+    prev_url = url_for('event.expenses', guid=event.guid, filter=filter_eventuser, page=expenses.prev_num) if expenses.has_prev else None
     return render_template('event/expenses.html', 
                            form=form, 
                            event=event, 

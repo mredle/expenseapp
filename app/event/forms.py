@@ -4,7 +4,7 @@ from flask_wtf import FlaskForm
 from flask_babel import _, lazy_gettext as _l
 from wtforms import StringField, SubmitField, TextAreaField, SelectField, SelectMultipleField, IntegerField, FloatField
 from wtforms.validators import DataRequired, Optional, Length, Email, Regexp
-from wtforms.fields.html5 import DateField
+from wtforms.fields import DateField
 
 
 class PostForm(FlaskForm):

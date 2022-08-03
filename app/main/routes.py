@@ -249,9 +249,9 @@ def logs():
         filters.append(Log.user==current_user)
     logs = Log.query.filter(*filters).order_by(Log.date.desc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
-    next_url = url_for('main.logs', page=logs.next_num) \
+    next_url = url_for('main.logs', severity=severity, page=logs.next_num) \
         if logs.has_next else None
-    prev_url = url_for('main.logs', page=logs.prev_num) \
+    prev_url = url_for('main.logs', severity=severity, page=logs.prev_num) \
         if logs.has_prev else None
     return render_template('logs.html',
                            logs=logs.items,
@@ -304,9 +304,9 @@ def tasks():
         filters.append(Task.user==current_user)
     tasks = Task.query.filter(*filters).order_by(Task.db_created_at.desc()).paginate(
         page, current_app.config['ITEMS_PER_PAGE'], False)
-    next_url = url_for('main.tasks', page=tasks.next_num) \
+    next_url = url_for('main.tasks', complete=complete_str, page=tasks.next_num) \
         if tasks.has_next else None
-    prev_url = url_for('main.tasks', page=tasks.prev_num) \
+    prev_url = url_for('main.tasks', complete=complete_str, page=tasks.prev_num) \
         if tasks.has_prev else None
     return render_template('tasks.html',
                            tasks=tasks.items,

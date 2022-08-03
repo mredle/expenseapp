@@ -32,6 +32,7 @@ class GUID(TypeDecorator):
 
     """
     impl = CHAR
+    cache_ok = True
     
     def __repr__(self):
         return self.impl.__repr__()
@@ -180,7 +181,7 @@ class Thumbnail(Entity, db.Model):
             im.save(self.get_path(), format=current_app.config['IMAGE_DEFAULT_FORMAT'])
     
     def __repr__(self):
-        return '<Thumbnail {}px>'.format(self.name, self.size)
+        return '<Thumbnail {} {}x{}px>'.format(self.name, self.size, self.size)
         
     @classmethod
     def get_class_stats(cls, user=None):

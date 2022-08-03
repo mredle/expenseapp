@@ -6,6 +6,7 @@ pyjwt
 gunicorn
 pymysql
 Werkzeug==0.16
+MarkupSafe==2.0.1
 email-validator
 forex-python
 yahoofinancials

@@ -1109,7 +1109,7 @@ msgstr "%(affected_users)d Benutzer"
 #: app/templates/event/_expense.html:47
 #, fuzzy, python-format
 msgid "%(when)s: %(username)s spent %(amount_str)s for %(affected_users)s:"
-msgstr "%(when)s, gab %(username)s %(amount_str)s für %(affected_users)s aus:"
+msgstr "%(when)s: gab %(username)s %(amount_str)s für %(affected_users)s aus:"
 
 #: app/templates/event/_post.html:19
 #, python-format
@@ -1119,7 +1119,7 @@ msgstr "%(username)s sagte %(when)s:"
 #: app/templates/event/_settlement.html:41
 #, fuzzy, python-format
 msgid "%(when)s: %(sender)s sent %(amount_str)s to %(recipient)s:"
-msgstr "%(when)s, %(sender)s hat %(amount_str)s für %(recipient)s überwiesen:"
+msgstr "%(when)s: %(sender)s hat %(amount_str)s für %(recipient)s überwiesen:"
 
 #: app/templates/event/_user.html:31
 #, python-format
@@ -1316,13 +1316,13 @@ msgstr "Bankkonto bearbeiten"
 
 #: app/templates/pdf/_expense.html:9
 #, python-format
-msgid "%(when)s, %(username)s spent %(amount_str)s for"
-msgstr "%(when)s, %(username)s gab %(amount_str)s aus für"
+msgid "%(when)s: %(username)s spent %(amount_str)s for"
+msgstr "%(when)s: %(username)s gab %(amount_str)s aus für"
 
 #: app/templates/pdf/_settlement.html:9
 #, python-format
-msgid "%(when)s, %(sender)s sent %(amount_str)s to %(recipient)s:"
-msgstr "%(when)s, %(sender)s hat %(amount_str)s für %(recipient)s überwiesen:"
+msgid "%(when)s: %(sender)s sent %(amount_str)s to %(recipient)s:"
+msgstr "%(when)s: %(sender)s hat %(amount_str)s für %(recipient)s überwiesen:"
 
 #: app/templates/pdf/balance.html:6
 msgid "Event"
