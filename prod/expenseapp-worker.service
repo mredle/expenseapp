@@ -1,0 +1,13 @@
+# put in ~/.config/systemd/user/
+
+[Unit]
+Description=Expense App
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=~/expenseapp/
+ExecStart=~/expenseapp/run_as_service.sh worker -u 'redis://:bPOd5jd84WVWiC53XNyxoQVzkWz5P9xw@10.122.112.25:6379/0' 'expenseapp-tasks'
+
+[Install]
+WantedBy=multi-user.target
