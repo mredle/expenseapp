@@ -1,13 +1,14 @@
-# put in ~/.config/systemd/user/
-
 [Unit]
-Description=Expense App
+Description=ExpenseApp
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=~/expenseapp/
-ExecStart=~/expenseapp/run_as_service.sh
+User=flask_app
+Group=flask_app
+WorkingDirectory=/home/flask_app/expenseapp/
+ExecStart=/home/flask_app/expenseapp/run_as_service.sh
 
 [Install]
 WantedBy=multi-user.target
+

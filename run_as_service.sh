@@ -1,5 +1,8 @@
 #!/bin/bash
+eval "$('/home/flask_app/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 conda activate flask_app
+
+export FLASK_APP=./expenseapp.py
 
 while true; do
     sleep 10
@@ -10,7 +13,6 @@ while true; do
     echo Upgrade command failed, retrying in 10 secs...
 done
 
-export FLASK_APP=./expenseapp.py
 flask dbinit admin --overwrite
 flask dbinit icons --overwrite --subfolder icons
 flask dbinit currencies --overwrite
