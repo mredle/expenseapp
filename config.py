@@ -43,7 +43,7 @@ class Config(object):
     REDIS_HOST = os.environ.get('REDIS_HOST') or 'localhost'
     REDIS_PORT = os.environ.get('REDIS_PORT') or 6379
     REDIS_DB = os.environ.get('REDIS_DB') or 0
-    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD') or None
+    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD') or 'pw'
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://{}{}:{}/{}'.format(':'+REDIS_PASSWORD+'@' if REDIS_PASSWORD is not None else '', REDIS_HOST, REDIS_PORT, REDIS_DB)
     SCHEDULER_API_ENABLED = True
     SCHEDULER_JOBSTORES = {

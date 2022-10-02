@@ -1,10 +1,7 @@
 #!/bin/bash
 
-sudo docker-compose up -d
-
-cd ..
-eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
-conda activate flask_app
+docker-compose -f scripts/dev/docker-compose.yml  up -d
+source venv/bin/activate
 
 export FLASK_APP=./expenseapp.py
 export FLASK_DEBUG=1
@@ -31,4 +28,4 @@ flask dbinit dummyusers --count 3
 flask dbmaint add-missing-guid
 flask dbmaint clean-log --no-error --keepdays 30
 flask translate compile
-flask run -h localhost
+flask run -h 0.0.0.0
