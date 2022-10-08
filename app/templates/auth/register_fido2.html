@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block app_content %}
+    <h1>{{ title }}</h1>
+    <div class="row">
+        <div class="col-md-4">
+            {{ wtf.quick_form(form) }}
+            <button id="btnRegister">Register device with FIDO2</button>
+        </div>
+    </div>
+    <br>
+    <p>
+        {{ _('Set a password instead? (not recommended)') }}
+        <a href="{{ url_for('auth.register_password', token=token) }}">{{ _('Click here') }}</a>
+    </p>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/simplewebauthn-browser.4.1.0.umd.min.js"></script>
+    <script src="/static/register_fido2.js"></script>
+{% endblock %}

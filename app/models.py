@@ -2,9 +2,10 @@
 
 from flask_babel import _
 from sqlalchemy.orm import validates
-from sqlalchemy.types import TypeDecorator, CHAR
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.types import TypeDecorator, CHAR, String
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy_utils.types.uuid import UUIDType
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from hashlib import md5
@@ -24,6 +25,21 @@ from app import db, login
 from flask import current_app, url_for
 from flask_login import UserMixin
 
+from webauthn.helpers.structs import AuthenticatorTransport
+
+class FIDO2Transports(TypeDecorator):
+    """Convert a list of enums into a string for storage"""
+
+    impl = String(64)
+
+    def process_bind_param(self, value, dialect):
+        if not isinstance(value, list):
+            raise TypeError("FIDO2Transports columns support only list values.")
+        return ','.join(value)
+
+    def process_result_value(self, value, dialect):
+        return [AuthenticatorTransport(x) for x in value.split(',')] if value else None
+
 class GUID(TypeDecorator):
     """Platform-independent GUID type.
 
@@ -39,7 +55,7 @@ class GUID(TypeDecorator):
 
     def load_dialect_impl(self, dialect):
         if dialect.name == 'postgresql':
-            return dialect.type_descriptor(UUID())
+            return dialect.type_descriptor(PG_UUID())
         else:
             return dialect.type_descriptor(CHAR(32))
 
@@ -93,12 +109,11 @@ class Entity():
     db_updated_at = db.Column(db.DateTime)
     db_created_by = db.Column(db.String(64))
     db_updated_by = db.Column(db.String(64))
-    guid = db.Column(GUID(), index=True, unique=True)
+    guid = db.Column(UUIDType(binary=False), default=uuid.uuid4, index=True, unique=True)
 
-    def __init__(self, db_created_by=''):
+    def __init__(self, db_created_by='SYSTEM'):
         self.db_created_at = datetime.utcnow()
         self.db_updated_at = datetime.utcnow()
-        self.guid = uuid.uuid4()
         self.db_created_by = db_created_by
         self.db_updated_by = db_created_by
     
@@ -157,7 +172,7 @@ class Thumbnail(Entity, db.Model):
     image = db.relationship('Image', foreign_keys=image_id, back_populates='thumbnails')
     
     def __init__(self, image, size):
-        Entity.__init__(self, '')
+        Entity.__init__(self)
         
         # Read image
         if not image.vector:
@@ -241,7 +256,7 @@ class Image(Entity, db.Model):
         self.description = ''
     
     def __init__(self, path, keep_original=False, name=None):
-        Entity.__init__(self, '')
+        Entity.__init__(self)
         self.import_properties(path)
         
         if name is None:
@@ -381,7 +396,7 @@ class Currency(Entity, db.Model):
     #events = db.relationship('Event', secondary='event_currencies', back_populates='currencies', lazy='dynamic')
     events_base_currency = db.relationship('Event', foreign_keys='Event.base_currency_id', back_populates='base_currency', lazy='dynamic')
     
-    def __init__(self, code, name, number, exponent, inCHF, description='', db_created_by=''):
+    def __init__(self, code, name, number, exponent, inCHF, description='', db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.code = code
         self.name = name
@@ -436,7 +451,7 @@ class Event(Entity, db.Model):
     settlements = db.relationship('Settlement', back_populates='event', lazy='dynamic')
     posts = db.relationship('Post', back_populates='event', lazy='dynamic')
     
-    def __init__(self, name, date, admin, base_currency, currencies, exchange_fee, fileshare_link, closed=False, description='', db_created_by=''):
+    def __init__(self, name, date, admin, base_currency, currencies, exchange_fee, fileshare_link, closed=False, description='', db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.name = name
         self.date = date
@@ -626,7 +641,7 @@ class Expense(Entity, db.Model):
     image = db.relationship('Image', foreign_keys=image_id)
     description = db.Column(db.String(256))
     
-    def __init__(self, user, event, currency, amount, affected_users, date, description='', db_created_by=''):
+    def __init__(self, user, event, currency, amount, affected_users, date, description='', db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.user = user
         self.event = event
@@ -707,7 +722,7 @@ class Settlement(Entity, db.Model):
     image = db.relationship('Image', foreign_keys=image_id)
     description = db.Column(db.String(256))
     
-    def __init__(self, sender, recipient, event, currency, amount, draft, date, description='', db_created_by=''):
+    def __init__(self, sender, recipient, event, currency, amount, draft, date, description='', db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.sender = sender
         self.recipient = recipient
@@ -766,7 +781,7 @@ class Post(Entity, db.Model):
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
     event = db.relationship('Event', back_populates='posts')
     
-    def __init__(self, body, timestamp, author, event, db_created_by=''):
+    def __init__(self, body, timestamp, author, event, db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.body = body
         self.timestamp = timestamp
@@ -797,7 +812,7 @@ class Message(Entity, db.Model):
     recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     recipient = db.relationship('User', foreign_keys=recipient_id,  back_populates='messages_received')
     
-    def __init__(self, body, author, recipient, db_created_by=''):
+    def __init__(self, body, author, recipient, db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.body = body
         self.timestamp = datetime.utcnow()
@@ -830,7 +845,7 @@ class Notification(Entity, db.Model):
     timestamp = db.Column(db.Float, index=True)
     payload_json = db.Column(db.Text)
     
-    def __init__(self, name, user, payload_json, db_created_by=''):
+    def __init__(self, name, user, payload_json, db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.name = name
         self.user = user
@@ -863,7 +878,7 @@ class Task(Entity, db.Model):
     user = db.relationship('User', back_populates='tasks')
     complete = db.Column(db.Boolean, default=False)
     
-    def __init__(self, id, name, description, user, complete=False, db_created_by=''):
+    def __init__(self, id, name, description, user, complete=False, db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.id = id
         self.name = name
@@ -899,6 +914,41 @@ class Task(Entity, db.Model):
         return job.meta.get('progress', 0) if job is not None else 100
 
 
+class Credential(Entity, db.Model):
+    __tablename__ = 'credential'
+    pk = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.LargeBinary)
+    public_key = db.Column(db.LargeBinary)
+    sign_count = db.Column(db.Integer)
+    transports = db.Column(FIDO2Transports)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
+    user = db.relationship('User', back_populates='credentials')
+
+    def __init__(self, id, public_key, sign_count, transports, user, db_created_by='SYSTEM'):
+        Entity.__init__(self, db_created_by)
+        self.id = id
+        self.public_key = public_key
+        self.sign_count = sign_count
+        self.transports = transports
+        self.user = user
+
+    def __repr__(self):
+        return '<Credential: {}>'.format(self.id)
+
+class Challenge(Entity, db.Model):
+    __tablename__ = 'challenge'
+    pk = db.Column(db.Integer, primary_key=True)
+    challenge = db.Column(db.LargeBinary)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
+    user = db.relationship('User', back_populates='challenges')
+
+    def __init__(self, challenge):
+        Entity.__init__(self)
+        self.challenge = challenge
+
+    def __repr__(self):
+        return '<Challenge: {}>'.format(self.session)
+
 class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -918,7 +968,9 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     notifications = db.relationship('Notification', back_populates='user', lazy='dynamic')
     tasks = db.relationship('Task', foreign_keys='Task.user_id', back_populates='user', lazy='dynamic')
     logs = db.relationship('Log', foreign_keys='Log.user_id', back_populates='user', lazy='dynamic')
-    
+    credentials = db.relationship('Credential', back_populates='user')
+    challenges = db.relationship('Challenge', back_populates='user')
+
     is_admin = db.Column(db.Boolean)
     about_me = db.Column(db.String(256))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
@@ -930,7 +982,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         else:
             return value[0].lower()
     
-    def __init__(self, username, email, locale, about_me='', db_created_by=''):
+    def __init__(self, username, email, locale, about_me='', db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.username = username
         self.email = email
@@ -1097,7 +1149,7 @@ class EventUser(Entity, db.Model):
         else:
             return value[0].lower()
     
-    def __init__(self, username, email, weighting, locale, about_me='', db_created_by=''):
+    def __init__(self, username, email, weighting, locale, about_me='', db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.username = username
         self.email = email

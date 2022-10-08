@@ -74,11 +74,11 @@ def create_thumbnails(image, update_progress=False):
     sizes = list(app.config['THUMBNAIL_SIZES'])
     total = len(app.config['THUMBNAIL_SIZES'])+1
     sizes.append(max((image.width, image.height)))
-    i = 0;
+    i = 0
     if update_progress:
         _set_task_progress(100*(1+i)//total)
     for size in sizes:
-        i = i+1;
+        i = i+1
         thumbnail = Thumbnail(image, size)
         db.session.add(thumbnail)
         if update_progress:

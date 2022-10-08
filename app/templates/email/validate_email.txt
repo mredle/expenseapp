@@ -1,6 +1,6 @@
 {{ _('Dear %(username)s', username=username) }},
 
-{{ _('To validate your email and set your password click on the following link') }}:
+{{ _('To validate your email and and set up authentication click on the following link') }}:
 {{ url }}
 
 {{ _('If you have not registered simply ignore this message') }}.

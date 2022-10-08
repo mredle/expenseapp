@@ -11,6 +11,8 @@ email-validator
 forex-python
 yahoofinancials
 prometheus-flask-exporter
+webauthn
+sqlalchemy-utils
 flask
 flask-sqlalchemy 
 flask-migrate 
