@@ -9,6 +9,11 @@
             <button id="btnRegister">Register device with FIDO2</button>
         </div>
     </div>
+    <br>
+    <p>
+        {{ _('Set a password instead? (not recommended)') }}
+        <a href="{{ url_for('auth.register_password', token=token) }}">{{ _('Click here') }}</a>
+    </p>
 {% endblock %}
 
 {% block scripts %}

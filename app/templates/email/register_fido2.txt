@@ -1,7 +1,0 @@
-{{ _('Dear %(username)s', username=username) }},
-
-{{ _('To register your device with FIDO2 click on the following link') }}:
-{{ url }}
-
-{{ _('If you have not registered simply ignore this message') }}.
-{{ _('Sincerely') }}

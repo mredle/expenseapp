@@ -10,7 +10,7 @@ from werkzeug.urls import url_parse
 from app import db
 from app.auth import bp
 from app.auth.forms import AuthenticatePasswordForm, RegistrationForm, ResetUserRequestForm, RegisterFIDO2Form, RegisterPasswordForm
-from app.auth.email import send_validate_email, send_register_fido2_email, send_newuser_notification
+from app.auth.email import send_validate_email, send_newuser_notification
 from app.models import Challenge, User, Credential
 from app.db_logging import log_login, log_login_denied, log_logout, log_register, log_reset_password_request, log_reset_password
 
@@ -30,16 +30,19 @@ from webauthn.helpers.structs import (
 )
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 
+
 # routes for rendered pages
 @bp.route('/login')
 def login():
     return redirect(url_for('auth.authenticate_fido2'))
+
 
 @bp.route('/authenticate_fido2', methods=['GET'])
 def authenticate_fido2():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     return render_template('auth/authenticate_fido2.html', title=_('Sign In'))
+
 
 @bp.route('/authenticate_fido2_error', methods=['GET'])
 def authenticate_fido2_error():
@@ -48,12 +51,14 @@ def authenticate_fido2_error():
     flash(_('Login failed'))
     return redirect(url_for('main.index'))
 
+
 @bp.route('/authenticate_fido2_success', methods=['GET'])
 def authenticate_fido2_success():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     flash(_('Login successful'))
     return redirect(url_for('main.index'))
+
 
 @bp.route('/authenticate_password', methods=['GET', 'POST'])
 def authenticate_password():
@@ -74,11 +79,13 @@ def authenticate_password():
         return redirect(next_page)
     return render_template('auth/authenticate_password.html', title=_('Sign In'), form=form)
 
+
 @bp.route('/logout')
 def logout():
     log_logout(request.path, current_user)
     logout_user()
     return redirect(url_for('main.index'))
+
 
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -100,21 +107,25 @@ def register():
         return redirect(url_for('auth.login'))
     return render_template('edit_form.html', title=_('Register'), form=form)
 
-@bp.route('/register_fido2_request', methods=['GET', 'POST'])
-def register_fido2_request():
+
+@bp.route('/reset_authentication', methods=['GET', 'POST'])
+def reset_authentication():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = ResetUserRequestForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data.lower()).first()
         if user:
-            send_register_fido2_email(user)
+            send_validate_email(user)
         log_reset_password_request(request.path, user)
-        flash(_('Check your email for the instructions to reset your password'))
+        flash(_('Please check your email to activate your account'))
         return redirect(url_for('auth.login'))
-    return render_template('edit_form.html', title=_('Reset Password'), form=form)
+    return render_template('edit_form.html', 
+                           title=_('Reset Login'), 
+                           form=form)
 
-@bp.route('/register_fido2/<token>', methods=['GET', 'POST'])
+
+@bp.route('/register_fido2/<token>', methods=['GET'])
 def register_fido2(token):
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
@@ -129,14 +140,18 @@ def register_fido2(token):
         flash(_('Your device is now registered for passwordless authentication'))
         return redirect(url_for('auth.login'))
 
-    response = make_response(render_template('auth/register_fido2.html', title=_('Register with FIDO2'), form=form))
+    response = make_response(render_template('auth/register_fido2.html', 
+                                             title=_('Enable passwordless authentication'), 
+                                             form=form,
+                                             token=token))
     response.set_cookie(key = 'register_fido2.token', 
                         value = token,
                         max_age = 3600)
     return response
 
+
 @bp.route('/register_password/<token>', methods=['GET', 'POST'])
-def reset_password(token):
+def register_password(token):
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     user = User.verify_reset_password_token(token)
@@ -145,10 +160,14 @@ def reset_password(token):
     form = RegisterPasswordForm()
     if form.validate_on_submit():
         user.set_password(form.password.data)
-        log_reset_password('/reset_password/<token>', user)
-        flash(_('Your password has been reset.'))
+        log_reset_password('/register_password/<token>', user)
+        flash(_('Your password has been set'))
         return redirect(url_for('auth.login'))
-    return render_template('edit_form.html', title=_('Set your password'), form=form)
+    return render_template('auth/register_password.html', 
+                           title=_('Set your password'), 
+                           form=form,
+                           token=token)
+
 
 @bp.route('/generate-registration-options', methods=['GET'])
 def handler_generate_registration_options():

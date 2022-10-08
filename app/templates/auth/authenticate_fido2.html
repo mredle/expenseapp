@@ -9,10 +9,17 @@
         </div>
     </div>
     <br>
-    <p>{{ _('New User?') }} <a href="{{ url_for('auth.register') }}">{{ _('Click to Register!') }}</a></p>
     <p>
-        {{ _('Forgot Your Password?') }}
-        <a href="{{ url_for('auth.register_fido2_request') }}">{{ _('Click to Reset It') }}</a>
+        {{ _('New user?') }} 
+        <a href="{{ url_for('auth.register') }}">{{ _('Click to register!') }}</a>
+    </p>
+    <p>
+        {{ _('Use authentication with password instead? (not recommended)') }}
+        <a href="{{ url_for('auth.authenticate_password') }}">{{ _('Click here') }}</a>
+    </p>
+    <p>
+        {{ _('Reset authentication?') }}
+        <a href="{{ url_for('auth.reset_authentication') }}">{{ _('Click to reset') }}</a>
     </p>
 {% endblock %}
 
