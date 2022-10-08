@@ -7,83 +7,83 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2021-06-14 21:54+0200\n"
+"POT-Creation-Date: 2022-10-08 15:32+0200\n"
 "PO-Revision-Date: 2018-08-29 22:41+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
 "Language-Team: de <LL@li.org>\n"
-"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.9.1\n"
+"Generated-By: Babel 2.10.3\n"
 
 #: app/__init__.py:39
 msgid "Please log in to access this page."
 msgstr "Bitte melde dich an um diese Seite zu sehen."
 
-#: app/models.py:139
+#: app/models.py:155
 msgid "Log entries"
 msgstr "Log-Einträge"
 
-#: app/models.py:187
+#: app/models.py:203
 msgid "Thumbnails"
 msgstr "Miniaturansichten"
 
-#: app/models.py:262
+#: app/models.py:278
 msgid "Images"
 msgstr "Bilder"
 
-#: app/models.py:341
+#: app/models.py:357
 msgid "Event currencies"
 msgstr "Währungen in Veranstaltungen"
 
-#: app/models.py:397 app/templates/base.html:22
+#: app/models.py:413 app/templates/base.html:22
 msgid "Currencies"
 msgstr "Währungen"
 
-#: app/models.py:455
+#: app/models.py:471
 msgid "Events"
 msgstr "Veranstaltungen"
 
-#: app/models.py:643 app/templates/event/main.html:37
+#: app/models.py:659 app/templates/event/main.html:37
 #: app/templates/pdf/balance.html:73
 msgid "Expenses"
 msgstr "Ausgaben"
 
-#: app/models.py:733
+#: app/models.py:749
 msgid "Settlements as sender"
 msgstr "Ausgleichszahlungen als Absender"
 
-#: app/models.py:733
+#: app/models.py:749
 msgid "Settlements as recipient"
 msgstr "Ausgleichszahlungen als Empfänger"
 
-#: app/models.py:780
+#: app/models.py:796
 msgid "Posts"
 msgstr "Beiträge"
 
-#: app/models.py:819
+#: app/models.py:835
 msgid "Messages sent"
 msgstr "Nachrichten versendet"
 
-#: app/models.py:819
+#: app/models.py:835
 msgid "Messages received"
 msgstr "Nachrichten empfangen"
 
-#: app/models.py:844
+#: app/models.py:860
 msgid "Notifications"
 msgstr "Benachrichtigungen"
 
-#: app/main/routes.py:313 app/models.py:879 app/templates/administration.html:7
+#: app/main/routes.py:313 app/models.py:895 app/templates/administration.html:7
 msgid "Tasks"
 msgstr "Aufgaben"
 
-#: app/models.py:950 app/templates/base.html:23
+#: app/models.py:1003 app/templates/base.html:23
 msgid "Users"
 msgstr "Benutzer"
 
-#: app/models.py:1112
+#: app/models.py:1165
 msgid "Event users"
 msgstr "Benutzer in Veranstaltungen"
 
@@ -133,7 +133,7 @@ msgstr "Passwort zurücksetzen"
 msgid "Username"
 msgstr "Benutzername"
 
-#: app/auth/forms.py:12 app/auth/forms.py:37 app/main/forms.py:60
+#: app/auth/forms.py:12 app/auth/forms.py:40 app/main/forms.py:60
 #: app/main/forms.py:82
 msgid "Password"
 msgstr "Passwort"
@@ -142,12 +142,12 @@ msgstr "Passwort"
 msgid "Remember Me"
 msgstr "Angemeldet bleiben"
 
-#: app/auth/forms.py:14 app/auth/routes.py:33
+#: app/auth/forms.py:14 app/auth/routes.py:44 app/auth/routes.py:80
 msgid "Sign In"
 msgstr "Anmelden"
 
-#: app/auth/forms.py:18 app/auth/forms.py:33 app/event/forms.py:64
-#: app/main/forms.py:59 app/main/forms.py:81
+#: app/auth/forms.py:18 app/auth/forms.py:33 app/auth/forms.py:37
+#: app/event/forms.py:64 app/main/forms.py:59 app/main/forms.py:81
 msgid "Email"
 msgstr "Email"
 
@@ -156,7 +156,7 @@ msgstr "Email"
 msgid "Language"
 msgstr "Sprache"
 
-#: app/auth/forms.py:20 app/auth/routes.py:62
+#: app/auth/forms.py:20 app/auth/routes.py:108
 msgid "Register"
 msgstr "Registrieren"
 
@@ -169,39 +169,54 @@ msgstr "Bitte einen anderen Benutzernamen wählen."
 msgid "Please use a different email address."
 msgstr "Bitte eine andere email Adresse wählen."
 
-#: app/auth/forms.py:34 app/auth/forms.py:40
+#: app/auth/forms.py:34
 msgid "Request Password Reset"
 msgstr "Passwort Rücksetzung anfordern"
 
-#: app/auth/forms.py:38 app/main/forms.py:61 app/main/forms.py:83
+#: app/auth/forms.py:41 app/main/forms.py:61 app/main/forms.py:83
 msgid "Repeat Password"
 msgstr "Passwort wiederhohlen"
 
-#: app/auth/routes.py:25
+#: app/auth/forms.py:43
+#, fuzzy
+msgid "Set password"
+msgstr "Passwort zurücksetzen"
+
+#: app/auth/routes.py:51
+msgid "Login failed"
+msgstr "Anmedlung fehlgeschlagen"
+
+#: app/auth/routes.py:59
+msgid "Login successful"
+msgstr "Anmeldung erfolgreich"
+
+#: app/auth/routes.py:72
 msgid "Invalid username or password"
 msgstr "Ungültiger Benutzername oder Passwort"
 
-#: app/auth/routes.py:59
-msgid "Congratulations, you are now a registered user!"
-msgstr "Gratuliere, du bist nun ein registrierter Benutzer!"
-
-#: app/auth/routes.py:60
+#: app/auth/routes.py:106 app/auth/routes.py:121
 msgid "Please check your email to activate your account"
 msgstr "Bitte überprüfe deine emails um dein Konto zu aktivieren"
 
-#: app/auth/routes.py:74
-msgid "Check your email for the instructions to reset your password"
-msgstr "Folge den Instruktionen im email um dein Passwort zurückzusetzen"
+#: app/auth/routes.py:124
+#, fuzzy
+msgid "Reset Login"
+msgstr "Adresse"
 
-#: app/auth/routes.py:76
-msgid "Reset Password"
-msgstr "Passwort zurücksetzen"
+#: app/auth/routes.py:140
+msgid "Your device is now registered for passwordless authentication"
+msgstr "Dein Gerät ist nun für die passwortlose Anmeldung freigeschalten"
 
-#: app/auth/routes.py:90
-msgid "Your password has been reset."
+#: app/auth/routes.py:144
+msgid "Enable passwordless authentication"
+msgstr "Aktiviere die passwortlose Anmeldung"
+
+#: app/auth/routes.py:164
+#, fuzzy
+msgid "Your password has been set"
 msgstr "Dein Passwort wurde zurückgesetzt."
 
-#: app/auth/routes.py:92
+#: app/auth/routes.py:167
 msgid "Set your password"
 msgstr "Setze dein Passwort"
 
@@ -664,7 +679,7 @@ msgstr "Du darfst nur deine eigenen Logeinträge sehen!"
 
 #: app/main/routes.py:273
 msgid "Trace"
-msgstr "Spuhr"
+msgstr "Trace"
 
 #: app/main/routes.py:279
 msgid "Only an admin can create errors!"
@@ -756,7 +771,7 @@ msgstr "%(code)s 1 entspricht CHF %(inCHF).4f"
 
 #: app/templates/_log.html:7
 msgid "trace"
-msgstr "Spuhr"
+msgstr "trace"
 
 #: app/templates/_log.html:12
 #, python-format
@@ -965,25 +980,58 @@ msgstr "Vorherige Benutzer"
 msgid "More users"
 msgstr "Mehr Benutzer"
 
-#: app/templates/auth/login.html:12
+#: app/templates/auth/authenticate_fido2.html:13
+#, fuzzy
+msgid "New user?"
+msgstr "Neuer Benutzer?"
+
+#: app/templates/auth/authenticate_fido2.html:14
+#: app/templates/auth/authenticate_password.html:14
+#, fuzzy
+msgid "Click to register!"
+msgstr "Hier klicken um dich zu Registrieren!"
+
+#: app/templates/auth/authenticate_fido2.html:17
+msgid "Use authentication with password instead? (not recommended)"
+msgstr "Anmeldung mit einem Passwort verwenden? (nicht empfohlen)"
+
+#: app/templates/auth/authenticate_fido2.html:18
+#: app/templates/auth/authenticate_password.html:18
+#: app/templates/auth/register_fido2.html:15
+#: app/templates/auth/register_password.html:14
+#, fuzzy
+msgid "Click here"
+msgstr "klicke hier"
+
+#: app/templates/auth/authenticate_fido2.html:21
+#: app/templates/auth/authenticate_password.html:21
+msgid "Reset authentication?"
+msgstr "Anmeldung zurücksetzen?"
+
+#: app/templates/auth/authenticate_fido2.html:22
+#: app/templates/auth/authenticate_password.html:22
+#, fuzzy
+msgid "Click to reset"
+msgstr "Klicken um es zurückzusetzen"
+
+#: app/templates/auth/authenticate_password.html:13
 msgid "New User?"
 msgstr "Neuer Benutzer?"
 
-#: app/templates/auth/login.html:12
-msgid "Click to Register!"
-msgstr "Hier klicken um dich zu Registrieren!"
+#: app/templates/auth/authenticate_password.html:17
+msgid "Use passwordless authentication instead? (recommended)"
+msgstr "Passwortlose Anmeldung verwenden? (empfohlen)"
 
-#: app/templates/auth/login.html:14
-msgid "Forgot Your Password?"
-msgstr "Passwort vergessen?"
+#: app/templates/auth/register_fido2.html:14
+msgid "Set a password instead? (not recommended)"
+msgstr "Lieber ein Passwort verwenden? (nicht empfohlen)"
 
-#: app/templates/auth/login.html:15
-msgid "Click to Reset It"
-msgstr "Klicken um es zurückzusetzen"
+#: app/templates/auth/register_password.html:13
+msgid "Set up passwordless authentication instead? (recommended)"
+msgstr "Lieber passwortlose Anmeldung verwenden? (empfohlen)"
 
 #: app/templates/email/balance_email.html:1
 #: app/templates/email/reminder_email.html:1
-#: app/templates/email/reset_password.html:1
 #: app/templates/email/simple_email.html:1
 #: app/templates/email/validate_email.html:1
 #, python-format
@@ -1000,7 +1048,6 @@ msgstr ""
 
 #: app/templates/email/balance_email.html:6
 #: app/templates/email/reminder_email.html:70
-#: app/templates/email/reset_password.html:11
 #: app/templates/email/simple_email.html:3
 #: app/templates/email/validate_email.html:11
 msgid "Sincerely"
@@ -1028,16 +1075,19 @@ msgstr "Adresse"
 msgid "ZIP/city"
 msgstr "PLZ/Stadt"
 
-#: app/templates/email/reset_password.html:3
-msgid "To reset your password click on the following link"
-msgstr "Um dein Passwort zurückzusetzen, klicke auf den folgenden Link"
+#: app/templates/email/validate_email.html:3
+#, fuzzy
+msgid ""
+"To validate your email and set up authentication click on the following "
+"link"
+msgstr ""
+"Um deine eMail zu verifizieren und das Passwort zu setzen, klicke auf den"
+" folgenden Link"
 
-#: app/templates/email/reset_password.html:5
 #: app/templates/email/validate_email.html:5
 msgid "click here"
 msgstr "klicke hier"
 
-#: app/templates/email/reset_password.html:8
 #: app/templates/email/validate_email.html:8
 msgid ""
 "Alternatively, you can paste the following link in your browser's address"
@@ -1046,16 +1096,9 @@ msgstr ""
 "Alternativ kannst du auch den folgenden Link in die Adresszeile deines "
 "Browsers kopieren"
 
-#: app/templates/email/reset_password.html:10
 #: app/templates/email/validate_email.html:10
 msgid "If you have not registered simply ignore this message"
 msgstr "Falls du dich nicht registriert hast, ignoriere diese Nachricht einfach"
-
-#: app/templates/email/validate_email.html:3
-msgid "To validate your email and set your password click on the following link"
-msgstr ""
-"Um deine eMail zu verifizieren und das Passwort zu setzen, klicke auf den"
-" folgenden Link"
 
 #: app/templates/errors/404.html:4
 msgid "Not Found"
@@ -1315,13 +1358,13 @@ msgid "Edit bank account"
 msgstr "Bankkonto bearbeiten"
 
 #: app/templates/pdf/_expense.html:9
-#, python-format
-msgid "%(when)s: %(username)s spent %(amount_str)s for"
+#, fuzzy, python-format
+msgid "%(when)s, %(username)s spent %(amount_str)s for"
 msgstr "%(when)s: %(username)s gab %(amount_str)s aus für"
 
 #: app/templates/pdf/_settlement.html:9
-#, python-format
-msgid "%(when)s: %(sender)s sent %(amount_str)s to %(recipient)s:"
+#, fuzzy, python-format
+msgid "%(when)s, %(sender)s sent %(amount_str)s to %(recipient)s:"
 msgstr "%(when)s: %(sender)s hat %(amount_str)s für %(recipient)s überwiesen:"
 
 #: app/templates/pdf/balance.html:6
@@ -1456,4 +1499,16 @@ msgstr "Offene Ausgleichzahlungen"
 
 #~ msgid "Back to user page"
 #~ msgstr ""
+
+#~ msgid "Congratulations, you are now a registered user!"
+#~ msgstr "Gratuliere, du bist nun ein registrierter Benutzer!"
+
+#~ msgid "Check your email for the instructions to reset your password"
+#~ msgstr "Folge den Instruktionen im email um dein Passwort zurückzusetzen"
+
+#~ msgid "Forgot Your Password?"
+#~ msgstr "Passwort vergessen?"
+
+#~ msgid "To reset your password click on the following link"
+#~ msgstr "Um dein Passwort zurückzusetzen, klicke auf den folgenden Link"
 
