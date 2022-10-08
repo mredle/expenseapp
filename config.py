@@ -10,6 +10,9 @@ load_dotenv(os.path.join(basedir, '.env'))
 
 class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+    RP_ID = os.environ.get('RP_ID') or 'localhost'
+    RP_ORIGIN = os.environ.get('RP_ORIGIN') or 'http://'+RP_ID+':5000'
+    RP_NAME = os.environ.get('RP_NAME') or 'Expense App'
     MYSQL_HOST = os.environ.get('MYSQL_HOST') or 'localhost'
     MYSQL_PORT = os.environ.get('MYSQL_PORT') or 3306
     MYSQL_USER = os.environ.get('MYSQL_USER') or 'user'

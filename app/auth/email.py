@@ -20,7 +20,7 @@ def send_newuser_notification(user):
 def send_validate_email(user):
     with force_locale(user.locale):
         token = user.get_reset_password_token()
-        url = url_for('auth.reset_password', token=token, _external=True)
+        url = url_for('auth.register_fido2', token=token, _external=True)
         send_email(_('Validate Your Email'),
                    sender=current_app.config['ADMIN_NOREPLY_SENDER'],
                    recipients=[user.email],
@@ -31,16 +31,16 @@ def send_validate_email(user):
                                              username=user.username,
                                              url=url))
 
-def send_password_reset_email(user):
+def send_register_fido2_email(user):
     with force_locale(user.locale):
         token = user.get_reset_password_token()
-        url = url_for('auth.reset_password', token=token, _external=True)
+        url = url_for('auth.register_fido2', token=token, _external=True)
         send_email(_('Reset Your Password'),
                    sender=current_app.config['ADMIN_NOREPLY_SENDER'],
                    recipients=[user.email],
-                   text_body=render_template('email/reset_password.txt',
+                   text_body=render_template('email/register_fido2.txt',
                                              username=user.username,
                                              url=url),
-                   html_body=render_template('email/reset_password.html',
+                   html_body=render_template('email/register_fido2.html',
                                              username=user.username,
                                              url=url))
