@@ -13,6 +13,7 @@ sys.path.insert(0, '..')
 from app import models
 import sqlalchemy as sa
 sa.GUID = models.GUID
+sa.FIDO2Transports = models.FIDO2Transports
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
