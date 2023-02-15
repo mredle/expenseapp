@@ -5,7 +5,7 @@ python-dotenv
 pyjwt
 gunicorn
 pymysql
-Werkzeug==0.16
+Werkzeug==2.2.3
 MarkupSafe==2.0.1
 email-validator
 forex-python
