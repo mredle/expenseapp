@@ -184,7 +184,7 @@ def handler_generate_registration_options():
             for cred in user.credentials
         ],
         authenticator_selection=AuthenticatorSelectionCriteria(
-            user_verification=UserVerificationRequirement.REQUIRED
+            user_verification=UserVerificationRequirement.PREFERRED
         ),
         supported_pub_key_algs=[
             COSEAlgorithmIdentifier.ECDSA_SHA_256,
