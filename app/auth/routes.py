@@ -220,7 +220,7 @@ def handler_verify_registration_response():
             expected_challenge=challenge.challenge,
             expected_rp_id=current_app.config['RP_ID'],
             expected_origin=current_app.config['RP_ORIGIN'],
-            require_user_verification=True
+            require_user_verification=False
         )
     except Exception as err:
         print(err)
@@ -286,7 +286,7 @@ def handler_verify_authentication_response():
             expected_origin=current_app.config['RP_ORIGIN'],
             credential_public_key=user_credential.public_key,
             credential_current_sign_count=user_credential.sign_count,
-            require_user_verification=True,
+            require_user_verification=False,
         )
     except Exception as err:
         return {'verified': False, 'msg': str(err), 'status': 400}
