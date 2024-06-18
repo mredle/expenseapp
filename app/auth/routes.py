@@ -247,7 +247,7 @@ def handler_generate_authentication_options():
 
     options = generate_authentication_options(
         rp_id=current_app.config['RP_ID'],
-        user_verification=UserVerificationRequirement.REQUIRED,
+        user_verification=UserVerificationRequirement.PREFERRED,
     )
 
     challenge = Challenge(options.challenge)
