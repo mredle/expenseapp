@@ -5,7 +5,7 @@ import uuid
 from flask import request, render_template, make_response, flash, redirect, url_for, current_app
 from flask_login import current_user, login_user, logout_user
 from flask_babel import _
-from werkzeug.urls import url_parse
+from urllib.parse import urlparse
 
 from app import db
 from app.auth import bp
@@ -74,7 +74,7 @@ def authenticate_password():
         log_login(request.path, user)
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
-        if not next_page or url_parse(next_page).netloc != '':
+        if not next_page or urlparse(next_page).netloc != '':
             next_page = url_for('main.index')
         return redirect(next_page)
     return render_template('auth/authenticate_password.html', title=_('Sign In'), form=form)

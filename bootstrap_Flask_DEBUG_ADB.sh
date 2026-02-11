@@ -1,10 +1,10 @@
 #!/bin/bash
 
-docker-compose -f scripts/dev/docker-compose.yml  up -d
 source create_venv_pyenv.sh
 
 export FLASK_APP=./expenseapp.py
 export FLASK_DEBUG=1
+export DB_TYPE=ORACLE
 export MYSQL_HOST=localhost
 export MYSQL_PORT=3306
 export MYSQL_USER=user
