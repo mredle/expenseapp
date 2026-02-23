@@ -2,7 +2,6 @@
 Small app to manage expenses in a group
 
 ## prepare ubuntu host system
-install python3.10
 install dependencies
 ```bash
 sudo apt install    python3-virtualenv \

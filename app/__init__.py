@@ -8,7 +8,6 @@ from redis import Redis
 import rq
 import os
 import time
-import atexit
 
 from flask import Flask, request, current_app
 from flask_sqlalchemy import SQLAlchemy
@@ -44,7 +43,19 @@ moment = Moment()
 babel = Babel()
 scheduler = APScheduler()
 #metrics = PrometheusMetrics.for_app_factory()
-    
+
+def get_locale():
+    # if a user is logged in, use the locale from the user settings
+    # otherwise try to guess the language from the user accept
+    # header the browser transmits. The best match wins.
+    try:
+        if current_user.is_authenticated:
+            return current_user.locale
+        else:
+            return request.accept_languages.best_match(current_app.config['LANGUAGES'])
+    except:
+        return 'en'
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -56,18 +67,12 @@ def create_app(config_class=Config):
     mail.init_app(app)
     bootstrap.init_app(app)
     moment.init_app(app)
-    babel.init_app(app)
+    babel.init_app(app, locale_selector=get_locale)
     #metrics.init_app(app)
     scheduler.init_app(app)
-    
+    scheduler.start()
+
     PrometheusMetrics(app, registry=CollectorRegistry())
-    
-    @app.before_first_request
-    def init_scheduler():
-        scheduler.start()
-        from app import models, tasks
-        # Shut down the scheduler when exiting the app
-        atexit.register(lambda: scheduler.shutdown())
     
     app.redis = Redis.from_url(app.config['REDIS_URL'])
     app.task_queue = rq.Queue('expenseapp-tasks', connection=app.redis)
@@ -116,19 +121,6 @@ def create_app(config_class=Config):
             app.logger.info('App startup')
     
     return app
-
-@babel.localeselector
-def get_locale():
-    # if a user is logged in, use the locale from the user settings
-    # otherwise try to guess the language from the user accept
-    # header the browser transmits. The best match wins.
-    try:
-        if current_user.is_authenticated:
-            return current_user.locale
-        else:
-            return request.accept_languages.best_match(current_app.config['LANGUAGES'])
-    except:
-        return 'en'
 
 # logging.basicConfig()
 # logger = logging.getLogger("myapp.sqltime")
