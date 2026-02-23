@@ -8,7 +8,6 @@ from redis import Redis
 import rq
 import os
 import time
-import atexit
 
 from flask import Flask, request, current_app
 from flask_sqlalchemy import SQLAlchemy
