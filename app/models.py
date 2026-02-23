@@ -124,7 +124,7 @@ class Entity():
 
 class Log(db.Model):
     __tablename__ = 'log'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
     severity = db.Column(db.String(32))
     module = db.Column(db.String(128))
@@ -161,7 +161,7 @@ class Log(db.Model):
         
 class Thumbnail(Entity, db.Model):
     __tablename__ = 'thumbnails'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
     name = db.Column(db.String(64), index=True)
     extension = db.Column(db.String(8))
@@ -216,7 +216,7 @@ class Thumbnail(Entity, db.Model):
 
 class Image(Entity, db.Model):
     __tablename__ = 'images'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
     name = db.Column(db.String(64), index=True)
     extension = db.Column(db.String(8))
@@ -378,7 +378,7 @@ class EventCurrency(db.Model):
 
 class Currency(Entity, db.Model):
     __tablename__ = 'currencies'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
     code = db.Column(db.String(3), index=True)
     name = db.Column(db.String(64))
@@ -426,7 +426,7 @@ class Currency(Entity, db.Model):
 
 class Event(Entity, db.Model):
     __tablename__ = 'events'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
 
     name = db.Column(db.String(64))
     date = db.Column(db.DateTime, index=True, default=datetime.utcnow)
@@ -625,7 +625,7 @@ expense_affected_users = db.Table('expense_affected_users',
 
 class Expense(Entity, db.Model):
     __tablename__ = 'expenses'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
     user_id = db.Column(db.Integer, db.ForeignKey('eventusers.id'), index=True)
     user = db.relationship('EventUser', back_populates='expenses')
@@ -704,7 +704,7 @@ class Expense(Entity, db.Model):
 
 class Settlement(Entity, db.Model):
     __tablename__ = 'settlements'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
     sender_id = db.Column(db.Integer, db.ForeignKey('eventusers.id'), index=True)
     sender = db.relationship('EventUser', foreign_keys=sender_id, back_populates='settlements_sender')
@@ -772,7 +772,7 @@ class Settlement(Entity, db.Model):
 
 class Post(Entity, db.Model):
     __tablename__ = 'posts'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
     body = db.Column(db.String(256))
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
@@ -803,7 +803,7 @@ class Post(Entity, db.Model):
 
 class Message(Entity, db.Model):
     __tablename__ = 'messages'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
     body = db.Column(db.String(256))
     timestamp = db.Column(db.DateTime, index=True)
@@ -837,7 +837,7 @@ class Message(Entity, db.Model):
 
 class Notification(Entity, db.Model):
     __tablename__ = 'notifications'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
     name = db.Column(db.String(128), index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -951,7 +951,7 @@ class Challenge(Entity, db.Model):
 
 class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(128), index=True, unique=True)
@@ -1109,7 +1109,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
 
 class EventUser(Entity, db.Model):
     __tablename__ = 'eventusers'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
     # user data
     username = db.Column(db.String(64), index=True)
