@@ -4,10 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=flask_app
-Group=flask_app
-WorkingDirectory=/home/flask_app/expenseapp/
-ExecStart=/home/flask_app/anaconda3/envs/flask_app/bin/rq worker -u 'redis://:bPOd5jd84WVWiC53XNyxoQVzkWz5P9xw@10.122.112.25:6379/0' 'expenseapp-tasks'
+User=expenseapp
+Group=expenseapp
+WorkingDirectory=/opt/expenseapp/
+ExecStart=/opt/expenseapp/venv/bin/rq worker -u 'redis://:bPOd5jd84WVWiC53XNyxoQVzkWz5P9xw@localhost:6379/0' 'expenseapp-tasks'
 
 [Install]
 WantedBy=multi-user.target

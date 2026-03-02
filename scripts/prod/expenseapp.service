@@ -4,11 +4,14 @@ After=network.target
 
 [Service]
 Type=simple
-User=flask_app
-Group=flask_app
-WorkingDirectory=/home/flask_app/expenseapp/
-ExecStart=/home/flask_app/expenseapp/run_as_service.sh
+User=expenseapp
+Group=expenseapp
+WorkingDirectory=/opt/expenseapp/
+ExecStart=/opt/expenseapp/run_as_service.sh
+
+# Security best practices (Optional but recommended)
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
-
