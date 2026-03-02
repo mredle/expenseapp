@@ -69,8 +69,9 @@ def create_app(config_class=Config):
     moment.init_app(app)
     babel.init_app(app, locale_selector=get_locale)
     #metrics.init_app(app)
-    scheduler.init_app(app)
-    scheduler.start()
+    if not scheduler.running:
+        scheduler.init_app(app)
+        scheduler.start()
 
     PrometheusMetrics(app, registry=CollectorRegistry())
     
