@@ -6,11 +6,11 @@ source create_venv_pyenv.sh
 export FLASK_APP=./expenseapp.py
 export FLASK_DEBUG=1
 export DB_TYPE=mysql
-export MYSQL_HOST=localhost
-export MYSQL_PORT=3306
-export MYSQL_USER=user
-export MYSQL_PW=pw
-export MYSQL_DB=expenseapp
+export DB_HOST=localhost
+export DB_PORT=3306
+export DB_USER=user
+export DB_PW=pw
+export DB_NAME=expenseapp
 
 while true; do
     sleep 10
