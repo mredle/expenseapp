@@ -13,10 +13,12 @@
                     username=task.user.username) }}
                 <br>
                 {% if task.complete %}
-                {{ (_('Complete')) }}: 
+                <span id="task-status-{{ task.id }}">{{ _('Complete') }}</span>: 
                 {% else %}
-                {{ (_('Pending, progress: %(progress)s', 
-                    progress=task.get_progress())) }}: 
+                <span id="task-status-{{ task.id }}">
+                    {% set progress_span = '<span class="task-progress-' ~ task.id ~ '">' ~ task.get_progress() ~ '</span>' %}
+                    {{ _('Pending, progress: %(progress)s', progress=progress_span) | safe }}
+                </span>: 
                 {% endif %}
                 {{ task.description }}
                 {% if task.can_edit(current_user) %}
