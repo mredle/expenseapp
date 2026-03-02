@@ -18,13 +18,16 @@ from yahoofinancials import YahooFinancials
 # from forex_python.converter import CurrencyRates
 # import pandas_datareader.data as web
 
+app = create_app()
+app.app_context().push()
+
 def _set_task_progress(progress):
     job = get_current_job()
     if job:
         job.meta['progress'] = progress
         job.save_meta()
-        task = Task.query.get(job.get_id())
-        task.user.add_notification('task_progress', {'task_id': job.get_id(),
+        task = Task.query.get(job.id)
+        task.user.add_notification('task_progress', {'task_id': job.id,
                                                      'progress': progress})
         if progress >= 100:
             task.complete = True

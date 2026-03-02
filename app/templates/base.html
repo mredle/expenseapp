@@ -56,7 +56,7 @@
             {% for task in tasks %}
             <div class="alert alert-success" role="alert">
                 {{ task.description }}
-                <span id="{{ task.id }}-progress">{{ task.get_progress() }}</span>%
+                <span class="task-progress-{{ task.id }}">{{ task.get_progress() }}</span>%
             </div>
             {% endfor %}
         {% endif %}
@@ -86,7 +86,16 @@
             $('#message_count').css('visibility', n ? 'visible' : 'hidden');
         }
         function set_task_progress(task_id, progress) {
-            $('#' + task_id + '-progress').text(progress);
+            // Update the progress number everywhere it appears
+            $('.task-progress-' + task_id).text(progress);
+            
+            // Automatically switch text to "Complete" when finished
+            if (progress >= 100) {
+                $('#task-status-' + task_id).text("{{ _('Complete') }}");
+                
+                // Optional: Fade out the top alert once it finishes
+                $('.task-progress-' + task_id).closest('.alert').delay(2000).fadeOut();
+            }
         }
         $(function () {
             var timer = null;

@@ -1076,7 +1076,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     def launch_task(self, name, description, *args, **kwargs):
         rq_job = current_app.task_queue.enqueue('app.tasks.' + name, self.guid,
                                                 *args, **kwargs)
-        task = Task(id=rq_job.get_id(), name=name, description=description,
+        task = Task(id=rq_job.id, name=name, description=description,
                     user=self)
         db.session.add(task)
         return task
