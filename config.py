@@ -49,7 +49,6 @@ class Config(object):
                }
             }
     
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_POOL_RECYCLE = 480
     MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'localhost'
     MAIL_PORT = int(os.environ.get('MAIL_PORT') or 1025)
