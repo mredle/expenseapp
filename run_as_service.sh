@@ -1,6 +1,7 @@
 #!/bin/bash
-eval "$('/home/flask_app/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-conda activate flask_app
+
+# Activate the pre-built virtual environment
+source /opt/expenseapp/venv/bin/activate
 
 export FLASK_APP=./expenseapp.py
 

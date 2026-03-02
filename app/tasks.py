@@ -18,9 +18,6 @@ from yahoofinancials import YahooFinancials
 # from forex_python.converter import CurrencyRates
 # import pandas_datareader.data as web
 
-app = create_app()
-app.app_context().push()
-
 def _set_task_progress(progress):
     job = get_current_job()
     if job:

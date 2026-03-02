@@ -13,14 +13,42 @@ class Config(object):
     RP_ID = os.environ.get('RP_ID') or 'localhost'
     RP_ORIGIN = os.environ.get('RP_ORIGIN') or 'http://'+RP_ID+':5000'
     RP_NAME = os.environ.get('RP_NAME') or 'Expense App'
-    DB_TYPE = os.environ.get('DB_TYPE') or 'MARIADB'
-    MYSQL_HOST = os.environ.get('MYSQL_HOST') or 'localhost'
-    MYSQL_PORT = os.environ.get('MYSQL_PORT') or 3306
-    MYSQL_USER = os.environ.get('MYSQL_USER') or 'user'
-    MYSQL_PW = os.environ.get('MYSQL_PW') or 'pw'
-    MYSQL_DB = os.environ.get('MYSQL_DB') or 'expenseapp'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8mb4'.format(MYSQL_USER, MYSQL_PW, MYSQL_HOST, MYSQL_PORT, MYSQL_DB)
+    DB_TYPE = os.environ.get('DB_TYPE') or 'mysql'
+    DB_HOST = os.environ.get('DB_HOST') or 'localhost'
+    DB_PORT = os.environ.get('DB_PORT') or 3306
+    DB_USER = os.environ.get('DB_USER') or 'user'
+    DB_PW = os.environ.get('DB_PW') or 'pw'
+    DB_NAME = os.environ.get('DB_NAME') or 'expenseapp'
+    TNS_ADMIN = os.environ.get('TNS_ADMIN') or '/opt/OCIWallet'
+    WALLET_PW = os.environ.get('WALLET_PW') or 'pw'
+
+    if os.environ.get('DATABASE_URL'):
+        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    else:
+        if DB_TYPE=='sqlite':
+            SQLALCHEMY_DATABASE_URI = 'sqlite:///{}'.format(DB_HOST)
+        elif DB_TYPE=='mariadb':
+            SQLALCHEMY_DATABASE_URI = 'mariadb+mariadbconnector://{}:{}@{}:{}/{}'.format(DB_USER, DB_PW, DB_HOST, DB_PORT, DB_NAME)
+        elif DB_TYPE=='mysql':
+            SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8mb4'.format(DB_USER, DB_PW, DB_HOST, DB_PORT, DB_NAME)
+        elif DB_TYPE=='postgres':
+            SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://{}:{}@{}:{}/{}'.format(DB_USER, DB_PW, DB_HOST, DB_PORT, DB_NAME)
+        elif DB_TYPE=='oracle':
+            SQLALCHEMY_DATABASE_URI = 'oracle+oracledb://{}:{}@{}:{}/?service_name={}'.format(DB_USER, DB_PW, DB_HOST, DB_PORT, DB_NAME)
+        elif DB_TYPE=='oci':
+            SQLALCHEMY_DATABASE_URI = 'oracle+oracledb://{}:{}@{}'.format(DB_USER, DB_PW, DB_NAME)
+            SQLALCHEMY_ENGINE_OPTIONS = {'thick_mode': {
+            'config_dir': TNS_ADMIN
+            },'connect_args': {
+               'user': DB_USER, 
+               'password': DB_PW,
+               'dsn': DB_NAME,
+               'config_dir': TNS_ADMIN,  # directory containing tnsnames.ora
+               'wallet_location': TNS_ADMIN,  # directory containing ewallet.pem
+               'wallet_password': WALLET_PW  # password for the PEM file
+               }
+            }
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_POOL_RECYCLE = 480
     MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'localhost'

@@ -53,7 +53,10 @@ def currencies():
     log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
     currencies = Currency.query.order_by(Currency.code.asc()).paginate(
-        page, current_app.config['ITEMS_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
     next_url = url_for('main.currencies', page=currencies.next_num) if currencies.has_next else None
     prev_url = url_for('main.currencies', page=currencies.prev_num) if currencies.has_prev else None
     return render_template('currencies.html', 
@@ -125,7 +128,10 @@ def users():
     log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
     users = User.query.order_by(User.username.asc()).paginate(
-        page, current_app.config['ITEMS_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
     next_url = url_for('main.users', page=users.next_num) if users.has_next else None
     prev_url = url_for('main.users', page=users.prev_num) if users.has_prev else None
     return render_template('users.html', 
@@ -248,7 +254,10 @@ def logs():
     if not current_user.is_admin:
         filters.append(Log.user==current_user)
     logs = Log.query.filter(*filters).order_by(Log.date.desc()).paginate(
-        page, current_app.config['ITEMS_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
     next_url = url_for('main.logs', severity=severity, page=logs.next_num) \
         if logs.has_next else None
     prev_url = url_for('main.logs', severity=severity, page=logs.prev_num) \
@@ -303,7 +312,10 @@ def tasks():
     if not current_user.is_admin:
         filters.append(Task.user==current_user)
     tasks = Task.query.filter(*filters).order_by(Task.db_created_at.desc()).paginate(
-        page, current_app.config['ITEMS_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
     next_url = url_for('main.tasks', complete=complete_str, page=tasks.next_num) \
         if tasks.has_next else None
     prev_url = url_for('main.tasks', complete=complete_str, page=tasks.prev_num) \
@@ -451,7 +463,10 @@ def messages():
     page = request.args.get('page', 1, type=int)
     messages = current_user.messages_sent.union(current_user.messages_received).order_by(
         Message.timestamp.desc()).paginate(
-            page, current_app.config['MESSAGES_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
     next_url = url_for('main.messages', page=messages.next_num) \
         if messages.has_next else None
     prev_url = url_for('main.messages', page=messages.prev_num) \
