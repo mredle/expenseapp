@@ -24,6 +24,7 @@
             {% endif %}
             {% if user == current_user %}
             <p><a href="{{ url_for('main.edit_profile') }}">{{ _('Edit your profile') }}</a></p>
+            <p><a href="javascript:void(0);" id="btnRegisterProfile">{{ _('Register device with FIDO2') }}</a></p>
             {% if not current_user.get_task_in_progress('export_posts') %}
             <p><a href="{{ url_for('main.export_posts') }}">{{ _('Export your posts') }}</a></p>
             {% endif %}
@@ -36,4 +37,47 @@
             {% endif %}
         </tr>
     </table>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="/static/simplewebauthn-browser.4.1.0.umd.min.js"></script>
+    <script>
+        const { startRegistration } = SimpleWebAuthnBrowser;
+
+        document.getElementById("btnRegisterProfile")?.addEventListener("click", async () => {
+            // Get options
+            const resp = await fetch("/auth/generate-registration-options");
+            if (!resp.ok) {
+                alert("{{ _('Failed to get registration options.') }}");
+                return;
+            }
+            const opts = await resp.json();
+
+            // Start WebAuthn Registration
+            let regResp;
+            try {
+                regResp = await startRegistration(opts);
+            } catch (err) {
+                console.error(err);
+                return; // User cancelled or error occurred
+            }
+
+            // Send response to server
+            const verificationResp = await fetch("/auth/verify-registration-response", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(regResp),
+            });
+
+            // Report validation response
+            const verificationRespJSON = await verificationResp.json();
+            if (verificationRespJSON.verified) {
+                alert("{{ _('Your device has been successfully registered!') }}");
+                window.location.reload();
+            } else {
+                alert("{{ _('Registration failed.') }}");
+            }
+        });
+    </script>
 {% endblock %}

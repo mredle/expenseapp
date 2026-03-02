@@ -171,8 +171,14 @@ def register_password(token):
 
 @bp.route('/generate-registration-options', methods=['GET'])
 def handler_generate_registration_options():
-    token = request.cookies.get('register_fido2.token')
-    user = User.verify_reset_password_token(token)
+    if current_user.is_authenticated:
+        user = current_user
+    else:
+        token = request.cookies.get('register_fido2.token')
+        user = User.verify_reset_password_token(token)
+        
+    if not user:
+        return make_response({'error': 'Unauthorized'}), 401
     
     options = generate_registration_options(
         rp_id=current_app.config['RP_ID'],
@@ -207,8 +213,15 @@ def handler_generate_registration_options():
 @bp.route('/verify-registration-response', methods=['POST'])
 def handler_verify_registration_response():
     body = request.get_data()
-    token = request.cookies.get('register_fido2.token')
-    user = User.verify_reset_password_token(token)
+    
+    if current_user.is_authenticated:
+        user = current_user
+    else:
+        token = request.cookies.get('register_fido2.token')
+        user = User.verify_reset_password_token(token)
+        
+    if not user:
+        return make_response({'error': 'Unauthorized'}), 401
 
     session_id = request.cookies.get('register_fido2.session')
     challenge = Challenge.query.filter_by(guid=session_id).first()
