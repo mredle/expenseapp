@@ -37,14 +37,23 @@ def get_eventuser_from_cookie(event, request):
 def index():
     log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
+    
     if current_user.is_admin:
         events = Event.query.order_by(Event.closed.asc(), Event.date.desc()).paginate(
-            page, current_app.config['ITEMS_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
     else:
         events = current_user.events_admin.order_by(Event.closed.asc(), Event.date.desc()).paginate(
-            page, current_app.config['ITEMS_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
+        
     next_url = url_for('event.index', page=events.next_num) if events.has_next else None
     prev_url = url_for('event.index', page=events.prev_num) if events.has_prev else None
+    
     return render_template('event/index.html', 
                            title=_('Hi %(username)s, your events:', username=current_user.username), 
                            events=events.items, 
@@ -101,7 +110,10 @@ def main(guid):
     
     page = request.args.get('page', 1, type=int)
     posts = event.posts.order_by(Post.timestamp.desc()).paginate(
-        page, current_app.config['ITEMS_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
     next_url = url_for('event.main', guid=event.guid, page=posts.next_num) if posts.has_next else None
     prev_url = url_for('event.main', guid=event.guid, page=posts.prev_num) if posts.has_prev else None
     return render_template('event/main.html', 
@@ -118,7 +130,10 @@ def currencies(guid):
     log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
     eventcurrencies = event.eventcurrencies.paginate(
-        page, current_app.config['ITEMS_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
     next_url = url_for('event.currencies', page=eventcurrencies.next_num) if eventcurrencies.has_next else None
     prev_url = url_for('event.currencies', page=eventcurrencies.prev_num) if eventcurrencies.has_prev else None
     return render_template('event/eventcurrencies.html', 
@@ -299,7 +314,10 @@ def users(guid):
     
     page = request.args.get('page', 1, type=int)
     users = event.users.order_by(EventUser.username.asc()).paginate(
-        page, current_app.config['ITEMS_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
     next_url = url_for('event.users', guid=guid, page=users.next_num) if users.has_next else None
     prev_url = url_for('event.users', guid=guid, page=users.prev_num) if users.has_prev else None
     return render_template('event/users.html', 
@@ -493,7 +511,10 @@ def expenses(guid):
         filters.append(Expense.user==eventuser)
     
     expenses = event.expenses.filter(*filters).order_by(Expense.date.desc()).paginate(
-        page, current_app.config['ITEMS_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
     next_url = url_for('event.expenses', guid=event.guid, filter=filter_eventuser, page=expenses.next_num) if expenses.has_next else None
     prev_url = url_for('event.expenses', guid=event.guid, filter=filter_eventuser, page=expenses.prev_num) if expenses.has_prev else None
     return render_template('event/expenses.html', 
@@ -611,7 +632,10 @@ def expense_users(guid):
     
     page = request.args.get('page', 1, type=int)
     users = expense.affected_users.order_by(EventUser.username.asc()).paginate(
-        page, current_app.config['ITEMS_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
     next_url = url_for('event.expense_users', guid=guid, page=users.next_num) if users.has_next else None
     prev_url = url_for('event.expense_users', guid=guid, page=users.prev_num) if users.has_prev else None
     return render_template('event/expense_users.html', 
@@ -696,7 +720,10 @@ def settlements(guid):
     form.currency_id.data = event.base_currency.id
     page = request.args.get('page', 1, type=int)
     settlements = event.settlements.filter_by(draft=False).order_by(Settlement.date.desc()).paginate(
-        page, current_app.config['ITEMS_PER_PAGE'], False)
+            page=page, 
+            per_page=current_app.config['ITEMS_PER_PAGE'], 
+            error_out=False
+        )
     next_url = url_for('event.settlements', guid=event.guid, page=settlements.next_num) if settlements.has_next else None
     prev_url = url_for('event.settlements', guid=event.guid, page=settlements.prev_num) if settlements.has_prev else None
     return render_template('event/settlements.html', 
