@@ -916,7 +916,7 @@ class Task(Entity, db.Model):
 
 class Credential(Entity, db.Model):
     __tablename__ = 'credential'
-    pk = db.Column(db.Integer, primary_key=True)
+    pk = db.Column(db.Integer, db.Identity(), primary_key=True)
     id = db.Column(db.LargeBinary)
     public_key = db.Column(db.LargeBinary)
     sign_count = db.Column(db.Integer)
@@ -937,7 +937,7 @@ class Credential(Entity, db.Model):
 
 class Challenge(Entity, db.Model):
     __tablename__ = 'challenge'
-    pk = db.Column(db.Integer, primary_key=True)
+    pk = db.Column(db.Integer, db.Identity(), primary_key=True)
     challenge = db.Column(db.LargeBinary)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
     user = db.relationship('User', back_populates='challenges')
