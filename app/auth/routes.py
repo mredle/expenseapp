@@ -183,7 +183,7 @@ def handler_generate_registration_options():
     options = generate_registration_options(
         rp_id=current_app.config['RP_ID'],
         rp_name=current_app.config['RP_NAME'],
-        user_id=user.guid.hex,
+        user_id=user.guid.hex.encode('utf-8'),
         user_name=user.username,
         exclude_credentials=[
             {'id': cred.id, 'transports': cred.transports, 'type': 'public-key'}
