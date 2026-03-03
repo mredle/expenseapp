@@ -78,7 +78,8 @@
                 alert("{{ _('Your device has been successfully registered!') }}");
                 window.location.reload();
             } else {
-                alert("{{ _('Registration failed.') }}");
+                // Surface the exact Python error message!
+                alert("{{ _('Registration failed: ') }}" + (verificationRespJSON.msg || "Unknown error"));
             }
         });
     </script>
