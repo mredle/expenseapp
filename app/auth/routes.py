@@ -172,7 +172,7 @@ def register_password(token):
 @bp.route('/generate-registration-options', methods=['GET'])
 def handler_generate_registration_options():
     if current_user.is_authenticated:
-        user = current_user
+        user = current_user._get_current_object()  # Unwraps the proxy here
     else:
         token = request.cookies.get('register_fido2.token')
         user = User.verify_reset_password_token(token)
@@ -215,7 +215,7 @@ def handler_verify_registration_response():
     body = request.get_data()
     
     if current_user.is_authenticated:
-        user = current_user
+        user = current_user._get_current_object()  # Unwraps the proxy here
     else:
         token = request.cookies.get('register_fido2.token')
         user = User.verify_reset_password_token(token)

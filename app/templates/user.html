@@ -60,7 +60,9 @@
                 regResp = await startRegistration(opts);
             } catch (err) {
                 console.error(err);
-                return; // User cancelled or error occurred
+                // This alert will tell you if you have HTTP or RP_ID issues on your phone!
+                alert("{{ _('Authenticator error: ') }}" + err.message); 
+                return;
             }
 
             // Send response to server
