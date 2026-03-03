@@ -27,6 +27,7 @@ from webauthn.helpers.structs import (
     UserVerificationRequirement,
     RegistrationCredential,
     AuthenticationCredential,
+    PublicKeyCredentialDescriptor,
 )
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 
@@ -186,7 +187,7 @@ def handler_generate_registration_options():
         user_id=user.guid.hex.encode('utf-8'),
         user_name=user.username,
         exclude_credentials=[
-            {'id': cred.id, 'transports': cred.transports, 'type': 'public-key'}
+            PublicKeyCredentialDescriptor(id=cred.id, transports=cred.transports)
             for cred in user.credentials
         ],
         authenticator_selection=AuthenticatorSelectionCriteria(
