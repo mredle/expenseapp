@@ -291,6 +291,9 @@ def handler_verify_authentication_response():
 
         # Find the user's corresponding public key
         user_credential = Credential.query.filter_by(id=credential.raw_id).first()
+        if user_credential is None:
+            raise Exception('Could not find corresponding public key in DB')
+        
         user = user_credential.user
 
         if user_credential is None:

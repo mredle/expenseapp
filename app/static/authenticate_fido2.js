@@ -40,6 +40,8 @@ document
     if (verified) {
       window.location.href = "/auth/authenticate_fido2_success";
     } else {
+      // Show the exact Python error message!
+      alert("Login failed: " + (msg || "Unknown error"));
       window.location.href = "/auth/authenticate_fido2_error";
     }
   });
