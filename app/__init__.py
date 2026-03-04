@@ -19,6 +19,8 @@ from flask_moment import Moment
 from flask_babel import Babel, lazy_gettext as _l
 from flask_uploads import UploadSet, IMAGES, configure_uploads
 from flask_apscheduler import APScheduler
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import CollectorRegistry
 
@@ -42,6 +44,7 @@ bootstrap = Bootstrap()
 moment = Moment()
 babel = Babel()
 scheduler = APScheduler()
+limiter = Limiter(key_func=get_remote_address)
 #metrics = PrometheusMetrics.for_app_factory()
 
 def get_locale():
@@ -68,6 +71,7 @@ def create_app(config_class=Config):
     bootstrap.init_app(app)
     moment.init_app(app)
     babel.init_app(app, locale_selector=get_locale)
+    limiter.init_app(app)
     #metrics.init_app(app)
     if not scheduler.running:
         scheduler.init_app(app)

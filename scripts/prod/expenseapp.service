@@ -9,9 +9,15 @@ Group=expenseapp
 WorkingDirectory=/opt/expenseapp/
 ExecStart=/opt/expenseapp/run_as_service.sh
 
-# Security best practices (Optional but recommended)
+# Poll the app every 2 seconds until it answers
+ExecStartPost=/bin/bash -c 'until curl --silent --output /dev/null http://localhost:5000; do sleep 2; done'
+
+# If it doesn't answer within 120 seconds, kill it and fail
+TimeoutStartSec=300
+
+# Automatically restart if it fails, hangs, or crashes
 Restart=on-failure
-RestartSec=5
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target

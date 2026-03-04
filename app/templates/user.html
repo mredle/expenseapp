@@ -60,7 +60,20 @@
                 regResp = await startRegistration(opts);
             } catch (err) {
                 console.error(err);
-                return; // User cancelled or error occurred
+                
+                // Check if the error is due to the credential already existing (exclusion list match)
+                if (err.name === 'InvalidStateError' || err.message.toLowerCase().includes('unknown error')) {
+                    alert("{{ _('This device is already registered to your account!') }}");
+                } 
+                // Check if the user intentionally canceled the prompt
+                else if (err.name === 'NotAllowedError') {
+                    alert("{{ _('Registration was canceled.') }}");
+                } 
+                // Fallback for any other actual errors
+                else {
+                    alert("{{ _('Authenticator error: ') }}" + err.message); 
+                }
+                return;
             }
 
             // Send response to server
@@ -76,7 +89,8 @@
                 alert("{{ _('Your device has been successfully registered!') }}");
                 window.location.reload();
             } else {
-                alert("{{ _('Registration failed.') }}");
+                // Surface the exact Python error message!
+                alert("{{ _('Registration failed: ') }}" + (verificationRespJSON.msg || "Unknown error"));
             }
         });
     </script>

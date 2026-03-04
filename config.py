@@ -37,7 +37,9 @@ class Config(object):
             SQLALCHEMY_DATABASE_URI = 'oracle+oracledb://{}:{}@{}:{}/?service_name={}'.format(DB_USER, DB_PW, DB_HOST, DB_PORT, DB_NAME)
         elif DB_TYPE=='oci':
             SQLALCHEMY_DATABASE_URI = 'oracle+oracledb://{}:{}@{}'.format(DB_USER, DB_PW, DB_NAME)
-            SQLALCHEMY_ENGINE_OPTIONS = {'thick_mode': {
+            SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_pre_ping': True,
+            'thick_mode': {
             'config_dir': TNS_ADMIN
             },'connect_args': {
                'user': DB_USER, 
@@ -76,6 +78,7 @@ class Config(object):
     REDIS_DB = os.environ.get('REDIS_DB') or 0
     REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD') or 'pw'
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://{}{}:{}/{}'.format(':'+REDIS_PASSWORD+'@' if REDIS_PASSWORD is not None else '', REDIS_HOST, REDIS_PORT, REDIS_DB)
+    RATELIMIT_STORAGE_URI = REDIS_URL
     SCHEDULER_API_ENABLED = True
     SCHEDULER_JOBSTORES = {
         'default': RedisJobStore(db=REDIS_DB, jobs_key='housekeeping_jobs', run_times_key='housekeeping_jobs_running', host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD)

@@ -18,7 +18,14 @@ document
     try {
       regResp = await startRegistration(opts);
     } catch (err) {
-      throw new Error(err);
+      if (err.name === 'InvalidStateError' || err.message.toLowerCase().includes('unknown error')) {
+          alert("This device is already registered!");
+      } else if (err.name === 'NotAllowedError') {
+          console.log("User canceled the registration.");
+      } else {
+          alert("Authenticator error: " + err.message);
+      }
+      return; // Stop the rest of the function from running
     }
 
     // Send response to server

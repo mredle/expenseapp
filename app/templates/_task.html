@@ -17,8 +17,8 @@
                 {% else %}
                 <span id="task-status-{{ task.id }}">
                     {% set progress_span = '<span class="task-progress-' ~ task.id ~ '">' ~ task.get_progress() ~ '</span>' %}
-                    {{ _('Pending, progress: %(progress)s', progress=progress_span) | safe }}
-                </span>: 
+                    {{ _('Pending, progress: %(progress)s', progress=progress_span | safe) }}
+                </span>:
                 {% endif %}
                 {{ task.description }}
                 {% if task.can_edit(current_user) %}

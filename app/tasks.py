@@ -3,6 +3,7 @@
 import sys
 import time
 import json
+import concurrent.futures
 
 from datetime import datetime, timedelta
 from weasyprint import HTML
@@ -256,44 +257,94 @@ def update_rates_yahoo(guid):
     user = User.get_by_guid_or_404(guid)
     _set_task_progress(0)
     
-    start = datetime.utcnow()
-    end = start
+    end = datetime.utcnow()
+    start = end - timedelta(days=5) # Look back 5 days to safely bypass weekends/holidays
     
     # CHF -> USD
     yahoo_currencies = 'CHF=X'
     yahoo_financials_currencies = YahooFinancials(yahoo_currencies)
     daily_currency_prices = yahoo_financials_currencies.get_historical_price_data(start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), 'daily')
-    USD_inCHF = daily_currency_prices['CHF=X']['prices'][0]['adjclose']
+    
+    # Safely extract the data
+    chf_data = daily_currency_prices.get('CHF=X', {})
+    if not chf_data or 'prices' not in chf_data or len(chf_data['prices']) == 0:
+        raise Exception(f"Failed to fetch baseline CHF=X rate. Yahoo response: {daily_currency_prices}")
+        
+    # Use [-1] to get the most recent daily close, instead of [0]
+    USD_inCHF = chf_data['prices'][-1]['adjclose']
     
     existing_currencies = Currency.query.filter(Currency.source=='yahoo').all()
-    yahoo_currencies = ['{}=X'.format(c.code) for c in existing_currencies]
     n = len(existing_currencies)
-    # def chunks(lst, n):
-    #     """Yield successive n-sized chunks from lst."""
-    #     for i in range(0, len(lst), n):
-    #         yield lst[i:i + n]
+
+    def chunks(lst, chunk_size):
+        """Yield successive chunk_size-sized chunks from lst."""
+        for i in range(0, len(lst), chunk_size):
+            yield lst[i:i + chunk_size]
     
     _set_task_progress(1)
     
     trace = None
     try:
-        yahoo_financials_currencies = YahooFinancials(yahoo_currencies)
-        daily_currency_prices = yahoo_financials_currencies.get_historical_price_data(start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), 'daily')
-        trace = str(daily_currency_prices)
-        if len(trace)>4000:
-            trace = trace[0:4000]
+        updated_count = 0
+        processed_count = 0  # Track how many we've checked so far
         
-        exchange_rates = {v['currency']: USD_inCHF/daily_currency_prices[k]['prices'][0]['adjclose'] 
-                          for k, v in daily_currency_prices.items() 
-                          if 'currency' in v}
-        
-        for c in existing_currencies:
-            if c.code in exchange_rates:
-                c.inCHF = exchange_rates[c.code]
-                c.db_updated_at = start
-                c.db_updated_by = 'update_rates_yahoo'
-        
-        message = '{} currencies updated successfully from yahoo.'.format(n)
+        # Process in batches of 10 to prevent Yahoo Finance from hanging
+        for currency_chunk in chunks(existing_currencies, 10):
+            yahoo_currencies = ['{}=X'.format(c.code) for c in currency_chunk]
+            yahoo_financials_currencies = YahooFinancials(yahoo_currencies)
+            
+            daily_currency_prices = None
+            try:
+                # Enforce a strict 15-second timeout on the Yahoo API request
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(
+                        yahoo_financials_currencies.get_historical_price_data,
+                        start.strftime('%Y-%m-%d'), 
+                        end.strftime('%Y-%m-%d'), 
+                        'daily'
+                    )
+                    daily_currency_prices = future.result(timeout=15)
+            except concurrent.futures.TimeoutError:
+                app.logger.warning(f"Yahoo API timeout for batch: {yahoo_currencies}. Skipping chunk.")
+                # --- Update progress even if we skip ---
+                processed_count += len(currency_chunk)
+                _set_task_progress(100 * processed_count // n)
+                continue # Skip to the next chunk safely!
+            except Exception as e:
+                app.logger.warning(f"Yahoo API error for batch: {yahoo_currencies} - {str(e)}")
+                # --- Update progress even if we skip ---
+                processed_count += len(currency_chunk)
+                _set_task_progress(100 * processed_count // n)
+                continue # Skip to the next chunk safely!
+            
+            trace = str(daily_currency_prices)
+            if len(trace) > 4000:
+                trace = trace[0:4000]
+            
+            # Safely parse the results
+            if daily_currency_prices:
+                exchange_rates = {
+                    v.get('currency'): USD_inCHF / daily_currency_prices[k]['prices'][-1]['adjclose'] 
+                    for k, v in daily_currency_prices.items() 
+                    if v and 'currency' in v and 'prices' in v and len(v['prices']) > 0
+                }
+                
+                for c in currency_chunk:
+                    if c.code in exchange_rates:
+                        c.inCHF = exchange_rates[c.code]
+                        c.db_updated_at = start
+                        c.db_updated_by = 'update_rates_yahoo'
+                        updated_count += 1
+            
+            # --- Update the RQ task progress ---
+            processed_count += len(currency_chunk)
+            _set_task_progress(100 * processed_count // n)
+            # -----------------------------------
+            
+            # Sleep briefly to avoid rate limits
+            time.sleep(1)
+            
+        message = '{} currencies updated successfully from yahoo.'.format(updated_count)
         
         log_add('INFORMATION', 'scheduler.task', 'get_rates_yahoo', message, user, trace=trace)
         db.session.commit()
@@ -302,7 +353,6 @@ def update_rates_yahoo(guid):
         log_add('WARNING', 'scheduler.task', 'get_rates_yahoo', message, user, trace=(trace if trace is not None else str(sys.exc_info())))
         
     _set_task_progress(100)
-    
             
 def check_rates_yahoo(guid):
     """Check if rates are available on yahoo"""
@@ -339,7 +389,7 @@ def check_rates_yahoo(guid):
             if len(trace)>4000:
                 trace = trace[0:4000]
             
-            exchange_rate = USD_inCHF/daily_currency_prices[yahoo_currency]['prices'][0]['adjclose'] 
+            exchange_rate = USD_inCHF/daily_currency_prices[yahoo_currency]['prices'][-1]['adjclose'] 
             
             c.inCHF = exchange_rate
             c.source = 'yahoo'

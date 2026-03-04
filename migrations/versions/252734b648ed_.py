@@ -192,7 +192,7 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_posts_user_id'), ['user_id'], unique=False)
 
     op.create_table('challenge',
-    sa.Column('pk', sa.Integer(), nullable=False),
+    sa.Column('pk', sa.Integer(), sa.Identity(always=False), nullable=False),
     sa.Column('challenge', sa.LargeBinary(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('db_created_at', sa.DateTime(), nullable=True),
@@ -208,7 +208,7 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_challenge_user_id'), ['user_id'], unique=False)
 
     op.create_table('credential',
-    sa.Column('pk', sa.Integer(), nullable=False),
+    sa.Column('pk', sa.Integer(), sa.Identity(always=False), nullable=False),
     sa.Column('id', sa.LargeBinary(), nullable=True),
     sa.Column('public_key', sa.LargeBinary(), nullable=True),
     sa.Column('sign_count', sa.Integer(), nullable=True),
