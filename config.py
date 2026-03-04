@@ -37,7 +37,9 @@ class Config(object):
             SQLALCHEMY_DATABASE_URI = 'oracle+oracledb://{}:{}@{}:{}/?service_name={}'.format(DB_USER, DB_PW, DB_HOST, DB_PORT, DB_NAME)
         elif DB_TYPE=='oci':
             SQLALCHEMY_DATABASE_URI = 'oracle+oracledb://{}:{}@{}'.format(DB_USER, DB_PW, DB_NAME)
-            SQLALCHEMY_ENGINE_OPTIONS = {'thick_mode': {
+            SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_pre_ping': True,
+            'thick_mode': {
             'config_dir': TNS_ADMIN
             },'connect_args': {
                'user': DB_USER, 
