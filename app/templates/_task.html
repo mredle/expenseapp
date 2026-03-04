@@ -16,7 +16,7 @@
                 <span id="task-status-{{ task.id }}">{{ _('Complete') }}</span>: 
                 {% else %}
                 <span id="task-status-{{ task.id }}">
-                    {% set progress_span = '<span class="task-status-' ~ task.id ~ '">' ~ task.get_progress() ~ '</span>' %}
+                    {% set progress_span = '<span class="task-progress-' ~ task.id ~ '">' ~ task.get_progress() ~ '</span>' %}
                     {{ _('Pending, progress: %(progress)s', progress=progress_span) | safe }}
                 </span>: 
                 {% endif %}

@@ -3,6 +3,7 @@
 import sys
 import time
 import json
+import concurrent.futures
 
 from datetime import datetime, timedelta
 from weasyprint import HTML
