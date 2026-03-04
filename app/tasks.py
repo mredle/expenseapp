@@ -281,14 +281,34 @@ def update_rates_yahoo(guid):
         updated_count = 0
         processed_count = 0  # Track how many we've checked so far
         
-        # Process in batches of 20 to prevent Yahoo Finance from hanging
-        for currency_chunk in chunks(existing_currencies, 20):
+        # Process in batches of 10 to prevent Yahoo Finance from hanging
+        for currency_chunk in chunks(existing_currencies, 10):
             yahoo_currencies = ['{}=X'.format(c.code) for c in currency_chunk]
             yahoo_financials_currencies = YahooFinancials(yahoo_currencies)
             
-            daily_currency_prices = yahoo_financials_currencies.get_historical_price_data(
-                start.strftime('%Y-%m-%d'), end.strftime('%Y-%m-%d'), 'daily'
-            )
+            daily_currency_prices = None
+            try:
+                # Enforce a strict 15-second timeout on the Yahoo API request
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(
+                        yahoo_financials_currencies.get_historical_price_data,
+                        start.strftime('%Y-%m-%d'), 
+                        end.strftime('%Y-%m-%d'), 
+                        'daily'
+                    )
+                    daily_currency_prices = future.result(timeout=15)
+            except concurrent.futures.TimeoutError:
+                app.logger.warning(f"Yahoo API timeout for batch: {yahoo_currencies}. Skipping chunk.")
+                # --- Update progress even if we skip ---
+                processed_count += len(currency_chunk)
+                _set_task_progress(100 * processed_count // n)
+                continue # Skip to the next chunk safely!
+            except Exception as e:
+                app.logger.warning(f"Yahoo API error for batch: {yahoo_currencies} - {str(e)}")
+                # --- Update progress even if we skip ---
+                processed_count += len(currency_chunk)
+                _set_task_progress(100 * processed_count // n)
+                continue # Skip to the next chunk safely!
             
             trace = str(daily_currency_prices)
             if len(trace) > 4000:
