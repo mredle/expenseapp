@@ -44,6 +44,7 @@ bootstrap = Bootstrap()
 moment = Moment()
 babel = Babel()
 scheduler = APScheduler()
+limiter = Limiter(get_remote_address)
 #metrics = PrometheusMetrics.for_app_factory()
 
 def get_locale():
@@ -70,7 +71,6 @@ def create_app(config_class=Config):
     bootstrap.init_app(app)
     moment.init_app(app)
     babel.init_app(app, locale_selector=get_locale)
-    limiter = Limiter(get_remote_address)
     limiter.init_app(app)
     #metrics.init_app(app)
     if not scheduler.running:
