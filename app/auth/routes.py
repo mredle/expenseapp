@@ -215,7 +215,7 @@ def handler_generate_registration_options():
 
 @bp.route('/verify-registration-response', methods=['POST'])
 def handler_verify_registration_response():
-    body = request.get_data()
+    data = request.get_json()
     
     if current_user.is_authenticated:
         user = current_user._get_current_object()  # Unwraps the proxy here
@@ -230,7 +230,7 @@ def handler_verify_registration_response():
     challenge = Challenge.query.filter_by(guid=session_id).first()
 
     try:
-        credential = parse_registration_credential_json(body)
+        credential = parse_registration_credential_json(data)
         verification = verify_registration_response(
             credential=credential,
             expected_challenge=challenge.challenge,
@@ -245,7 +245,7 @@ def handler_verify_registration_response():
     new_credential = Credential(id=verification.credential_id,
                                 public_key = verification.credential_public_key,
                                 sign_count = verification.sign_count,
-                                transports = json.loads(body).get('transports', []),
+                                transports = data.get('response', {}).get('transports', []),
                                 user = user)
 
     user.credentials.append(new_credential)
@@ -279,13 +279,13 @@ def handler_generate_authentication_options():
 
 @bp.route('/verify-authentication-response', methods=['POST'])
 def handler_verify_authentication_response():
-    body = request.get_data()
+    data = request.get_json()
     
     session_id = request.cookies.get('authenticate_fido2.session')
     challenge = Challenge.query.filter_by(guid=session_id).first()
 
     try:
-        credential = parse_authentication_credential_json(body)
+        credential = parse_authentication_credential_json(data)
 
         # Find the user's corresponding public key
         user_credential = Credential.query.filter_by(id=credential.raw_id).first()
