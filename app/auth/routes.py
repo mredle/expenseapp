@@ -289,12 +289,22 @@ def handler_verify_authentication_response():
     try:
         credential = parse_authentication_credential_json(data)
 
-        # Find the user's corresponding public key
-        user_credential = Credential.query.filter_by(id=credential.raw_id).first()
-        if user_credential is None:
-            raise Exception('Could not find corresponding public key in DB')
+        # Extract the user's GUID from the resident key's user_handle
+        if not credential.response.user_handle:
+            raise Exception('No user handle returned. Resident key required.')
+            
+        user_guid_hex = credential.response.user_handle.decode('utf-8')
+        user = User.query.filter_by(guid=uuid.UUID(user_guid_hex)).first()
         
-        user = user_credential.user
+        if not user:
+            raise Exception('User associated with this credential not found.')
+
+        # Find the matching FIDO2 key in Python memory to bypass Oracle's BLOB limitation
+        user_credential = None
+        for cred in user.credentials:
+            if cred.id == credential.raw_id:
+                user_credential = cred
+                break
 
         if user_credential is None:
             raise Exception('Could not find corresponding public key in DB')
