@@ -22,11 +22,13 @@ from webauthn import (
     verify_authentication_response,
     options_to_json,
 )
+from webauthn.helpers import (
+    parse_registration_credential_json,
+    parse_authentication_credential_json,
+)
 from webauthn.helpers.structs import (
     AuthenticatorSelectionCriteria,
     UserVerificationRequirement,
-    RegistrationCredential,
-    AuthenticationCredential,
     PublicKeyCredentialDescriptor,
 )
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
@@ -228,7 +230,7 @@ def handler_verify_registration_response():
     challenge = Challenge.query.filter_by(guid=session_id).first()
 
     try:
-        credential = RegistrationCredential.parse_raw(body)
+        credential = parse_registration_credential_json(body)
         verification = verify_registration_response(
             credential=credential,
             expected_challenge=challenge.challenge,
@@ -283,7 +285,7 @@ def handler_verify_authentication_response():
     challenge = Challenge.query.filter_by(guid=session_id).first()
 
     try:
-        credential = AuthenticationCredential.parse_raw(body)
+        credential = parse_authentication_credential_json(body)
 
         # Find the user's corresponding public key
         user_credential = Credential.query.filter_by(id=credential.raw_id).first()
