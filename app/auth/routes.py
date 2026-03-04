@@ -5,9 +5,10 @@ import uuid
 from flask import request, render_template, make_response, flash, redirect, url_for, current_app
 from flask_login import current_user, login_user, logout_user
 from flask_babel import _
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 from app import db
+from app import limiter
 from app.auth import bp
 from app.auth.forms import AuthenticatePasswordForm, RegistrationForm, ResetUserRequestForm, RegisterFIDO2Form, RegisterPasswordForm
 from app.auth.email import send_validate_email, send_newuser_notification
@@ -34,6 +35,10 @@ from webauthn.helpers.structs import (
 )
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 
+def is_safe_url(target):
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
 # routes for rendered pages
 @bp.route('/login')
@@ -65,20 +70,27 @@ def authenticate_fido2_success():
 
 
 @bp.route('/authenticate_password', methods=['GET', 'POST'])
+@limiter.limit('12 per minute')
 def authenticate_password():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = AuthenticatePasswordForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
-        if user is None or not user.check_password(form.password.data):
+        if user is None:
+            # Hash a dummy string to equalize response time
+            User('dummy', 'dummy@example.com', 'en').check_password('dummy')
+            log_login_denied(request.path, form.username.data)
+            flash(_('Invalid username or password'))
+            return redirect(url_for('auth.login'))
+        elif not user.check_password(form.password.data):
             log_login_denied(request.path, form.username.data)
             flash(_('Invalid username or password'))
             return redirect(url_for('auth.login'))
         log_login(request.path, user)
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
-        if not next_page or urlparse(next_page).netloc != '':
+        if not next_page or not is_safe_url(next_page):
             next_page = url_for('main.index')
         return redirect(next_page)
     return render_template('auth/authenticate_password.html', title=_('Sign In'), form=form)
@@ -150,7 +162,10 @@ def register_fido2(token):
                                              token=token))
     response.set_cookie(key = 'register_fido2.token', 
                         value = token,
-                        max_age = 3600)
+                        max_age=3600,
+                        secure=True,       # Only send over HTTPS
+                        httponly=True,     # Hide from JavaScript
+                        samesite='Strict') # Protect against CSRF
     return response
 
 
@@ -211,7 +226,10 @@ def handler_generate_registration_options():
     response = make_response(options_to_json(options))
     response.set_cookie(key = 'register_fido2.session', 
                         value = str(challenge.guid),
-                        max_age = 3600)
+                        max_age=3600,
+                        secure=True,       # Only send over HTTPS
+                        httponly=True,     # Hide from JavaScript
+                        samesite='Strict') # Protect against CSRF
     return response
 
 
@@ -241,8 +259,8 @@ def handler_verify_registration_response():
             require_user_verification=False
         )
     except Exception as err:
-        print(err)
-        return {'verified': False, 'msg': str(err), 'status': 400}
+        current_app.logger.error(f"WebAuthn Error: {str(err)}")
+        return {'verified': False, 'msg': 'Invalid credential or server error', 'status': 400}
     
     new_credential = Credential(id=verification.credential_id,
                                 public_key = verification.credential_public_key,
@@ -256,7 +274,10 @@ def handler_verify_registration_response():
     response = make_response({'verified': True})
     response.set_cookie(key = 'register_fido2.session', 
                         value = '',
-                        expires=0)
+                        expires=0,
+                        secure=True,       # Only send over HTTPS
+                        httponly=True,     # Hide from JavaScript
+                        samesite='Strict') # Protect against CSRF
     return response
 
 
@@ -275,7 +296,10 @@ def handler_generate_authentication_options():
     response = make_response(options_to_json(options))
     response.set_cookie(key = 'authenticate_fido2.session', 
                         value = str(challenge.guid),
-                        max_age = 3600)
+                        max_age=3600,
+                        secure=True,       # Only send over HTTPS
+                        httponly=True,     # Hide from JavaScript
+                        samesite='Strict') # Protect against CSRF
     return response
 
 
@@ -320,7 +344,8 @@ def handler_verify_authentication_response():
             require_user_verification=False,
         )
     except Exception as err:
-        return {'verified': False, 'msg': str(err), 'status': 400}
+        current_app.logger.error(f"WebAuthn Error: {str(err)}")
+        return {'verified': False, 'msg': 'Invalid credential or server error', 'status': 400}
 
     # Update our credential's sign count to what the authenticator says it is now
     user_credential.sign_count = verification.new_sign_count
@@ -332,5 +357,8 @@ def handler_verify_authentication_response():
     response = make_response({'verified': True})
     response.set_cookie(key = 'authenticate_fido2.session', 
                         value = '',
-                        expires=0)
+                        expires=0,
+                        secure=True,       # Only send over HTTPS
+                        httponly=True,     # Hide from JavaScript
+                        samesite='Strict') # Protect against CSRF
     return response
