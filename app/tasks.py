@@ -320,7 +320,11 @@ def update_rates_yahoo(guid):
         
         log_add('INFORMATION', 'scheduler.task', 'get_rates_yahoo', message, user, trace=trace)
         db.session.commit()
-    
+    except:
+        message = '{} currencies could not be updated from yahoo.'.format(n)
+        log_add('WARNING', 'scheduler.task', 'get_rates_yahoo', message, user, trace=(trace if trace is not None else str(sys.exc_info())))
+        
+    _set_task_progress(100)
             
 def check_rates_yahoo(guid):
     """Check if rates are available on yahoo"""
