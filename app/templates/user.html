@@ -60,8 +60,19 @@
                 regResp = await startRegistration(opts);
             } catch (err) {
                 console.error(err);
-                // This alert will tell you if you have HTTP or RP_ID issues on your phone!
-                alert("{{ _('Authenticator error: ') }}" + err.message); 
+                
+                // Check if the error is due to the credential already existing (exclusion list match)
+                if (err.name === 'InvalidStateError' || err.message.toLowerCase().includes('unknown error')) {
+                    alert("{{ _('This device is already registered to your account!') }}");
+                } 
+                // Check if the user intentionally canceled the prompt
+                else if (err.name === 'NotAllowedError') {
+                    alert("{{ _('Registration was canceled.') }}");
+                } 
+                // Fallback for any other actual errors
+                else {
+                    alert("{{ _('Authenticator error: ') }}" + err.message); 
+                }
                 return;
             }
 
