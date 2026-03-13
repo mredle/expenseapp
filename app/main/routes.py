@@ -16,8 +16,16 @@ from app.db_logging import log_page_access, log_page_access_denied
 @bp.before_app_request
 def before_request():
     if current_user.is_authenticated:
-        current_user.last_seen = datetime.utcnow()
-        db.session.commit()
+        # Skip updating last_seen for media and static requests to prevent DB concurrency locks!
+        if request.endpoint and (request.endpoint.startswith('media.') or request.endpoint == 'static'):
+            return
+            
+        try:
+            current_user.last_seen = datetime.utcnow()
+            db.session.commit()
+        except Exception as e:
+            # Fallback protection in case other concurrent requests collide
+            db.session.rollback()
     g.locale = str(get_locale())
 
 # routes for rendered pages
