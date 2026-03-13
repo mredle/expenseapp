@@ -1,7 +1,6 @@
-version: '3.8'
 services:
   db:
-    image: mariadb:10.8
+    image: mariadb:11.8
     container_name: expenseapp-db
     command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
     restart: always
