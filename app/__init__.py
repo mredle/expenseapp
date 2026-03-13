@@ -87,6 +87,9 @@ def create_app(config_class=Config):
     
     from app.auth import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
+
+    from app.media import bp as media_bp
+    app.register_blueprint(media_bp, url_prefix='/media')
     
     from app.apis import bp as apis_bp
     app.register_blueprint(apis_bp, url_prefix='/apis')

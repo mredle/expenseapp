@@ -10,6 +10,7 @@ from app import db, images
 from app.main import bp
 from app.main.forms import ImageForm, EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm
 from app.models import Currency, User, Message, Notification, Image, Log, Task, Event, EventUser, EventCurrency, Expense, Settlement, Post
+from app.media.processor import process_and_store_image
 from app.db_logging import log_page_access, log_page_access_denied
 
 @bp.before_app_request
@@ -423,14 +424,24 @@ def edit_profile_picture():
     log_page_access(request, current_user)
     form = ImageForm()
     if form.validate_on_submit():
-        try:
-            image_filename = images.save(request.files['image'])
-            image_path = images.path(image_filename)
-            current_user.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='User', add_to_id=current_user.id)
-            db.session.commit()
-            flash(_('Your changes have been saved.'))
-        except UploadNotAllowed:
+        if 'image' not in request.files or request.files['image'].filename == '':
             flash(_('Invalid or empty image.'))
+            return redirect(url_for('main.user', guid=current_user.guid))
+            
+        file_obj = request.files['image']
+        try:
+            # Pass the stream and filename directly to the new storage processor
+            new_image = process_and_store_image(file_obj.stream, file_obj.filename)
+            
+            # Link the new image object directly to the current user
+            current_user.profile_picture = new_image
+            db.session.commit()
+            
+            flash(_('Your changes have been saved.'))
+        except Exception as e:
+            current_app.logger.error(f"Failed to upload profile picture: {str(e)}")
+            flash(_('An error occurred while uploading your image.'))
+            
         return redirect(url_for('main.user', guid=current_user.guid))
     return render_template('edit_form.html', 
                            title=_('Profile Picture'), 

@@ -11,6 +11,7 @@ from app.event import bp
 from app.main.forms import ImageForm
 from app.event.forms import PostForm, EventForm, EventEditForm, EventUserForm, BankAccountForm, ExpenseAddUserForm, SelectUserForm, ExpenseForm, SettlementForm, SetRateForm
 from app.models import Currency, Event, EventUser, EventCurrency, Expense, Settlement, Post, Image
+from app.media.processor import process_and_store_image
 from app.db_logging import log_page_access, log_page_access_denied
 
 # helper function
@@ -277,16 +278,23 @@ def edit_picture(guid):
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.main', guid=event.guid))
     log_page_access(request, current_user)
+    
     form = ImageForm()
     if form.validate_on_submit():
+        if 'image' not in request.files or request.files['image'].filename == '':
+            flash(_('Invalid or empty image.'))
+            return redirect(url_for('event.main', guid=guid))
+            
+        file_obj = request.files['image']
         try:
-            image_filename = images.save(request.files['image'])
-            image_path = images.path(image_filename)
-            event.admin.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='Event', add_to_id=event.id)
+            new_image = process_and_store_image(file_obj.stream, file_obj.filename)
+            event.image = new_image
             db.session.commit()
             flash(_('Your changes have been saved.'))
-        except UploadNotAllowed:
-            flash(_('Invalid or empty image.'))
+        except Exception as e:
+            current_app.logger.error(f"Failed to upload event picture: {str(e)}")
+            flash(_('An error occurred while uploading your image.'))
+            
         return redirect(url_for('event.main', guid=guid))
     return render_template('edit_form.html', 
                            title=_('Event Picture'), 
@@ -441,14 +449,20 @@ def edit_profile_picture(guid):
     
     form = ImageForm()
     if form.validate_on_submit():
+        if 'image' not in request.files or request.files['image'].filename == '':
+            flash(_('Invalid or empty image.'))
+            return redirect(url_for('event.user', guid=eventuser.guid))
+            
+        file_obj = request.files['image']
         try:
-            image_filename = images.save(request.files['image'])
-            image_path = images.path(image_filename)
-            eventuser.event.admin.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='EventUser', add_to_id=eventuser.id)
+            new_image = process_and_store_image(file_obj.stream, file_obj.filename)
+            eventuser.profile_picture = new_image
             db.session.commit()
             flash(_('Your changes have been saved.'))
-        except UploadNotAllowed:
-            flash(_('Invalid or empty image.'))
+        except Exception as e:
+            current_app.logger.error(f"Failed to upload user profile picture: {str(e)}")
+            flash(_('An error occurred while uploading your image.'))
+            
         return redirect(url_for('event.user', guid=eventuser.guid))
     return render_template('edit_form.html', 
                            title=_('Profile Picture'), 
@@ -539,14 +553,20 @@ def add_receipt(guid):
     
     form = ImageForm()
     if form.validate_on_submit():
+        if 'image' not in request.files or request.files['image'].filename == '':
+            flash(_('Invalid or empty image.'))
+            return redirect(url_for('event.expenses', guid=expense.event.guid))
+            
+        file_obj = request.files['image']
         try:
-            image_filename = images.save(request.files['image'])
-            image_path = images.path(image_filename)
-            event.admin.launch_task('import_image', _('Importing %(filename)s...', filename=image_filename), path=image_path, add_to_class='Expense', add_to_id=expense.id)
+            new_image = process_and_store_image(file_obj.stream, file_obj.filename)
+            expense.image = new_image
             db.session.commit()
             flash(_('Your changes have been saved.'))
-        except UploadNotAllowed:
-            flash(_('Invalid or empty image.'))
+        except Exception as e:
+            current_app.logger.error(f"Failed to upload receipt: {str(e)}")
+            flash(_('An error occurred while uploading your image.'))
+            
         return redirect(url_for('event.expenses', guid=expense.event.guid))
     return render_template('edit_form.html', 
                            title=_('Add Receipt'), 
