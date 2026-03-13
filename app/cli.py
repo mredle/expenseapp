@@ -3,10 +3,12 @@
 import os
 import sys
 import click
+import redis
 import time
 import csv
 import uuid
 from datetime import datetime
+from flask import current_app
 from app import create_app, db
 from app.models import Thumbnail, Image, Currency, Event, EventUser, Post, Expense, Settlement, User, Message, Notification, Task
 from app.tasks import create_thumbnails
@@ -302,3 +304,23 @@ def register(app):
         class_add_missing_guid(Notification)
         class_add_missing_guid(Task)
     
+    @app.cli.command("flush-media-cache")
+    def flush_media_cache():
+        """Clear all cached images from Redis."""
+        # Connect to Redis using your app config
+        r = redis.Redis(
+            host=current_app.config.get('REDIS_HOST', 'localhost'),
+            port=current_app.config.get('REDIS_PORT', 6379),
+            db=current_app.config.get('REDIS_DB', 0),
+            password=current_app.config.get('REDIS_PASSWORD')
+        )
+        
+        # Find all keys matching our media cache pattern
+        keys = r.keys('media_cache:*')
+        
+        if keys:
+            # Delete them all in a single batch operation
+            r.delete(*keys)
+            click.echo(f"Successfully flushed {len(keys)} media files from Redis cache.")
+        else:
+            click.echo("Redis media cache is already empty.")
