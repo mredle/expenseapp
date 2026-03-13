@@ -18,6 +18,12 @@ class Config(object):
     RP_ORIGIN = os.environ.get('RP_ORIGIN') or 'http://'+RP_ID+':5000'
     RP_NAME = os.environ.get('RP_NAME') or 'Expense App'
 
+    # Admin settings
+    ADMIN_NOREPLY_SENDER = os.environ.get('ADMIN_NOREPLY_SENDER') or 'no-reply@expenseapp'
+    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') or 'admin'
+    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or 'pw'
+    ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'admin@expenseapp'
+
     # DB Settings
     DB_TYPE = os.environ.get('DB_TYPE') or 'mysql'
     DB_HOST = os.environ.get('DB_HOST') or 'localhost'
@@ -67,31 +73,30 @@ class Config(object):
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
 
-    # Admin settings
-    ADMIN_NOREPLY_SENDER = os.environ.get('ADMIN_NOREPLY_SENDER') or 'no-reply@expenseapp'
-    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME') or 'admin'
-    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD') or 'pw'
-    ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL') or 'admin@expenseapp'
-
-    # Image configuration
-    IMAGE_DEFAULT_FORMAT = os.environ.get('IMAGE_DEFAULT_FORMAT') or 'JPEG'
-    IMAGE_ROOT_PATH = os.environ.get('IMAGE_ROOT_PATH') or './app'
-    IMAGE_TMP_PATH = os.environ.get('IMAGE_TMP_PATH') or 'static/tmp/'
-    IMAGE_IMG_PATH = os.environ.get('IMAGE_IMG_PATH') or 'static/img/'
-    IMAGE_TIMG_PATH = os.environ.get('IMAGE_TIMG_PATH') or 'static/timg/'
-    UPLOADS_DEFAULT_DEST = os.path.join(IMAGE_ROOT_PATH, IMAGE_TMP_PATH)
-    UPLOADED_IMAGES_DEST = os.path.join(IMAGE_ROOT_PATH, IMAGE_TMP_PATH)
-    THUMBNAIL_SIZES = [32, 64, 128, 256, 512, 1024, 2048]
-
     # Storage Configuration
     STORAGE_DEFAULT_BACKEND = os.environ.get('STORAGE_DEFAULT_BACKEND', 'local')
-    STORAGE_LOCAL_PATH = os.environ.get('STORAGE_LOCAL_PATH', IMAGE_ROOT_PATH)
+    STORAGE_LOCAL_PATH = os.environ.get('STORAGE_LOCAL_PATH', './app')
     
     # S3 Configuration
     S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', 'expenseapp-bucket')
     S3_REGION = os.environ.get('S3_REGION', 'eu-central-1')
     # Use S3_ENDPOINT_URL if you are using MinIO, DigitalOcean Spaces, etc.
     S3_ENDPOINT_URL = os.environ.get('S3_ENDPOINT_URL')
+
+    # Image configuration
+    IMAGE_ROOT_PATH = STORAGE_LOCAL_PATH
+    IMAGE_DEFAULT_FORMAT = os.environ.get('IMAGE_DEFAULT_FORMAT') or 'JPEG'
+    if STORAGE_DEFAULT_BACKEND=='local':
+        IMAGE_TMP_PATH = os.environ.get('IMAGE_TMP_PATH') or 'static/tmp'
+        IMAGE_IMG_PATH = os.environ.get('IMAGE_IMG_PATH') or 'static/img'
+        IMAGE_TIMG_PATH = os.environ.get('IMAGE_TIMG_PATH') or 'static/timg'
+    elif STORAGE_DEFAULT_BACKEND=='s3':
+        IMAGE_TMP_PATH = os.environ.get('IMAGE_TMP_PATH') or 'tmp'
+        IMAGE_IMG_PATH = os.environ.get('IMAGE_IMG_PATH') or 'images'
+        IMAGE_TIMG_PATH = os.environ.get('IMAGE_TIMG_PATH') or 'thumbnails'
+    UPLOADS_DEFAULT_DEST = os.path.join(IMAGE_ROOT_PATH, IMAGE_TMP_PATH)
+    UPLOADED_IMAGES_DEST = os.path.join(IMAGE_ROOT_PATH, IMAGE_TMP_PATH)
+    THUMBNAIL_SIZES = [32, 64, 128, 256, 512, 1024, 2048]
 
     # Redis Settings
     REDIS_HOST = os.environ.get('REDIS_HOST') or 'localhost'

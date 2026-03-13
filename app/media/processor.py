@@ -26,15 +26,21 @@ def process_and_store_image(file_stream, original_filename):
     Processes an uploaded image stream, saves it to the active storage 
     backend, generates thumbnails, and returns the Image DB object.
     """
-    # 1. Compute Hash for Deduplication
-    file_hash = compute_file_hash(file_stream)
+    # --- FIX: Detach the file data from Flask/Werkzeug early! ---
+    # Reading the raw bytes once prevents third-party libraries (like 
+    # PIL or boto3) from accidentally closing the shared stream on us.
+    file_bytes = file_stream.read()
+    # ------------------------------------------------------------
+    
+    # 1. Compute Hash for Deduplication (using a fresh memory stream)
+    file_hash = compute_file_hash(BytesIO(file_bytes))
     
     # 2. Check if this exact file is already in our system
     existing_file = File.query.filter_by(file_hash=file_hash).first()
     if existing_file:
         existing_image = Image.query.filter_by(file_id=existing_file.id).first()
         if existing_image:
-            return existing_image # Skip everything, just return the existing image!
+            return existing_image 
 
     # 3. Gather Metadata
     mime_type, _ = mimetypes.guess_type(original_filename)
@@ -44,7 +50,7 @@ def process_and_store_image(file_stream, original_filename):
     if not ext and mime_type == 'image/jpeg': 
         ext = '.jpg'
     
-    # Generate Storage Key (e.g., images/a1b2c3d4.jpg)
+    # Generate Storage Key securely (with sanitization!)
     storage_backend = current_app.config.get('STORAGE_DEFAULT_BACKEND', 'local')
     unique_id = uuid.uuid4().hex
     raw_key = f"{current_app.config.get('IMAGE_IMG_PATH')}/{unique_id}{ext}" # Or however you map your folders
@@ -60,15 +66,14 @@ def process_and_store_image(file_stream, original_filename):
         mode = 'RGB'
     else:
         try:
-            with ImagePIL.open(file_stream) as pil_img:
+            # Give PIL its own isolated memory stream!
+            with ImagePIL.open(BytesIO(file_bytes)) as pil_img:
                 width, height = pil_img.size
                 img_format = pil_img.format
                 mode = pil_img.mode
         except Exception as e:
             current_app.logger.error(f"Failed to read image {original_filename}: {e}")
             raise ValueError("Invalid image file")
-            
-        file_stream.seek(0) # Reset stream after PIL reads it
     
     # 5. Save the Original File to Storage
     file_obj = File(
@@ -81,10 +86,12 @@ def process_and_store_image(file_stream, original_filename):
     )
     
     provider = file_obj.get_provider()
-    provider.save(storage_key, file_stream, mime_type)
+    
+    # Give boto3 its own isolated memory stream!
+    provider.save(storage_key, BytesIO(file_bytes), mime_type)
     
     db.session.add(file_obj)
-    db.session.flush() # Flush to get file_obj.id generated
+    db.session.flush() 
     
     # 6. Create the Image Record
     image_obj = Image(
@@ -100,12 +107,10 @@ def process_and_store_image(file_stream, original_filename):
     
     # 7. Generate Thumbnails (if not vector)
     if not vector:
-        # Standard sizes you want to generate
         sizes = current_app.config.get('THUMBNAIL_SIZES')
-        file_stream.seek(0)
         
-        with ImagePIL.open(file_stream) as pil_img:
-            # Drop alpha channel for JPEG thumbnails to prevent black backgrounds
+        # Give PIL one last isolated memory stream!
+        with ImagePIL.open(BytesIO(file_bytes)) as pil_img:
             if pil_img.mode == 'RGBA':
                 background = ImagePIL.new('RGB', pil_img.size, (255, 255, 255))
                 background.paste(pil_img, mask=pil_img.split()[3])
@@ -116,12 +121,11 @@ def process_and_store_image(file_stream, original_filename):
             
             for size in sizes:
                 if size >= max_dim:
-                    continue # Don't upscale small images
+                    continue 
                     
                 thumb_img = pil_img.copy()
                 thumb_img.thumbnail((size, size))
                 
-                # Save thumbnail to in-memory bytes stream
                 thumb_stream = BytesIO()
                 thumb_img.save(thumb_stream, format=thumb_format)
                 thumb_stream.seek(0)
