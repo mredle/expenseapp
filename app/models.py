@@ -248,7 +248,7 @@ class Image(Entity, db.Model):
     
     file_id = db.Column(db.Integer, db.ForeignKey('files.id'), index=True)
     file = db.relationship('File')
-    vector = db.Column('vector', db.Boolean, quote=True)
+    is_vector = db.Column(db.Boolean)
     width = db.Column(db.Integer)
     height = db.Column(db.Integer)
     height = db.Column(db.Integer)
@@ -258,10 +258,10 @@ class Image(Entity, db.Model):
     description = db.Column(db.String(256))
     thumbnails = db.relationship('Thumbnail', foreign_keys='Thumbnail.image_id', back_populates='image', lazy='dynamic')
     
-    def __init__(self, file_obj, vector=False, width=0, height=0, format='', mode='', description='', db_created_by='SYSTEM'):
+    def __init__(self, file_obj, is_vector=False, width=0, height=0, format='', mode='', description='', db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.file = file_obj
-        self.vector = vector
+        self.is_vector = is_vector
         self.width = width
         self.height = height
         self.format = format
@@ -297,7 +297,7 @@ class Image(Entity, db.Model):
            
     def get_thumbnail(self, desired_size):
         thumbnails = self.thumbnails.order_by(Thumbnail.size.asc()).all()
-        if not self.vector:
+        if not self.is_vector:
             for thumbnail in thumbnails:
                 if thumbnail.size > desired_size:
                     return thumbnail

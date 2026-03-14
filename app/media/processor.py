@@ -57,11 +57,11 @@ def process_and_store_image(file_stream, original_filename):
     storage_key = re.sub(r'/+', '/', raw_key.replace('\\', '/')).lstrip('/')
     
     # 4. Process Image properties using PIL
-    vector = (mime_type == 'image/svg+xml')
+    is_vector = (mime_type == 'image/svg+xml')
     width, height = 0, 0
     img_format, mode = '', ''
     
-    if vector:
+    if is_vector:
         img_format = 'SVG'
         mode = 'RGB'
     else:
@@ -96,7 +96,7 @@ def process_and_store_image(file_stream, original_filename):
     # 6. Create the Image Record
     image_obj = Image(
         file_obj=file_obj,
-        vector=vector,
+        is_vector=is_vector,
         width=width,
         height=height,
         format=img_format,
@@ -105,8 +105,8 @@ def process_and_store_image(file_stream, original_filename):
     db.session.add(image_obj)
     db.session.flush()
     
-    # 7. Generate Thumbnails (if not vector)
-    if not vector:
+    # 7. Generate Thumbnails (if not is_vector)
+    if not is_vector:
         sizes = current_app.config.get('THUMBNAIL_SIZES')
         
         # Give PIL one last isolated memory stream!

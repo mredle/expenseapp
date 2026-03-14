@@ -141,7 +141,7 @@ def register(app):
                     try:
                         currency.image.update(url, keep_original=True, name=country_code)
                         currency.image.description = 'Static image'
-                        if not currency.image.vector:
+                        if not currency.image.is_vector:
                             create_thumbnails(currency.image)
                         db.session.commit()
                     except:
@@ -151,7 +151,7 @@ def register(app):
                 try:
                     image = Image(url, keep_original=True, name=country_code)
                     image.description = 'Static image'
-                    if not image.vector:
+                    if not image.is_vector:
                         create_thumbnails(image)
                     currency.image = image
                     db.session.commit()
@@ -177,7 +177,7 @@ def register(app):
                     try:
                         existing_image.update(url, keep_original=True, name=name)
                         existing_image.description = 'Static image'
-                        if not existing_image.vector:
+                        if not existing_image.is_vector:
                             create_thumbnails(existing_image)
                         db.session.commit()
                     except:
@@ -187,7 +187,7 @@ def register(app):
                 try:
                     image = Image(url, keep_original=True, name=name)
                     image.description = 'Static image'
-                    if not image.vector:
+                    if not image.is_vector:
                         create_thumbnails(image)
                     db.session.add(image)
                     db.session.commit()

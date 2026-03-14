@@ -45,7 +45,7 @@ def image(guid):
     return render_template('image.html', 
                            title=_('Image'), 
                            image=image,
-                           allow_turning=(not image.vector))
+                           allow_turning=(not image.is_vector))
 
 @bp.route('/rotate_image/<guid>')
 @login_required
