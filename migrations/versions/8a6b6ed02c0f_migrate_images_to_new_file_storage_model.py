@@ -66,8 +66,8 @@ def upgrade():
     # ==========================================================
     bind = op.get_bind()
     
-    img_folder = current_app.config.get('IMAGE_IMG_PATH', 'img')
-    timg_folder = current_app.config.get('IMAGE_TIMG_PATH', 'timg')
+    img_folder = current_app.config.get('IMAGE_IMG_PATH', 'images')
+    timg_folder = current_app.config.get('IMAGE_TIMG_PATH', 'thumbnails')
     root_path = current_app.config.get('IMAGE_ROOT_PATH', os.path.join(current_app.root_path, 'static'))
 
     # 1. Migrate Images

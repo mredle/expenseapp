@@ -41,6 +41,10 @@ def run_migration():
             # Also strip any leading slashes just in case
             if clean_storage_key.startswith('/'):
                 clean_storage_key = clean_storage_key[1:]
+
+            # Migrate from old to new storage prefixes
+            clean_storage_key = clean_storage_key.replace('static/img', 'images')
+            clean_storage_key = clean_storage_key.replace('static/timg', 'thumbnails')
             
             try:
                 # 1. Read from local disk and upload to S3
@@ -48,6 +52,7 @@ def run_migration():
                     s3_provider.save(clean_storage_key, file_data, f_obj.mime_type)
                 
                 # 2. Update the database record to point to S3
+                f_obj.storage_key = clean_storage_key
                 f_obj.storage_backend = 's3'
                 db.session.commit()
                 

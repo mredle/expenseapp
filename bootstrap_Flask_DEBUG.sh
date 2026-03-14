@@ -35,8 +35,10 @@ flask dbinit dummyusers --count 3
 flask dbmaint add-missing-guid
 flask translate compile
 
-echo "Clearing Redis media cache for clean debug session..."
-flask flush_media_cache
+#echo "Performing development factory reset..."
+#flask flush-s3
+#flask flush-db
+#flask flush-media-cache
 
 echo "Starting Flask development server..."
 flask run --host=0.0.0.0
