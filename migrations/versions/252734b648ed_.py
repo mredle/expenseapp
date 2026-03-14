@@ -22,7 +22,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), sa.Identity(always=False), nullable=False),
     sa.Column('name', sa.String(length=64), nullable=True),
     sa.Column('extension', sa.String(length=8), nullable=True),
-    sa.Column('vector', sa.Boolean(), nullable=True),
+    sa.Column('is_vector', sa.Boolean(), nullable=True),
     sa.Column('width', sa.Integer(), nullable=True),
     sa.Column('height', sa.Integer(), nullable=True),
     sa.Column('rotate', sa.Integer(), nullable=True),

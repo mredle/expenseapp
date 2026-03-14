@@ -22,6 +22,8 @@ import uuid
 import mimetypes
 
 from app import db, login
+from app.storage import get_storage_provider
+
 from flask import current_app, url_for
 from flask_login import UserMixin
 
@@ -158,45 +160,74 @@ class Log(db.Model):
             filters.append(cls.user==user)
         number = cls.query.filter(*filters).count()
         return [(description, number)]
+
+class File(Entity, db.Model):
+    __tablename__ = 'files'
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
+    
+    original_filename = db.Column(db.String(256))
+    storage_backend = db.Column(db.String(32), default='local', index=True) # e.g., 'local', 's3'
+    storage_key = db.Column(db.String(512), unique=True, index=True) # e.g., 'images/uuid.jpg'
+    mime_type = db.Column(db.String(128))
+    size = db.Column(db.Integer)
+    file_hash = db.Column(db.String(128), index=True) 
+    hash_algorithm = db.Column(db.String(32), default='sha256') # e.g., 'sha256'
+    
+    def __init__(self, original_filename, storage_backend, storage_key, mime_type, size=0, file_hash=None, hash_algorithm='sha256', db_created_by='SYSTEM'):
+        Entity.__init__(self, db_created_by)
+        self.original_filename = original_filename
+        self.storage_backend = storage_backend
+        self.storage_key = storage_key
+        self.mime_type = mime_type
+        self.size = size
+        self.file_hash = file_hash
+        self.hash_algorithm = hash_algorithm
         
+    def __repr__(self):
+        return f'<File {self.storage_key} on {self.storage_backend} (Hash: {self.file_hash})>'
+
+    @classmethod
+    def get_class_stats(cls, user=None):
+        description = _('Files')
+        number = cls.query.count()
+        return [(description, number)]
+
+    def get_provider(self):
+        """Returns the appropriate StorageProvider instance for this file."""
+        return get_storage_provider(self.storage_backend)
+
+    def get_url(self):
+        """Returns the internal Flask route to securely serve the file."""
+        return url_for('media.serve_file', file_id=self.id)
+        
+    def get_local_path(self):
+        """Returns local path if available, useful for image processing."""
+        return self.get_provider().get_local_path(self.storage_key)
+        
+    def delete_from_storage(self):
+        """Deletes the actual file from the underlying storage backend."""
+        self.get_provider().delete(self.storage_key)
+
 class Thumbnail(Entity, db.Model):
     __tablename__ = 'thumbnails'
     id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
-    name = db.Column(db.String(64), index=True)
-    extension = db.Column(db.String(8))
+    file_id = db.Column(db.Integer, db.ForeignKey('files.id'), index=True)
+    file = db.relationship('File')
     size = db.Column(db.Integer)
     format = db.Column(db.String(8))
     mode = db.Column(db.String(8))
     image_id = db.Column(db.Integer, db.ForeignKey('images.id'), index=True)
     image = db.relationship('Image', foreign_keys=image_id, back_populates='thumbnails')
     
-    def __init__(self, image, size):
-        Entity.__init__(self)
-        
-        # Read image
-        if not image.vector:
-            im = ImagePIL.open(image.get_path())
-            if im.mode=='RGBA':
-                background = ImagePIL.new('RGB', im.size, (255, 255, 255))
-                background.paste(im, mask=im.split()[3]) # 3 is the alpha channel
-                im = background
-                
-            self.name = image.name + '_' + str(size)
-            self.extension = '.' + current_app.config['IMAGE_DEFAULT_FORMAT']
-            self.size = size
-            self.format = current_app.config['IMAGE_DEFAULT_FORMAT']
-            self.mode = im.mode
-            self.image = image
-            
-            # Saving the thumbnail to a new file
-            max_size = max((image.width, image.height))
-            if size < max_size:
-                im.thumbnail((size, size))
-            im.save(self.get_path(), format=current_app.config['IMAGE_DEFAULT_FORMAT'])
+    def __init__(self, image, size, file_obj, db_created_by='SYSTEM'):
+        Entity.__init__(self, db_created_by)
+        self.image = image
+        self.size = size
+        self.file = file_obj
     
     def __repr__(self):
-        return '<Thumbnail {} {}x{}px>'.format(self.name, self.size, self.size)
+        return '<Thumbnail {}x{}px>'.format(self.size, self.size)
         
     @classmethod
     def get_class_stats(cls, user=None):
@@ -204,74 +235,42 @@ class Thumbnail(Entity, db.Model):
         number = cls.query.count()
         return [(description, number)]
     
-    def get_path(self):
-        return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
-                            current_app.config['IMAGE_TIMG_PATH'], 
-                            self.name + (self.extension if self.extension is not None else ''))
-        
     def get_url(self):
-        return os.path.join('/', current_app.config['IMAGE_TIMG_PATH'], 
-                            self.name + (self.extension if self.extension is not None else ''))
+        """Proxy the URL request to the underlying File object."""
+        if self.file:
+            return self.file.get_url()
+        return ''
     
 
 class Image(Entity, db.Model):
     __tablename__ = 'images'
     id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
-    name = db.Column(db.String(64), index=True)
-    extension = db.Column(db.String(8))
-    vector = db.Column(db.Boolean)
+    file_id = db.Column(db.Integer, db.ForeignKey('files.id'), index=True)
+    file = db.relationship('File')
+    is_vector = db.Column(db.Boolean)
     width = db.Column(db.Integer)
     height = db.Column(db.Integer)
     height = db.Column(db.Integer)
     rotate = db.Column(db.Integer)
     format = db.Column(db.String(8))
     mode = db.Column(db.String(8))
-    original_filename = db.Column(db.String(128))
     description = db.Column(db.String(256))
     thumbnails = db.relationship('Thumbnail', foreign_keys='Thumbnail.image_id', back_populates='image', lazy='dynamic')
     
-    def import_properties(self, path):
-        # Read image
-        mime_type = mimetypes.guess_type(path)[0]
-        if mime_type=='image/svg+xml':
-            self.vector = True
-            self.width = 0
-            self.height = 0
-            self.rotate = 0
-            self.format = 'SVG'
-            self.mode = 'RGB'
-        else:
-            im = ImagePIL.open(path)
-            self.vector = False
-            self.width = im.width
-            self.height = im.height
-            self.rotate = 0
-            self.format = im.format
-            self.mode = im.mode
-            
-        original_path, original_filename = os.path.split(path)
-        self.original_filename = original_filename
-        self.extension = '.' + self.format
-        self.description = ''
-    
-    def __init__(self, path, keep_original=False, name=None):
-        Entity.__init__(self)
-        self.import_properties(path)
-        
-        if name is None:
-            self.name = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').replace('=', '')
-        else:
-            self.name = name
-        
-        # Moving the image to a new file
-        if keep_original:
-            shutil.copy(path, self.get_path())
-        else:
-            shutil.move(path, self.get_path())
+    def __init__(self, file_obj, is_vector=False, width=0, height=0, format='', mode='', description='', db_created_by='SYSTEM'):
+        Entity.__init__(self, db_created_by)
+        self.file = file_obj
+        self.is_vector = is_vector
+        self.width = width
+        self.height = height
+        self.format = format
+        self.mode = mode
+        self.rotate = 0
+        self.description = description
     
     def __repr__(self):
-        return '<Image {} {}x{}px>'.format(self.name, self.width, self.height)
+        return '<Image {}x{}px>'.format(self.width, self.height)
         
     @classmethod
     def get_class_stats(cls, user=None):
@@ -289,40 +288,16 @@ class Image(Entity, db.Model):
             return self.width/self.height
         else:
             return 1
-       
-    def update(self, path, keep_original=False, name=None):
-        # Remove old file
-        os.remove(self.get_path())
-        
-        self.import_properties(path)
-        
-        if name is not None:
-            self.name = name
-            
-        # Moving the image to a new file
-        if keep_original:
-            shutil.copy(path, self.get_path())
-        else:
-            shutil.move(path, self.get_path())
-     
-    def get_path(self):
-        if self.name:
-            return os.path.join(current_app.config['IMAGE_ROOT_PATH'], 
-                                current_app.config['IMAGE_IMG_PATH'], 
-                                self.name + (self.extension if self.extension is not None else ''))
-        else:
-            return ''
-        
+
     def get_url(self):
-        if self.name:
-            return os.path.join('/', current_app.config['IMAGE_IMG_PATH'], 
-                                self.name + (self.extension if self.extension is not None else ''))
-        else:
-            return ''
+        """Proxy the URL request to the underlying File object."""
+        if self.file:
+            return self.file.get_url()
+        return ''
            
     def get_thumbnail(self, desired_size):
         thumbnails = self.thumbnails.order_by(Thumbnail.size.asc()).all()
-        if not self.vector:
+        if not self.is_vector:
             for thumbnail in thumbnails:
                 if thumbnail.size > desired_size:
                     return thumbnail

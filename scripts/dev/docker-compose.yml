@@ -1,7 +1,6 @@
-version: '3.8'
 services:
   db:
-    image: mariadb:10.8
+    image: mariadb:latest
     container_name: expenseapp-db-dev
     command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
     restart: on-failure
@@ -61,6 +60,33 @@ services:
        volume:
          nocopy: true
 
+  minio:
+    image: minio/minio
+    container_name: expenseapp-minio-dev
+    restart: on-failure
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpw
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+
+  minio-init:
+    image: minio/mc
+    container_name: expenseapp-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set myminio http://minio:9000 minioadmin minioadminpw;
+      mc mb myminio/expenseapp-bucket;
+      exit 0;
+      "
+
 volumes:
   mariadb-data:
     driver: local
@@ -70,3 +96,7 @@ volumes:
     driver: local
     external: false
     name: expenseapp-redis-data
+  minio-data:
+    driver: local
+    external: false
+    name: expenseapp-minio-data
