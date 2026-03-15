@@ -339,8 +339,6 @@ def register(app):
         click.echo(f"Connecting to S3 to empty bucket '{bucket_name}'...")
         
         try:
-            # We use boto3.resource here because it provides a high-level API 
-            # for batch deleting all objects in a bucket efficiently
             s3 = boto3.resource(
                 's3',
                 region_name=current_app.config.get('S3_REGION'),
@@ -348,12 +346,14 @@ def register(app):
             )
             bucket = s3.Bucket(bucket_name)
             
-            # S3 doesn't technically have folders, just objects with '/' in their keys.
-            # Deleting all objects automatically removes the "folders".
-            deleted = bucket.objects.all().delete()
+            # --- FIX: Delete objects one by one to bypass OCI's MD5 requirement ---
+            count = 0
+            for obj in bucket.objects.all():
+                obj.delete() # Uses the singular DeleteObject API
+                count += 1
+            # ----------------------------------------------------------------------
             
-            if deleted:
-                count = sum(len(batch.get('Deleted', [])) for batch in deleted)
+            if count > 0:
                 click.echo(f"Successfully deleted {count} objects/folders from S3.")
             else:
                 click.echo("Bucket is already empty.")
@@ -368,17 +368,14 @@ def register(app):
         
         click.echo("WARNING: Dropping all database tables...")
         try:
-            # 1. Disable foreign key checks so MariaDB doesn't block dropping tables with relations
-            db.session.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
             
-            # 2. Reflect the current state of the database to find ALL tables
+            # 1. Reflect the current state of the database to find ALL tables
             db.metadata.reflect(bind=db.engine)
             
-            # 3. Drop them all
+            # 2. Drop them all
             db.metadata.drop_all(bind=db.engine)
             
-            # 4. Re-enable foreign key checks for future queries
-            db.session.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
+            # 3. Coomit
             db.session.commit()
             
             click.echo("Successfully wiped the entire database (tables, content, indexes).")
@@ -391,26 +388,42 @@ def register(app):
     def flush_db_force():
         """Completely drop all tables, data, indexes, and constraints."""
         from app import db 
+        from sqlalchemy import inspect
+        from sqlalchemy.sql import text
         
         click.echo("WARNING: Dropping all database tables...")
         try:
-            # 1. Disable foreign key checks so MariaDB allows the drops
-            db.session.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
-            
-            # 2. Bypass SQLAlchemy's sorting by getting raw table names from the DB
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
+            dialect = db.engine.dialect.name
             
-            # 3. Drop each table manually using raw SQL
-            for table in tables:
-                db.session.execute(text(f"DROP TABLE IF EXISTS `{table}`;"))
-                click.echo(f"Dropped table: {table}")
+            # --- MARIADB / MYSQL LOGIC ---
+            if dialect in ('mysql', 'mariadb'):
+                db.session.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
+                for table in tables:
+                    db.session.execute(text(f"DROP TABLE IF EXISTS `{table}`;"))
+                    click.echo(f"Dropped table: {table}")
+                db.session.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
+                
+            # --- ORACLE LOGIC ---
+            elif dialect == 'oracle':
+                for table in tables:
+                    # Oracle uses CASCADE CONSTRAINTS to bypass foreign key locks
+                    db.session.execute(text(f"DROP TABLE {table} CASCADE CONSTRAINTS"))
+                    click.echo(f"Dropped table: {table} (Cascaded)")
+                    
+            # --- FALLBACK LOGIC (SQLite, PostgreSQL, etc) ---
+            else:
+                for table in tables:
+                    db.session.execute(text(f"DROP TABLE {table} CASCADE;"))
+                    click.echo(f"Dropped table: {table}")
             
-            # 4. Re-enable foreign key checks
-            db.session.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
             db.session.commit()
+            click.echo(f"Successfully wiped the entire {dialect.upper()} database.")
             
-            click.echo("Successfully wiped the entire database (tables, content, indexes).")
+        except Exception as e:
+            db.session.rollback()
+            click.echo(f"Error flushing database: {e}")
             
         except Exception as e:
             db.session.rollback()

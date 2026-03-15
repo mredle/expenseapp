@@ -81,6 +81,7 @@ def process_and_store_image(file_stream, original_filename):
         storage_backend=storage_backend,
         storage_key=storage_key,
         mime_type=mime_type,
+        file_size=len(file_bytes),
         file_hash=file_hash,
         hash_algorithm='sha256'
     )
@@ -139,6 +140,7 @@ def process_and_store_image(file_stream, original_filename):
                     storage_backend=storage_backend,
                     storage_key=thumb_key,
                     mime_type=thumb_mime,
+                    file_size=len(thumb_stream.getvalue()),
                     file_hash=compute_file_hash(thumb_stream),
                     hash_algorithm='sha256'
                 )

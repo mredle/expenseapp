@@ -169,17 +169,17 @@ class File(Entity, db.Model):
     storage_backend = db.Column(db.String(32), default='local', index=True) # e.g., 'local', 's3'
     storage_key = db.Column(db.String(512), unique=True, index=True) # e.g., 'images/uuid.jpg'
     mime_type = db.Column(db.String(128))
-    size = db.Column(db.Integer)
+    file_size = db.Column(db.Integer)
     file_hash = db.Column(db.String(128), index=True) 
     hash_algorithm = db.Column(db.String(32), default='sha256') # e.g., 'sha256'
     
-    def __init__(self, original_filename, storage_backend, storage_key, mime_type, size=0, file_hash=None, hash_algorithm='sha256', db_created_by='SYSTEM'):
+    def __init__(self, original_filename, storage_backend, storage_key, mime_type, file_size=0, file_hash=None, hash_algorithm='sha256', db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.original_filename = original_filename
         self.storage_backend = storage_backend
         self.storage_key = storage_key
         self.mime_type = mime_type
-        self.size = size
+        self.file_size = file_size
         self.file_hash = file_hash
         self.hash_algorithm = hash_algorithm
         

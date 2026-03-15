@@ -8,6 +8,7 @@ from flask import current_app
 try:
     import boto3
     from botocore.exceptions import ClientError
+    from botocore.config import Config
 except ImportError:
     boto3 = None
 
@@ -74,10 +75,18 @@ class S3StorageProvider(StorageProvider):
             raise ImportError("The 'boto3' library is required for S3 storage. Run 'pip install boto3'.")
             
         self.bucket_name = bucket_name
+        
+        # --- NEW: Bypass the boto3 1.36.0+ checksum bug for OCI ---
+        oci_compat_config = Config(
+            request_checksum_calculation='WHEN_REQUIRED',
+            response_checksum_validation='WHEN_REQUIRED'
+        )
+        
         self.s3 = boto3.client(
             's3', 
             region_name=region_name, 
-            endpoint_url=endpoint_url
+            endpoint_url=endpoint_url,
+            config=oci_compat_config
         )
 
     def _sanitize_key(self, storage_key):

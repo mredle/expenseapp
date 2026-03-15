@@ -30,7 +30,7 @@ def upgrade():
     sa.Column('storage_backend', sa.String(length=32), nullable=True),
     sa.Column('storage_key', sa.String(length=512), nullable=True),
     sa.Column('mime_type', sa.String(length=128), nullable=True),
-    sa.Column('size', sa.Integer(), nullable=True),
+    sa.Column('file_size', sa.Integer(), nullable=True),
     sa.Column('file_hash', sa.String(length=128), nullable=True),
     sa.Column('hash_algorithm', sa.String(length=32), nullable=True),
     sa.Column('db_created_at', sa.DateTime(), nullable=True),
@@ -45,9 +45,6 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_files_guid'), ['guid'], unique=True)
         batch_op.create_index(batch_op.f('ix_files_storage_backend'), ['storage_backend'], unique=False)
         batch_op.create_index(batch_op.f('ix_files_storage_key'), ['storage_key'], unique=True)
-
-    with op.batch_alter_table('events', schema=None) as batch_op:
-        batch_op.create_foreign_key(None, 'eventusers', ['accountant_id'], ['id'])
 
     with op.batch_alter_table('images', schema=None) as batch_op:
         batch_op.add_column(sa.Column('file_id', sa.Integer(), nullable=True))
@@ -87,13 +84,13 @@ def upgrade():
         # Also ensure orig_name falls back to safe_name down in the execute block
         orig_name = orig_name or f"{safe_name}{ext}"
         
-        size = 0
+        file_size = 0
         file_hash = None
         mime_type = mimetypes.guess_type(orig_name or storage_key)[0] or 'application/octet-stream'
         
         # Read the physical file to calculate size and hash!
         if os.path.isfile(full_path):
-            size = os.path.getsize(full_path)
+            file_size = os.path.getsize(full_path)
             sha256 = hashlib.sha256()
             with open(full_path, 'rb') as f:
                 while chunk := f.read(8192):
@@ -102,9 +99,9 @@ def upgrade():
             
         # Insert File record
         bind.execute(
-            text("""INSERT INTO files (original_filename, storage_backend, storage_key, mime_type, size, file_hash, hash_algorithm) 
-                    VALUES (:orig, 'local', :key, :mime, :size, :hash, 'sha256')"""),
-            {"orig": orig_name or f"{name}{ext}", "key": storage_key, "mime": mime_type, "size": size, "hash": file_hash}
+            text("""INSERT INTO files (original_filename, storage_backend, storage_key, mime_type, file_size, file_hash, hash_algorithm) 
+                    VALUES (:orig, 'local', :key, :mime, :file_size, :file_hash, 'sha256')"""),
+            {"orig": orig_name or f"{name}{ext}", "key": storage_key, "mime": mime_type, "file_size": file_size, "file_hash": file_hash}
         )
         
         # Query the newly generated File ID (DB-agnostic approach)
@@ -132,12 +129,12 @@ def upgrade():
         full_path = os.path.join(root_path, timg_folder, f"{safe_name}{ext}")
         name = safe_name # Ensures the INSERT uses the safe_name
         
-        size = 0
+        file_size = 0
         file_hash = None
         mime_type = mimetypes.guess_type(storage_key)[0] or 'image/jpeg'
         
         if os.path.isfile(full_path):
-            size = os.path.getsize(full_path)
+            file_size = os.path.getsize(full_path)
             sha256 = hashlib.sha256()
             with open(full_path, 'rb') as f:
                 while chunk := f.read(8192):
@@ -145,9 +142,9 @@ def upgrade():
             file_hash = sha256.hexdigest()
             
         bind.execute(
-            text("""INSERT INTO files (original_filename, storage_backend, storage_key, mime_type, size, file_hash, hash_algorithm) 
-                    VALUES (:orig, 'local', :key, :mime, :size, :hash, 'sha256')"""),
-            {"orig": f"{name}{ext}", "key": storage_key, "mime": mime_type, "size": size, "hash": file_hash}
+            text("""INSERT INTO files (original_filename, storage_backend, storage_key, mime_type, file_size, file_hash, hash_algorithm) 
+                    VALUES (:orig, 'local', :key, :mime, :file_size, :file_hash, 'sha256')"""),
+            {"orig": f"{name}{ext}", "key": storage_key, "mime": mime_type, "file_size": file_size, "file_hash": file_hash}
         )
         
         file_id = bind.execute(
@@ -193,9 +190,6 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_images_file_id'))
         batch_op.create_index(batch_op.f('ix_images_name'), ['name'], unique=False)
         batch_op.drop_column('file_id')
-
-    with op.batch_alter_table('events', schema=None) as batch_op:
-        batch_op.drop_constraint(None, type_='foreignkey')
 
     with op.batch_alter_table('files', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_files_storage_key'))

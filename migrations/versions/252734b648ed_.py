@@ -128,7 +128,6 @@ def upgrade():
     sa.Column('db_created_by', sa.String(length=64), nullable=True),
     sa.Column('db_updated_by', sa.String(length=64), nullable=True),
     sa.Column('guid', sqlalchemy_utils.types.uuid.UUIDType(binary=False), nullable=True),
-    #sa.ForeignKeyConstraint(['accountant_id'], ['eventusers.id'], ),
     sa.ForeignKeyConstraint(['admin_id'], ['users.id'], ),
     sa.ForeignKeyConstraint(['base_currency_id'], ['currencies.id'], ),
     sa.ForeignKeyConstraint(['image_id'], ['images.id'], ),
@@ -169,6 +168,9 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_eventusers_event_id'), ['event_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_eventusers_guid'), ['guid'], unique=True)
         batch_op.create_index(batch_op.f('ix_eventusers_username'), ['username'], unique=False)
+
+    with op.batch_alter_table('events', schema=None) as batch_op:
+        batch_op.create_foreign_key(None, 'eventusers', ['accountant_id'], ['id'])
 
     op.create_table('posts',
     sa.Column('id', sa.Integer(), sa.Identity(always=False), nullable=False),
