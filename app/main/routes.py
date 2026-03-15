@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import request, render_template, make_response, flash, redirect, url_for, jsonify, g, current_app
 from flask_login import current_user, login_required
 from flask_uploads import UploadNotAllowed
@@ -21,7 +21,7 @@ def before_request():
             return
             
         try:
-            current_user.last_seen = datetime.utcnow()
+            current_user.last_seen = datetime.now(timezone.utc)
             db.session.commit()
         except Exception as e:
             # Fallback protection in case other concurrent requests collide
@@ -459,7 +459,7 @@ def edit_profile_picture():
 @login_required
 def messages():
     log_page_access(request, current_user)
-    current_user.last_message_read_time = datetime.utcnow()
+    current_user.last_message_read_time = datetime.now(timezone.utc)
     current_user.add_notification('unread_message_count', 0)
     db.session.commit()
     users = [(u.id, u.username) for u in User.query.order_by(User.username.asc()) if u != current_user]
@@ -470,7 +470,8 @@ def messages():
         recipient = User.get_by_guid_or_404(recipient_guid)
         form.recipient_id.data = recipient.id
     if form.validate_on_submit():
-        recipient = User.query.get(form.recipient_id.data)
+        recipient = db.session.get(User, orm.recipient_id.data)
+
         msg = Message(author=current_user, 
                       recipient=recipient,
                       body=form.message.data)

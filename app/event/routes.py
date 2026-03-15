@@ -78,7 +78,7 @@ def select_user(event_guid):
     form = SelectUserForm()
     form.user_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
-        eventuser = EventUser.query.get(form.user_id.data)
+        eventuser = db.session.get(EventUser, form.user_id.data)
         flash(_('You selected user %(username)s as context', username=eventuser.username))
         response = make_response(redirect(url_for('event.main', guid=event.guid)))
         response.set_cookie(key = '{}.eventuser'.format(event_guid), 
@@ -102,7 +102,7 @@ def main(guid):
     if form.validate_on_submit():
         post = Post(body=form.post.data, 
                     author=eventuser, 
-                    timestamp=datetime.utcnow(), 
+                    timestamp=datetime.now(timezone.utc), 
                     event=event)
         db.session.add(post)
         db.session.commit()
@@ -179,8 +179,8 @@ def new():
     form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by(Currency.code.asc())]
     form.currency_id.choices = form.base_currency_id.choices
     if form.validate_on_submit():
-        base_currency = Currency.query.get(form.base_currency_id.data)
-        currencies = [Currency.query.get(currency_id) for currency_id in form.currency_id.data]
+        base_currency = db.session.get(Currency, form.base_currency_id.data)
+        currencies = [db.session.get(Currency, currency_id) for currency_id in form.currency_id.data]
         event = Event(name=form.name.data, 
                       date=form.date.data,
                       admin=current_user,
@@ -210,7 +210,7 @@ def new():
     CHF = Currency.query.filter_by(code='CHF').first()
     form.base_currency_id.data = CHF.id
     form.currency_id.data = [CHF.id]
-    form.date.data = datetime.utcnow()
+    form.date.data = datetime.now(timezone.utc)
     return render_template('edit_form.html', 
                            title=_('New Event'), 
                            form=form)
@@ -236,13 +236,13 @@ def edit(guid):
         event.date = form.date.data
         event.fileshare_link = form.fileshare_link.data
         event.description = form.description.data
-        event.base_currency = Currency.query.get(form.base_currency_id.data)
+        event.base_currency = db.session.get(Currency, form.base_currency_id.data)
         event.exchange_fee = form.exchange_fee.data
-        event.accountant = EventUser.query.get(form.accountant_id.data)
+        event.accountant = db.session.get(EventUser, form.accountant_id.data)
         
         # add new currencies
         for currency_id in form.currency_id.data:
-            currency = Currency.query.get(currency_id)
+            currency = db.session.get(Currency, currency_id)
             if currency not in event.currencies:
                 event.currencies.append(currency)
         
@@ -500,9 +500,9 @@ def expenses(guid):
             return redirect(url_for('main.event', guid=event.guid))
         expense = Expense(user=eventuser, 
                           event=event, 
-                          currency=Currency.query.get(form.currency_id.data), 
+                          currency=db.session.get(Currency, form.currency_id.data),
                           amount=form.amount.data, 
-                          affected_users=[EventUser.query.get(user_id) for user_id in form.affected_users_id.data], 
+                          affected_users=[db.session.get(EventUser, user_id) for user_id in form.affected_users_id.data], 
                           date=form.date.data,
                           description=form.description.data, 
                           db_created_by=(current_user.username if current_user.is_anonymous else 'anonymous'))
@@ -515,7 +515,7 @@ def expenses(guid):
         return redirect(url_for('event.expenses', guid=guid))
     
     form.currency_id.data = event.base_currency.id
-    form.date.data = datetime.utcnow()
+    form.date.data = datetime.now(timezone.utc)
     form.affected_users_id.data = [u.id for u in event.users]
     page = request.args.get('page', 1, type=int)
     
@@ -589,9 +589,9 @@ def edit_expense(guid):
     form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
-        expense.currency = Currency.query.get(form.currency_id.data)
+        expense.currency = db.session.get(Currency, form.currency_id.data),
         expense.amount = form.amount.data
-        expense.affected_users = [EventUser.query.get(user_id) for user_id in form.affected_users_id.data]
+        expense.affected_users = [db.session.get(EventUser, user_id) for user_id in form.affected_users_id.data]
         expense.date = form.date.data
         expense.description = form.description.data
         db.session.commit()
@@ -644,7 +644,7 @@ def expense_users(guid):
             log_page_access_denied(request, current_user)
             return redirect(url_for('event.expenses', guid=expense.event.guid))
     
-        users = [EventUser.query.get(user_id) for user_id in form.user_id.data]
+        users = [db.session.get(EventUser, user_id) for user_id in form.user_id.data]
         expense.add_users(users)
         db.session.commit()
         flash(_('User %(username)s has been added to the expense.', username=' and '.join([u.username for u in users])))
@@ -721,12 +721,12 @@ def settlements(guid):
             flash(_('Your are only allowed to edit an open event!'))
             return redirect(url_for('main.event', guid=event.guid))
         settlement = Settlement(sender=eventuser, 
-                                recipient=EventUser.query.get(form.recipient_id.data), 
+                                recipient=db.session.get(EventUser, form.recipient_id.data), 
                                 event=event, 
-                                currency=Currency.query.get(form.currency_id.data), 
+                                currency=db.session.get(Currency, form.currency_id.data), 
                                 amount=form.amount.data, 
                                 draft=False,
-                                date=datetime.utcnow(),
+                                date=datetime.now(timezone.utc),
                                 description=form.description.data, 
                                 db_created_by=(current_user.username if current_user.is_anonymous else 'anonymous'))
         image = Image.query.filter_by(name='settlement').first()
@@ -770,9 +770,9 @@ def edit_settlement(guid):
     form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
-        settlement.currency = Currency.query.get(form.currency_id.data)
+        settlement.currency = db.session.get(Currency, form.currency_id.data)
         settlement.amount = form.amount.data
-        settlement.recipient = EventUser.query.get(form.recipient_id.data)
+        settlement.recipient = db.session.get(EventUser, form.recipient_id.data)
         settlement.description = form.description.data
         db.session.commit()
         flash(_('Your changes have been saved.'))
