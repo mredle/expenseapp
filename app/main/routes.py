@@ -247,6 +247,11 @@ def revoke_admin(guid):
 @bp.route('/administration')
 @login_required
 def administration():
+    if not current_user.is_admin:
+        flash(_('Only an admin can view the administration page!'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('main.index'))
+    
     log_page_access(request, current_user)
     return render_template('administration.html',
                            title= _('Administration'))

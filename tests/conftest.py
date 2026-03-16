@@ -12,6 +12,8 @@ class TestConfig(Config):
     """Inherits everything from config.py, but overrides specific test flags."""
     TESTING = True
     WTF_CSRF_ENABLED = False # Disable CSRF tokens to make form testing much easier
+    #STORAGE_DEFAULT_BACKEND = 'local'
+    RATELIMIT_ENABLED = False
 
 
 @pytest.fixture
