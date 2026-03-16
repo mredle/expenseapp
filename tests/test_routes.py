@@ -189,6 +189,94 @@ def test_event_creation_and_sub_routes(auth_client):
         res = auth_client.get(route)
         assert res.status_code == 200, f"Failed to load {route}"
 
+def test_deep_event_logic_workflow(auth_client):
+    """
+    Pure Black-Box Integration Test:
+    Simulates a full real-world workflow: Creating an event, adding a friend, 
+    logging a shared expense, and making a settlement payment.
+    """
+    # ---------------------------------------------------------
+    # 1. Create the Event & Get Context Cookie
+    # ---------------------------------------------------------
+    auth_client.post('/event/new', data={
+        'name': 'Weekend Trip',
+        'description': 'Integration Testing',
+        'date': '2026-06-01',
+        'base_currency_id': 1,
+        'currency_id': [1],
+        'exchange_fee': 0.0
+    })
+    
+    # Extract GUID from the redirect
+    event_response = auth_client.get('/event/index')
+    html_content = event_response.data.decode('utf-8')
+    event_guid_match = re.search(r'href="/event/main/([a-f0-9\-]{36})"', html_content)
+    assert event_guid_match is not None, "Could not find the new event on the index!"
+    event_guid = event_guid_match.group(1)
+    
+    # Get Admin User ID & Cookie
+    select_response = auth_client.get(f'/event/select_user/{event_guid}')
+    admin_id_match = re.search(r'<option value="(\d+)">', select_response.data.decode('utf-8'))
+    admin_user_id = admin_id_match.group(1)
+    
+    auth_client.post(f'/event/select_user/{event_guid}', data={'user_id': admin_user_id})
+
+    # ---------------------------------------------------------
+    # 2. Add a New User to the Event
+    # ---------------------------------------------------------
+    user_response = auth_client.post(f'/event/users/{event_guid}', data={
+        'username': 'Alice',
+        'email': 'alice@example.com',
+        'weighting': 1.0,
+        'locale': 'en',
+        'about_me': 'A test friend'
+    }, follow_redirects=True)
+    
+    assert user_response.status_code == 200
+    assert b"Alice" in user_response.data
+    
+    # Extract Alice's dynamic User ID from the DOM so we can use it in the expense
+    alice_id_match = re.search(r'value="(\d+)">Alice</option>', auth_client.get(f'/event/expenses/{event_guid}').data.decode('utf-8'))
+    assert alice_id_match is not None, "Alice was not added to the form choices!"
+    alice_user_id = alice_id_match.group(1)
+
+    # ---------------------------------------------------------
+    # 3. Create a Shared Expense
+    # ---------------------------------------------------------
+    expense_response = auth_client.post(f'/event/expenses/{event_guid}', data={
+        'currency_id': 1,
+        'amount': 150.50,
+        'affected_users_id': [admin_user_id, alice_user_id], # Split between both users
+        'date': '2026-06-02',
+        'description': 'Dinner at the restaurant'
+    }, follow_redirects=True)
+    
+    assert expense_response.status_code == 200
+    assert b"150.5" in expense_response.data
+    assert b"Dinner at the restaurant" in expense_response.data
+
+    # ---------------------------------------------------------
+    # 4. Create a Settlement (Paying Alice back)
+    # ---------------------------------------------------------
+    settlement_response = auth_client.post(f'/event/settlements/{event_guid}', data={
+        'currency_id': 1,
+        'recipient_id': alice_user_id,
+        'amount': 75.25,
+        'description': 'My half of the dinner'
+    }, follow_redirects=True)
+    
+    assert settlement_response.status_code == 200
+    assert b"75.25" in settlement_response.data
+    assert b"My half of the dinner" in settlement_response.data
+
+    # ---------------------------------------------------------
+    # 5. Verify the Balance Calculation Matrix
+    # ---------------------------------------------------------
+    # Loading the balance page triggers all the complex math in event.calculate_balance()
+    balance_response = auth_client.get(f'/event/balance/{event_guid}')
+    assert balance_response.status_code == 200
+
+
 # =========================================================================
 # 5. MEDIA ROUTES
 # =========================================================================
@@ -196,3 +284,43 @@ def test_event_creation_and_sub_routes(auth_client):
 def test_media_404s_for_invalid_file(auth_client):
     response = auth_client.get('/media/999999')
     assert response.status_code == 404
+
+# =========================================================================
+# 6. ADMINISTRATOR ROUTES
+# =========================================================================
+
+def test_admin_routes_accessible_for_admins(admin_client):
+    """Test that an admin can successfully access administration pages."""
+    response = admin_client.get('/administration')
+    assert response.status_code == 200
+    assert b"Administration" in response.data
+
+def test_admin_can_load_new_user_form(admin_client):
+    """Test that an admin can access the user creation page."""
+    response = admin_client.get('/new_user')
+    assert response.status_code == 200
+    assert b"New User" in response.data
+
+def test_normal_user_blocked_from_new_user_form(auth_client):
+    """Test that a standard user is kicked out of the user creation page."""
+    response = auth_client.get('/new_user')
+    # Should redirect (302) them away
+    assert response.status_code == 302
+    assert "/users" in response.location
+
+# =========================================================================
+# 7. ERROR HANDLER
+# =========================================================================
+
+def test_404_error_handler(client):
+    """Test that invalid routes return the custom 404 page."""
+    response = client.get('/this-route-does-not-exist')
+    assert response.status_code == 404
+    assert b"Not Found" in response.data # Change to your actual 404 template text
+
+def test_500_error_handler(admin_client):
+    """Test that the application safely throws the expected exception."""
+    # Because we are using admin_client, we don't need app context blocks here!
+    import pytest
+    with pytest.raises(TypeError):
+        admin_client.get('/create_error?key=TYPE_ERROR')

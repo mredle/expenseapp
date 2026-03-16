@@ -980,12 +980,15 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         return [(description, number)]
     
     def to_dict(self, include_email=False):
+        eventusers = EventUser.query.filter_by(email=self.email).all()
+        post_count = sum([eu.posts.count() for eu in eventusers])
+        
         data = {
             'id': self.id,
             'username': self.username,
             'last_seen': self.last_seen.isoformat() + 'Z',
             'about_me': self.about_me,
-            'post_count': self.posts.count(),
+            'post_count': post_count, # Use the calculated variable here!
             '_links': {
                 'self': url_for('apis.users_api_user', id=self.id),
                 'avatar': self.avatar(128)

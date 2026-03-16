@@ -10,7 +10,7 @@ from app import db, images
 from app.event import bp
 from app.main.forms import ImageForm
 from app.event.forms import PostForm, EventForm, EventEditForm, EventUserForm, BankAccountForm, ExpenseAddUserForm, SelectUserForm, ExpenseForm, SettlementForm, SetRateForm
-from app.models import Currency, Event, EventUser, EventCurrency, Expense, Settlement, Post, Image
+from app.models import Currency, Event, EventUser, EventCurrency, Expense, Settlement, Post, Image, File
 from app.media.processor import process_and_store_image
 from app.db_logging import log_page_access, log_page_access_denied
 
@@ -506,7 +506,10 @@ def expenses(guid):
                           date=form.date.data,
                           description=form.description.data, 
                           db_created_by=(current_user.username if current_user.is_anonymous else 'anonymous'))
-        image = Image.query.filter_by(name='expense').first()
+        
+        with db.session.no_autoflush:
+            image = Image.query.join(File).filter(File.original_filename.like('expense%')).first()
+        
         if image:
             expense.image = image
         db.session.add(expense)
@@ -729,7 +732,10 @@ def settlements(guid):
                                 date=datetime.now(timezone.utc),
                                 description=form.description.data, 
                                 db_created_by=(current_user.username if current_user.is_anonymous else 'anonymous'))
-        image = Image.query.filter_by(name='settlement').first()
+        
+        with db.session.no_autoflush:
+            image = Image.query.join(File).filter(File.original_filename.like('settlement%')).first()
+
         if image:
             settlement.image = image
         db.session.add(settlement)

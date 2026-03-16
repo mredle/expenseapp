@@ -5,7 +5,7 @@ import time
 import json
 import concurrent.futures
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from weasyprint import HTML
 from flask import render_template, current_app
 from flask_babel import _, force_locale
@@ -126,13 +126,17 @@ def export_posts(guid):
         user = User.get_by_guid_or_404(guid)
         _set_task_progress(0)
         data = []
+        
+        eventusers = EventUser.query.filter_by(email=user.email).all()
+        total_posts = sum([eu.posts.count() for eu in eventusers])
+        
         i = 0
-        total_posts = user.posts.count()
-        for post in user.posts.order_by(Post.timestamp.asc()):
-            data.append({'body': post.body,
-                         'timestamp': post.timestamp.isoformat() + 'Z'})
-            i += 1
-            _set_task_progress(100*i//total_posts)
+        for eu in eventusers:
+            for post in eu.posts.order_by(Post.timestamp.asc()):
+                data.append({'body': post.body,
+                             'timestamp': post.timestamp.isoformat() + 'Z'})
+                i += 1
+                _set_task_progress(100*i//max(total_posts, 1))
         
         _set_task_progress(100)
         message = 'Please find attached the archive of your posts that you requested'
@@ -245,7 +249,7 @@ def clean_log(error, keepdays):
     """Clean log entries older than certain days"""
     
     # find log entries
-    keydate = datetime.utcnow() - timedelta(days=keepdays)
+    keydate = datetime.now(timezone.utc) - timedelta(days=keepdays)
     if error:
         Log.query.filter(Log.date<=keydate).delete()
     else:
@@ -257,7 +261,7 @@ def update_rates_yahoo(guid):
     user = User.get_by_guid_or_404(guid)
     _set_task_progress(0)
     
-    end = datetime.utcnow()
+    end = datetime.now(timezone.utc)
     start = end - timedelta(days=5) # Look back 5 days to safely bypass weekends/holidays
     
     # CHF -> USD
