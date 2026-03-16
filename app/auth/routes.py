@@ -75,24 +75,28 @@ def authenticate_password():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = AuthenticatePasswordForm()
+
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
+
         if user is None:
             # Hash a dummy string to equalize response time
             User('dummy', 'dummy@example.com', 'en').check_password('dummy')
             log_login_denied(request.path, form.username.data)
             flash(_('Invalid username or password'))
-            return redirect(url_for('auth.login'))
+            
         elif not user.check_password(form.password.data):
             log_login_denied(request.path, form.username.data)
             flash(_('Invalid username or password'))
-            return redirect(url_for('auth.login'))
-        log_login(request.path, user)
-        login_user(user, remember=form.remember_me.data)
-        next_page = request.args.get('next')
-        if not next_page or not is_safe_url(next_page):
-            next_page = url_for('main.index')
-        return redirect(next_page)
+        
+        else:
+            log_login(request.path, user)
+            login_user(user, remember=form.remember_me.data)
+            next_page = request.args.get('next')
+            if not next_page or not is_safe_url(next_page):
+                next_page = url_for('main.index')
+            return redirect(next_page)
+        
     return render_template('auth/authenticate_password.html', title=_('Sign In'), form=form)
 
 
