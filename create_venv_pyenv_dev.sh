@@ -19,4 +19,4 @@ pyenv exec python -m venv "$HOME/virtualenv/$ENV_NAME"
 source "$HOME/virtualenv/$ENV_NAME/bin/activate"
 
 pip install -U pip
-pip install -r requirements.txt
+pip install -r requirements-dev.txt

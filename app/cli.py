@@ -8,7 +8,7 @@ import boto3
 import time
 import csv
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.sql import text
 from sqlalchemy import inspect
 from flask import current_app
@@ -288,7 +288,7 @@ def register(app):
             
             for instance in instances:
                 instance.db_updated_by = updated_by
-                instance.db_updated_at = datetime.utcnow()
+                instance.db_updated_at = datetime.now(timezone.utc)
                 instance.guid = uuid.uuid4();
                 
             db.session.commit()

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-source create_venv_pyenv.sh
+source create_venv_pyenv_dev.sh
 
 export FLASK_APP="./expenseapp.py"
 export FLASK_DEBUG=1
@@ -31,7 +31,7 @@ done
 
 flask db upgrade
 flask dbinit admin --overwrite
-flask dbinit icons --overwrite --subfolder icons
+flask dbinit icons --no-overwrite --subfolder icons
 flask dbinit currencies --overwrite
 flask dbinit dummyusers --count 3
 flask dbmaint add-missing-guid

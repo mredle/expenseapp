@@ -6,7 +6,7 @@ from sqlalchemy.types import TypeDecorator, CHAR, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy_utils.types.uuid import UUIDType
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 from hashlib import md5
 from time import time
@@ -114,8 +114,8 @@ class Entity():
     guid = db.Column(UUIDType(binary=False), default=uuid.uuid4, index=True, unique=True)
 
     def __init__(self, db_created_by='SYSTEM'):
-        self.db_created_at = datetime.utcnow()
-        self.db_updated_at = datetime.utcnow()
+        self.db_created_at = datetime.now(timezone.utc)
+        self.db_updated_at = datetime.now(timezone.utc)
         self.db_created_by = db_created_by
         self.db_updated_by = db_created_by
     
@@ -562,10 +562,10 @@ class Event(Entity, db.Model):
             balance = balance_item[5]
             if balance<-tolerance:
                 settlements.append(Settlement(sender=user, recipient=self.accountant, event=self, 
-                                              currency=self.base_currency, amount=-balance, draft=True, date=datetime.utcnow()))
+                                              currency=self.base_currency, amount=-balance, draft=True, date=datetime.now(timezone.utc)))
             elif balance>tolerance:
                 settlements.append(Settlement(sender=self.accountant, recipient=user, event=self, 
-                                              currency=self.base_currency, amount=balance, draft=True, date=datetime.utcnow()))
+                                              currency=self.base_currency, amount=balance, draft=True, date=datetime.now(timezone.utc)))
             else:
                 continue
             
@@ -790,7 +790,7 @@ class Message(Entity, db.Model):
     def __init__(self, body, author, recipient, db_created_by='SYSTEM'):
         Entity.__init__(self, db_created_by)
         self.body = body
-        self.timestamp = datetime.utcnow()
+        self.timestamp = datetime.now(timezone.utc)
         self.author = author
         self.recipient = recipient
         
@@ -824,7 +824,7 @@ class Notification(Entity, db.Model):
         Entity.__init__(self, db_created_by)
         self.name = name
         self.user = user
-        self.timestamp = datetime.utcnow().timestamp()
+        self.timestamp = datetime.now(timezone.utc).timestamp()
         self.payload_json = payload_json
         
     def __repr__(self):
@@ -964,11 +964,11 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         self.locale = locale
         self.password_hash = ''
         self.token = ''
-        self.token_expiration = datetime.utcnow() - timedelta(seconds=1)
-        self.last_message_read_time = datetime.utcnow()
+        self.token_expiration = datetime.now(timezone.utc) - timedelta(seconds=1)
+        self.last_message_read_time = datetime.now(timezone.utc)
         self.is_admin = False
         self.about_me = about_me
-        self.last_seen = datetime.utcnow()
+        self.last_seen = datetime.now(timezone.utc)
         
     def __repr__(self):
         return '<User {}>'.format(self.username)
@@ -980,12 +980,15 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         return [(description, number)]
     
     def to_dict(self, include_email=False):
+        eventusers = EventUser.query.filter_by(email=self.email).all()
+        post_count = sum([eu.posts.count() for eu in eventusers])
+        
         data = {
             'id': self.id,
             'username': self.username,
             'last_seen': self.last_seen.isoformat() + 'Z',
             'about_me': self.about_me,
-            'post_count': self.posts.count(),
+            'post_count': post_count, # Use the calculated variable here!
             '_links': {
                 'self': url_for('apis.users_api_user', id=self.id),
                 'avatar': self.avatar(128)
@@ -1064,7 +1067,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
                                     complete=False).first()
     
     def get_token(self, expires_in=3600):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         if self.token and self.token_expiration > now + timedelta(seconds=60):
             return self.token
         self.token = base64.b64encode(os.urandom(24)).decode('utf-8')
@@ -1073,12 +1076,12 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         return self.token
 
     def revoke_token(self):
-        self.token_expiration = datetime.utcnow() - timedelta(seconds=1)
+        self.token_expiration = datetime.now(timezone.utc) - timedelta(seconds=1)
 
     @staticmethod
     def check_token(token):
         user = User.query.filter_by(token=token).first()
-        if user is None or user.token_expiration < datetime.utcnow():
+        if user is None or user.token_expiration < datetime.now(timezone.utc):
             return None
         return user
 

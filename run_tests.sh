@@ -18,27 +18,20 @@ export AWS_ACCESS_KEY_ID="minioadmin"
 export AWS_SECRET_ACCESS_KEY="minioadminpw"
 export S3_ENDPOINT_URL="http://localhost:9000"
 
-while true; do
-    sleep 10
-    flask db upgrade
-    if [[ "$?" == "0" ]]; then
-        break
-    fi
-    echo "Upgrade command failed, retrying in 10 secs..."
-done
+echo "Performing development factory reset..."
+flask flush-s3
+flask flush-db-force
+flask flush-media-cache
 
+echo "Initializing database..."
 flask db upgrade
 flask dbinit admin --overwrite
-flask dbinit icons --no-overwrite --subfolder icons
+#flask dbinit icons --no-overwrite --subfolder icons
 flask dbinit currencies --overwrite
 flask dbinit dummyusers --count 3
 flask dbmaint add-missing-guid
-flask translate compile
 
-#echo "Performing development factory reset..."
-#flask flush-s3
-#flask flush-db
-#flask flush-media-cache
+python -m pytest --cov=app tests/
 
-echo "Starting Flask development server..."
+echo "Starting Flask development server to inspect result..."
 flask run --host=0.0.0.0
