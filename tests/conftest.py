@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import sys
-import os
 
 import pytest
 from app import create_app, db

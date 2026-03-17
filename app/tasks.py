@@ -55,7 +55,7 @@ def consume_time(guid, amount):
                 attachments=[],
                 sync=True)
     
-    except:
+    except Exception:
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
@@ -67,7 +67,7 @@ def type_error(guid):
         test_number = test_str + 5
         _set_task_progress(100)
     
-    except:
+    except Exception:
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
         
@@ -117,7 +117,7 @@ def import_image(guid, path, add_to_class, add_to_id):
         # Create thumbnails
         create_thumbnails(image, update_progress=True)
         
-    except:
+    except Exception:
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
         
@@ -152,7 +152,7 @@ def export_posts(guid):
                               json.dumps({'posts': data}, indent=4))],
                 sync=True)
     
-    except:
+    except Exception:
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
@@ -205,7 +205,7 @@ def request_balance(guid, event_guid, eventuser_guid):
                        attachments=[('balance.pdf', 'application/pdf', pdf)],
                        sync=True)
         _set_task_progress(100)
-    except:
+    except Exception:
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
@@ -241,7 +241,7 @@ def send_reminders(guid, event_guid):
         _set_task_progress(100)
 
     
-    except:
+    except Exception:
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
    
@@ -352,7 +352,7 @@ def update_rates_yahoo(guid):
         
         log_add('INFORMATION', 'scheduler.task', 'get_rates_yahoo', message, user, trace=trace)
         db.session.commit()
-    except:
+    except Exception:
         message = '{} currencies could not be updated from yahoo.'.format(n)
         log_add('WARNING', 'scheduler.task', 'get_rates_yahoo', message, user, trace=(trace if trace is not None else str(sys.exc_info())))
         
@@ -403,7 +403,7 @@ def check_rates_yahoo(guid):
             
             log_add('INFORMATION', 'scheduler.task', 'check_rates_yahoo', message, user, trace=trace)
             db.session.commit()
-        except:
+        except Exception:
             message = 'Currency {} could not be updated from yahoo'.format(c.code)
             log_add('WARNING', 'scheduler.task', 'check_rates_yahoo', message, user, trace=(trace if trace is not None else str(sys.exc_info())))
             
@@ -422,7 +422,7 @@ def housekeeping(guid):
         log_add('INFORMATION', 'scheduler.task', 'housekeeping', message, user)
         _set_task_progress(100)
         
-    except:
+    except Exception:
         _set_task_progress(100)
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
         

@@ -2,7 +2,7 @@
 
 import redis
 from io import BytesIO
-from flask import send_file, abort, current_app, abort
+from flask import send_file, current_app, abort
 from app import db
 from app.media import bp
 from app.models import File

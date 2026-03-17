@@ -10,16 +10,13 @@ from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 from hashlib import md5
 from time import time
-from PIL import Image as ImagePIL
 import jwt
 import json
 import redis
 import rq
 import base64
 import os
-import shutil
 import uuid
-import mimetypes
 
 from app import db, login
 from app.storage import get_storage_provider
@@ -1025,7 +1022,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         try:
             id = jwt.decode(token, current_app.config['SECRET_KEY'],
                             algorithms=['HS256'])['reset_password']
-        except:
+        except Exception:
             return
         return User.query.get(id)
     

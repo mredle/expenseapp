@@ -66,7 +66,7 @@ def register(app):
                 User.query.filter_by(username='admin').first()
             except ConnectionRefusedError:
                 continue
-            except:
+            except Exception:
                 print('Unexpected error:', sys.exc_info()[0])
                 raise
             return
@@ -144,7 +144,7 @@ def register(app):
                         if not currency.image.is_vector:
                             create_thumbnails(currency.image)
                         db.session.commit()
-                    except:
+                    except Exception:
                         print('Adding flag for {} failed'.format(country_code))
                         db.session.rollback()
             else:
@@ -155,7 +155,7 @@ def register(app):
                         create_thumbnails(image)
                     currency.image = image
                     db.session.commit()
-                except:
+                except Exception:
                     print('Adding flag for {} failed'.format(country_code))
                     db.session.rollback()
                     
@@ -180,7 +180,7 @@ def register(app):
                         if not existing_image.is_vector:
                             create_thumbnails(existing_image)
                         db.session.commit()
-                    except:
+                    except Exception:
                         print('Updating icon {} failed'.format(file))
                         db.session.rollback()
             else:
@@ -191,7 +191,7 @@ def register(app):
                         create_thumbnails(image)
                     db.session.add(image)
                     db.session.commit()
-                except:
+                except Exception:
                     print('Adding icon {} failed'.format(file))
                     db.session.rollback()
     
@@ -289,7 +289,7 @@ def register(app):
             for instance in instances:
                 instance.db_updated_by = updated_by
                 instance.db_updated_at = datetime.now(timezone.utc)
-                instance.guid = uuid.uuid4();
+                instance.guid = uuid.uuid4()
                 
             db.session.commit()
         
@@ -388,8 +388,6 @@ def register(app):
     def flush_db_force():
         """Completely drop all tables, data, indexes, and constraints."""
         from app import db 
-        from sqlalchemy import inspect
-        from sqlalchemy.sql import text
         
         click.echo("WARNING: Dropping all database tables...")
         try:

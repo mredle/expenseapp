@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from flask_wtf import FlaskForm
-from flask_babel import _, lazy_gettext as _l
+from flask_babel import lazy_gettext as _l
 from wtforms import StringField, SubmitField, TextAreaField, SelectField, SelectMultipleField, IntegerField, FloatField
 from wtforms.validators import DataRequired, Optional, Length, Email, Regexp
 from wtforms.fields import DateField
