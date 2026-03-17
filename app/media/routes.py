@@ -25,7 +25,7 @@ def get_redis_connection():
 @bp.route('/<int:file_id>')
 # @login_required 
 def serve_file(file_id):
-    file_obj = db.session.get(File, id)
+    file_obj = db.session.get(File, file_id)
     if file_obj is None:
         abort(404)
     
