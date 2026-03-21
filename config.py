@@ -40,7 +40,8 @@ class Config(object):
         if DB_TYPE=='sqlite':
             SQLALCHEMY_DATABASE_URI = 'sqlite:///{}'.format(DB_HOST)
         elif DB_TYPE=='mariadb':
-            SQLALCHEMY_DATABASE_URI = 'mariadb+mariadbconnector://{}:{}@{}:{}/{}'.format(DB_USER, DB_PW, DB_HOST, DB_PORT, DB_NAME)
+            #SQLALCHEMY_DATABASE_URI = 'mariadb+mariadbconnector://{}:{}@{}:{}/{}'.format(DB_USER, DB_PW, DB_HOST, DB_PORT, DB_NAME)
+            SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8mb4'.format(DB_USER, DB_PW, DB_HOST, DB_PORT, DB_NAME)
         elif DB_TYPE=='mysql':
             SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://{}:{}@{}:{}/{}?charset=utf8mb4'.format(DB_USER, DB_PW, DB_HOST, DB_PORT, DB_NAME)
         elif DB_TYPE=='postgres':
@@ -64,7 +65,7 @@ class Config(object):
             }
     
     SQLALCHEMY_POOL_RECYCLE = 480
-
+    
     # Mail settings
     MAIL_SERVER = os.environ.get('MAIL_SERVER') or 'localhost'
     MAIL_PORT = int(os.environ.get('MAIL_PORT') or 1025)

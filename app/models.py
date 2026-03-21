@@ -130,7 +130,7 @@ class Log(db.Model):
     msg_type = db.Column(db.String(128))
     msg = db.Column(db.String(256))
     trace = db.Column(db.String(4096))
-    date = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    date = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     user = db.relationship('User', back_populates='logs')
@@ -401,7 +401,7 @@ class Event(Entity, db.Model):
     id = db.Column(db.Integer, db.Identity(), primary_key=True)
 
     name = db.Column(db.String(64))
-    date = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    date = db.Column(db.DateTime, index=True, default=lambda: datetime.now(timezone.utc))
     admin_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     admin = db.relationship('User', foreign_keys=admin_id, back_populates='events_admin')
     accountant_id = db.Column(db.Integer, db.ForeignKey('eventusers.id'))
@@ -500,8 +500,9 @@ class Event(Entity, db.Model):
             return 1
     
     def convert_currencies_to_base(self):
-        expenses = self.expenses.all()
-        settlements = self.settlements.all()
+        with db.session.no_autoflush:
+            expenses = self.expenses.all()
+            settlements = self.settlements.all()
         
         for x in expenses:
             x.amount = x.eventcurrency.get_amount_in(x.amount, self.base_eventcurrency, self.exchange_fee)
@@ -517,27 +518,32 @@ class Event(Entity, db.Model):
         return ', '.join(currency_codes)
                          
     def get_total_expenses(self):
-        expenses = self.expenses.all()
+        with db.session.no_autoflush:
+            expenses = self.expenses.all()
         expenses_num = [x.get_amount() for x in expenses]
         return sum(expenses_num)
             
     def get_amount_paid(self, user):
-        expenses = self.expenses.filter_by(user=user).all()
+        with db.session.no_autoflush:
+            expenses = self.expenses.filter_by(user=user).all()
         expenses_num = [x.get_amount() for x in expenses]
         return sum(expenses_num)
     
     def get_amount_spent(self, user):
-        expenses = self.expenses.all()
-        expenses_num = [user.weighting*x.get_amount()/sum([u.weighting for u in x.affected_users.all()]) for x in expenses if user in x.affected_users]
+        with db.session.no_autoflush:
+            expenses = self.expenses.all()
+            expenses_num = [user.weighting*x.get_amount()/sum([u.weighting for u in x.affected_users.all()]) for x in expenses if user in x.affected_users]
         return sum(expenses_num)
     
     def get_amount_sent(self, user):
-        settlements = self.settlements.filter_by(sender=user, draft=False).all()
+        with db.session.no_autoflush:
+            settlements = self.settlements.filter_by(sender=user, draft=False).all()
         settlements_num = [x.get_amount() for x in settlements]
         return sum(settlements_num)
     
     def get_amount_received(self, user):
-        settlements = self.settlements.filter_by(recipient=user, draft=False).all()
+        with db.session.no_autoflush:
+            settlements = self.settlements.filter_by(recipient=user, draft=False).all()
         settlements_num = [x.get_amount() for x in settlements]
         return sum(settlements_num)
     
@@ -550,7 +556,8 @@ class Event(Entity, db.Model):
         return (user, amount_paid, amount_spent, amount_sent, amount_received, balance)
     
     def get_compensation_settlements_accountant(self):
-        users = [u for u in self.users if u != self.accountant]
+        with db.session.no_autoflush:
+            users = [u for u in self.users if u != self.accountant]
         settlements = []
         tolerance = 10**-self.base_currency.exponent
         
@@ -747,7 +754,7 @@ class Post(Entity, db.Model):
     id = db.Column(db.Integer, db.Identity(), primary_key=True)
     
     body = db.Column(db.String(256))
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, index=True, default=lambda: datetime.now(timezone.utc))
     user_id = db.Column(db.Integer, db.ForeignKey('eventusers.id'), index=True)
     author = db.relationship('EventUser', back_populates='posts')
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
@@ -945,7 +952,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
 
     is_admin = db.Column(db.Boolean)
     about_me = db.Column(db.String(256))
-    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     @validates('email')
     def convert_lower(self, field, value):
@@ -1064,7 +1071,8 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
                                     complete=False).first()
     
     def get_token(self, expires_in=3600):
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        
         if self.token and self.token_expiration > now + timedelta(seconds=60):
             return self.token
         self.token = base64.b64encode(os.urandom(24)).decode('utf-8')

@@ -6,27 +6,26 @@ from app import create_app, db
 from app.models import User
 from config import Config
 
-class TestConfig(Config):
-    """Inherits everything from config.py, but overrides specific test flags."""
-    TESTING = True
-    WTF_CSRF_ENABLED = False # Disable CSRF tokens to make form testing much easier
-    #STORAGE_DEFAULT_BACKEND = 'local'
-    RATELIMIT_ENABLED = False
+# 1. Add the "params" argument to the fixture
+@pytest.fixture(params=['local', 's3'])
+def app(request):
+    """Creates a fresh Flask app instance for testing, looping through storage backends."""
+    
+    class TestConfig(Config):
+        TESTING = True
+        WTF_CSRF_ENABLED = False
+        RATELIMIT_ENABLED = False
+        # 2. Dynamically set the storage backend to whatever the current loop is on!
+        STORAGE_DEFAULT_BACKEND = request.param 
 
-
-@pytest.fixture
-def app():
-    """Creates a fresh Flask app instance for testing."""
-    # Pass test-specific configuration
     app = create_app(TestConfig)
 
     with app.app_context():
-        # Create all tables before the test runs
-        #db.create_all()
         yield app
-        # Drop all tables after the test finishes to leave a clean slate
-        #db.session.remove()
-        #db.drop_all()
+        
+        # --- TEARDOWN PHASE ---
+        db.session.remove()
+        db.engine.dispose()
 
 @pytest.fixture
 def client(app):
