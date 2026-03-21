@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if [ "$GITHUB_ACTIONS" == "true" ]; then
+    echo "☁️  GitHub Actions detected"
+else
+    echo "💻 Local environment detected"
+fi
+
 # 1. Read the first argument passed to the script, default to 'mysql'
 DB_CHOICE=${1:-mysql}
 
@@ -56,7 +62,7 @@ else
     exit 1
 fi
 
-docker-compose -f scripts/dev/docker-compose.yml up -d
+docker compose -f scripts/dev/docker-compose.yml up -d
 
 # We don't need to wait for Docker if we are using SQLite!
 if [ "$DB_CHOICE" != "sqlite" ]; then

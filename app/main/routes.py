@@ -470,12 +470,13 @@ def messages():
     form = MessageForm()
     form.recipient_id.choices = users
     recipient_guid = request.args.get('recipient')
+
     if recipient_guid:
         recipient = User.get_by_guid_or_404(recipient_guid)
         form.recipient_id.data = recipient.id
     if form.validate_on_submit():
         recipient = db.session.get(User, form.recipient_id.data)
-
+        
         msg = Message(author=current_user, 
                       recipient=recipient,
                       body=form.message.data)
