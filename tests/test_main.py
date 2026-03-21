@@ -50,7 +50,7 @@ def test_messaging_system(auth_client, app):
     with app.app_context():
         recipient = User(username=test_username, email=f'{test_username}@expenseapp.ch', locale='en')
         recipient.set_password('TestPass123')
-        recipient.token = str(uuid.uuid4())
+        recipient.get_token()
 
         db.session.add(recipient)
         db.session.commit()

@@ -64,7 +64,7 @@ def test_login_and_logout(client, app):
     with app.app_context():
         user = User(username=test_username, email=f'{test_username}@expenseapp.ch', locale='en')
         user.set_password('TestPass123')
-        user.token = str(uuid.uuid4()) # Guarantee a unique token!
+        user.get_token()
         db.session.add(user)
         db.session.commit()
         
@@ -110,7 +110,7 @@ def test_password_reset_workflow(mock_send_email, client, app):
     with app.app_context():
         user = User(username=test_username, email=test_email, locale='en')
         user.set_password('OldPassword123')
-        user.token = str(uuid.uuid4()) # Guarantee a unique token!
+        user.get_token()
         db.session.add(user)
         db.session.commit()
         
