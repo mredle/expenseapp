@@ -13,7 +13,7 @@ class Config(object):
     ITEMS_PER_PAGE = 10
     MESSAGES_PER_PAGE = 10
     LANGUAGES = ['de', 'en']
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'this-is-a-very-long-dummy-secret-key-for-testing-purposes'
     RP_ID = os.environ.get('RP_ID') or 'localhost'
     RP_ORIGIN = os.environ.get('RP_ORIGIN') or 'http://'+RP_ID+':5000'
     RP_NAME = os.environ.get('RP_NAME') or 'Expense App'

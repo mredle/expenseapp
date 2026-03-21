@@ -17,6 +17,7 @@ def app(request):
         RATELIMIT_ENABLED = False
         # 2. Dynamically set the storage backend to whatever the current loop is on!
         STORAGE_DEFAULT_BACKEND = request.param 
+        SECRET_KEY = 'this-is-a-very-long-dummy-secret-key-for-testing-purposes'
 
     app = create_app(TestConfig)
 
@@ -42,7 +43,7 @@ def auth_client(client, app):
         # Check if testuser already exists so we don't crash on the 2nd test
         user = User.query.filter_by(username=username).first()
         if not user:
-            user = User(username=username, email='test@expenseapp.local', locale='en')
+            user = User(username=username, email='test@expenseapp.ch', locale='en')
             user.set_password(password)
             user.token = 'user_unique_token_123'
             db.session.add(user)
@@ -66,7 +67,7 @@ def admin_client(client, app):
         # Check if the test admin already exists
         admin_user = User.query.filter_by(username=username).first()
         if not admin_user:
-            admin_user = User(username=username, email='testadmin@expenseapp.local', locale='en')
+            admin_user = User(username=username, email='testadmin@expenseapp.ch', locale='en')
             admin_user.set_password(password)
             admin_user.is_admin = True
             admin_user.token = 'admin_unique_token_123'

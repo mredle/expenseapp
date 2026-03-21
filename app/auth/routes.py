@@ -111,12 +111,14 @@ def register():
         return redirect(url_for('main.index'))
     form = RegistrationForm()
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
+    
     if form.validate_on_submit():
         user = User(username=form.username.data, 
                     email=form.email.data,
                     locale=form.locale.data)
         user.set_random_password()
         user.get_token()
+        
         db.session.add(user)
         log_register(request.path, user)
         send_newuser_notification(user)

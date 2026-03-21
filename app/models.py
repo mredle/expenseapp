@@ -1031,7 +1031,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
                             algorithms=['HS256'])['reset_password']
         except Exception:
             return
-        return User.query.get(id)
+        return db.session.get(User, id)
     
     def avatar(self, size):
         if self.profile_picture:

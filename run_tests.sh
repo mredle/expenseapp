@@ -75,6 +75,11 @@ source create_venv_pyenv_dev.sh
 export FLASK_APP="./expenseapp.py"
 export FLASK_DEBUG=1
 
+export MAIL_SERVER="localhost"
+export MAIL_PORT=1025
+export MAIL_USERNAME="user"
+export MAIL_PASSWORD="pw"
+
 export S3_BUCKET_NAME="expenseapp-bucket"
 export S3_REGION="eu-central-1"
 export AWS_ACCESS_KEY_ID="minioadmin"
