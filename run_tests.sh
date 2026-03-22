@@ -1,9 +1,10 @@
 #!/bin/bash
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
-    echo "☁️  GitHub Actions detected"
+    echo "☁️  GitHub Actions detected: Bypassing pyenv and using system Python!"
 else
-    echo "💻 Local environment detected"
+    echo "💻 Local environment detected: Setting up pyenv..."
+    source create_venv_pyenv_dev.sh
 fi
 
 # 1. Read the first argument passed to the script, default to 'mysql'
@@ -13,6 +14,9 @@ DB_CHOICE=${1:-mysql}
 echo "========================================"
 echo " STARTING TEST SUITE FOR: $DB_CHOICE"
 echo "========================================"
+
+docker compose -f scripts/dev/docker-compose.yml up -d adminer mailhog redis minio minio-init
+docker compose -f scripts/dev/docker-compose.yml up -d $DB_CHOICE
 
 if [ "$DB_CHOICE" == "sqlite" ]; then
     # SQLite uses a fast, in-memory database for testing
@@ -29,7 +33,7 @@ elif [ "$DB_CHOICE" == "mariadb" ]; then
     export DB_USER="user"
     export DB_PW="pw"
     export DB_NAME="expenseapp"
-    
+
 elif [ "$DB_CHOICE" == "mysql" ]; then
     # Connects to MySQL on port 3307!
     export DB_TYPE="mysql"
@@ -62,8 +66,6 @@ else
     exit 1
 fi
 
-docker compose -f scripts/dev/docker-compose.yml up -d
-
 # We don't need to wait for Docker if we are using SQLite!
 if [ "$DB_CHOICE" != "sqlite" ]; then
     echo "⏳ Waiting for $DB_CHOICE to become healthy..."
@@ -76,7 +78,6 @@ if [ "$DB_CHOICE" != "sqlite" ]; then
     
     echo -e "\n✅ dev-$DB_CHOICE is fully booted and ready!"
 fi
-source create_venv_pyenv_dev.sh
 
 export FLASK_APP="./expenseapp.py"
 export FLASK_DEBUG=1
