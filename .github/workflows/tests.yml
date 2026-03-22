@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         # This will spin up 3 parallel servers and test all 3 DBs simultaneously!
-        database: [sqlite, mysql, postgres] 
+        database: [sqlite, mysql, postgres, oracle-adb] 
 
     steps:
     - name: Checkout Code
@@ -24,12 +24,7 @@ jobs:
       with:
         python-version: '3.14'
         cache: 'pip'
-    - name: Install System Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y make build-essential
-        curl https://pyenv.run | bash
-        
+    
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
