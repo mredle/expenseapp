@@ -34,13 +34,15 @@ def client(app):
     return app.test_client()
 
 @pytest.fixture
-def auth_client(client, app):
+def auth_client(app): 
     """A test client that is already logged in as a test user."""
+    # 2. ADD this line so it creates its own browser!
+    client = app.test_client() 
+    
     username = 'testuser'
     password = 'testpassword'
 
     with app.app_context():
-        # Check if testuser already exists so we don't crash on the 2nd test
         user = User.query.filter_by(username=username).first()
         if not user:
             user = User(username=username, email='test@expenseapp.ch', locale='en')
@@ -49,7 +51,6 @@ def auth_client(client, app):
             db.session.add(user)
             db.session.commit()
 
-    # Simulate logging in using the correct endpoint and form fields!
     client.post('/auth/authenticate_password', data={
         'username': username,
         'password': password
@@ -58,13 +59,15 @@ def auth_client(client, app):
     return client
 
 @pytest.fixture
-def admin_client(client, app):
+def admin_client(app):
     """A test client that is logged in as an administrator."""
+    # 4. ADD this line so it creates its own browser!
+    client = app.test_client()
+    
     username = 'testadmin'
     password = 'adminpassword'
 
     with app.app_context():
-        # Check if the test admin already exists
         admin_user = User.query.filter_by(username=username).first()
         if not admin_user:
             admin_user = User(username=username, email='testadmin@expenseapp.ch', locale='en')
@@ -74,7 +77,6 @@ def admin_client(client, app):
             db.session.add(admin_user)
             db.session.commit()
 
-    # Simulate logging in as the admin
     client.post('/auth/authenticate_password', data={
         'username': username,
         'password': password

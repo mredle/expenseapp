@@ -157,6 +157,7 @@ def user(guid):
                            user=user)
 
 @bp.route('/new_user', methods=['GET', 'POST'])
+@login_required
 def new_user():
     if not current_user.is_admin:
         flash(_('Only an admin can create new users!'))
@@ -180,6 +181,7 @@ def new_user():
     return render_template('edit_form.html', title=_('New User'), form=form)
 
 @bp.route('/edit_user/<guid>', methods=['GET', 'POST'])
+@login_required
 def edit_user(guid):
     if not current_user.is_admin:
         flash(_('Only an admin can edit users!'))
