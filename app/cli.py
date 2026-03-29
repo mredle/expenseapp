@@ -124,76 +124,136 @@ def register(app):
             else:
                 db.session.add(currency)
                 db.session.commit()
+
+        click.echo("Successfully updated the currencies.")
     
     @dbinit.command()
     @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing flags.')
     def currency_flags(overwrite):
         """Initialize currency flags."""
+        from app.storage import get_storage_provider
+        from app.models import File # Make sure File is imported!
         
-        # Update flags
+        storage = get_storage_provider(current_app.config['STORAGE_DEFAULT_BACKEND'])
+        
         flag_path = os.path.join(app.config['IMAGE_ROOT_PATH'], 'resources', 'flags')
         existing_currencies = Currency.query.all()
+        
         for currency in existing_currencies:
             country_code = currency.code[0:2].upper()
-            url = os.path.join(flag_path, country_code + '.svg')
-            if currency.image:
+            filename = f"{country_code}.svg"
+            filepath = os.path.join(flag_path, filename)
+            
+            if not os.path.exists(filepath):
+                continue
+                
+            if currency.image and currency.image.file:
                 if overwrite:
                     try:
-                        currency.image.update(url, keep_original=True, name=country_code)
+                        storage.save(currency.image.file.storage_key, filepath, mime_type='image/svg+xml')
+                        currency.image.file.file_size = os.path.getsize(filepath)
                         currency.image.description = 'Static image'
+                        
                         if not currency.image.is_vector:
                             create_thumbnails(currency.image)
                         db.session.commit()
-                    except Exception:
-                        print('Adding flag for {} failed'.format(country_code))
+                    except Exception as e:
+                        print(f'Updating flag for {country_code} failed: {e}')
                         db.session.rollback()
             else:
                 try:
-                    image = Image(url, keep_original=True, name=country_code)
-                    image.description = 'Static image'
+                    storage_key = f"flags/{uuid.uuid4().hex}_{filename}"
+                    storage.save(storage_key, filepath, mime_type='image/svg+xml')
+                    
+                    # 1. Create the File record first
+                    new_file = File(
+                        original_filename=filename,
+                        storage_backend=current_app.config['STORAGE_DEFAULT_BACKEND'],
+                        storage_key=storage_key,
+                        mime_type='image/svg+xml',
+                        file_size=os.path.getsize(filepath)
+                    )
+                    
+                    # 2. Pass the File object to the Image record
+                    # SVGs are vectors, so we can set is_vector=True
+                    image = Image(file_obj=new_file, is_vector=True, description='Static image')
+                    
+                    currency.image = image
+                    db.session.add(new_file)
+                    db.session.add(image)
+                    db.session.commit()
+                    
                     if not image.is_vector:
                         create_thumbnails(image)
-                    currency.image = image
-                    db.session.commit()
-                except Exception:
-                    print('Adding flag for {} failed'.format(country_code))
+                except Exception as e:
+                    print(f'Adding flag for {country_code} failed: {e}')
                     db.session.rollback()
+
+        click.echo("Successfully updated the flags.")
                     
     @dbinit.command()
     @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing flags.')
     @click.option('--subfolder', default='', help='Subfolder for icons')
     def icons(overwrite, subfolder):
         """Initialize icons."""
+        from app.storage import get_storage_provider
+        from app.models import File # Make sure File is imported!
         
-        # Update icons
+        storage = get_storage_provider(current_app.config['STORAGE_DEFAULT_BACKEND'])
         icon_path = os.path.join(app.config['IMAGE_ROOT_PATH'], 'resources', subfolder)
+        
+        if not os.path.exists(icon_path):
+            print(f"Icon path does not exist: {icon_path}")
+            return
+            
         files = [f for f in os.listdir(icon_path) if f.endswith('.svg')]
         for file in files:
-            url = os.path.join(icon_path, file)
-            name = os.path.splitext(file)[0]
-            existing_image = Image.query.filter_by(name=name).first()
-            if existing_image:
+            filepath = os.path.join(icon_path, file)
+            
+            # Use a JOIN to filter by the related File's original_filename
+            existing_image = Image.query.join(File).filter(File.original_filename == file).first()
+            
+            if existing_image and existing_image.file:
                 if overwrite:
                     try:
-                        existing_image.update(url, keep_original=True, name=name)
+                        storage.save(existing_image.file.storage_key, filepath, mime_type='image/svg+xml')
+                        existing_image.file.file_size = os.path.getsize(filepath)
                         existing_image.description = 'Static image'
+                        
                         if not existing_image.is_vector:
                             create_thumbnails(existing_image)
                         db.session.commit()
-                    except Exception:
-                        print('Updating icon {} failed'.format(file))
+                    except Exception as e:
+                        print(f'Updating icon {file} failed: {e}')
                         db.session.rollback()
             else:
                 try:
-                    image = Image(url, keep_original=True, name=name)
-                    image.description = 'Static image'
-                    if not image.is_vector:
-                        create_thumbnails(image)
+                    storage_key = f"icons/{uuid.uuid4().hex}_{file}"
+                    storage.save(storage_key, filepath, mime_type='image/svg+xml')
+                    
+                    # 1. Create the File record
+                    new_file = File(
+                        original_filename=file,
+                        storage_backend=current_app.config['STORAGE_DEFAULT_BACKEND'],
+                        storage_key=storage_key,
+                        mime_type='image/svg+xml',
+                        file_size=os.path.getsize(filepath)
+                    )
+                    
+                    # 2. Pass the File object to the Image record
+                    image = Image(file_obj=new_file, is_vector=True, description='Static image')
+                    
+                    db.session.add(new_file)
                     db.session.add(image)
                     db.session.commit()
-                except Exception:
-                    print('Adding icon {} failed'.format(file))
+                    
+                    if not image.is_vector:
+                        create_thumbnails(image)
+                except Exception as e:
+                    print(f'Adding icon {file} failed: {e}')
                     db.session.rollback()
+        
+        click.echo("Successfully updated the icons.")
     
     @dbinit.command()
     @click.option('--overwrite/--no-overwrite', default=False, help='Overwrite existing admin.')
@@ -248,6 +308,8 @@ def register(app):
             admin_user.get_token()
             db.session.add(admin_user)
             db.session.commit()
+
+        click.echo("Successfully added the admin user.")
         
     @dbinit.command()
     @click.option('--count', default=3, help='Number of dummy users to create.')
@@ -270,6 +332,8 @@ def register(app):
                 user.get_token()
                 db.session.add(user)
         db.session.commit()
+
+        click.echo("Successfully added {} dummy users.".format(count))
                 
                 
     @app.cli.group()
@@ -306,6 +370,8 @@ def register(app):
         class_add_missing_guid(Message) 
         class_add_missing_guid(Notification)
         class_add_missing_guid(Task)
+
+        click.echo("Successfully addes missing guids.")
     
     @app.cli.command("flush-media-cache")
     def flush_media_cache():
@@ -327,6 +393,22 @@ def register(app):
             click.echo(f"Successfully flushed {len(keys)} media files from Redis cache.")
         else:
             click.echo("Redis media cache is already empty.")
+    
+    @app.cli.command("flush-jobs")
+    def flush_jobs():
+        """Clear all scheduled jobs from Redis."""
+        # Connect to Redis using your app config
+        r = redis.Redis(
+            host=current_app.config.get('REDIS_HOST', 'localhost'),
+            port=current_app.config.get('REDIS_PORT', 6379),
+            db=current_app.config.get('REDIS_DB', 0),
+            password=current_app.config.get('REDIS_PASSWORD')
+        )
+        
+        # Delete the specific keys used by APScheduler
+        r.delete('housekeeping_jobs', 'housekeeping_jobs_running')
+        
+        click.echo("Successfully flushed orphaned scheduled jobs from Redis.")
 
     @app.cli.command("flush-s3")
     def flush_s3():

@@ -649,7 +649,9 @@ class Expense(Entity, db.Model):
             return ''
     
     def can_edit(self, user, eventuser):
-        return (user==eventuser.event.admin) if user.is_authenticated else (eventuser==self.user and not eventuser.event.closed)
+        is_admin = user.is_authenticated and user == self.event.admin
+        is_owner = eventuser is not None and eventuser == self.user and not self.event.closed
+        return is_admin or is_owner
         
     def has_user(self, user):
         return (user in self.affected_users)
@@ -734,7 +736,9 @@ class Settlement(Entity, db.Model):
             return ''
     
     def can_edit(self, user, eventuser):
-        return (user==eventuser.event.admin) if user.is_authenticated else (eventuser==self.recipient and not eventuser.event.closed)
+        is_admin = user.is_authenticated and user == self.event.admin
+        is_recipient = eventuser is not None and eventuser == self.recipient and not self.event.closed
+        return is_admin or is_recipient
         
     def get_amount(self):
         return self.eventcurrency.get_amount_in(self.amount, self.event.base_eventcurrency, self.event.exchange_fee)
@@ -967,7 +971,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         self.email = email
         self.locale = locale
         self.password_hash = ''
-        self.token = ''
+        self.token = uuid.uuid4().hex
         self.token_expiration = datetime.now(timezone.utc) - timedelta(seconds=1)
         self.last_message_read_time = datetime.now(timezone.utc)
         self.is_admin = False
@@ -1071,11 +1075,18 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
                                     complete=False).first()
     
     def get_token(self, expires_in=3600):
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(timezone.utc)
         
-        if self.token and self.token_expiration > now + timedelta(seconds=60):
+        # Safety net: If the database loaded this datetime without timezone info,
+        # forcefully attach the UTC timezone to it so we can compare it safely.
+        if self.token_expiration and self.token_expiration.tzinfo is None:
+            self.token_expiration = self.token_expiration.replace(tzinfo=timezone.utc)
+            
+        if self.token and self.token_expiration and self.token_expiration > now + timedelta(seconds=60):
             return self.token
-        self.token = base64.b64encode(os.urandom(24)).decode('utf-8')
+            
+        # We can also use uuid here just like __init__ to guarantee uniqueness!
+        self.token = uuid.uuid4().hex 
         self.token_expiration = now + timedelta(seconds=expires_in)
         db.session.add(self)
         return self.token
