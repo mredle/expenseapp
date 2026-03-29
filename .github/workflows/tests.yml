@@ -1,0 +1,41 @@
+name: ExpenseApp Test Matrix
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # This will spin up 3 parallel servers and test all 3 DBs simultaneously!
+        database: [sqlite, mysql, mariadb, postgres, oracle-adb] 
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.14
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.14'
+        cache: 'pip'
+    
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        # Install testing extras
+        pip install pytest pytest-cov
+
+    - name: Run Test Script
+      env:
+        # Mock AWS keys for the S3 tests
+        AWS_ACCESS_KEY_ID: testing_key
+        AWS_SECRET_ACCESS_KEY: testing_secret
+      # Pass the matrix database choice directly into your bash script!
+      run: bash ./run_tests.sh ${{ matrix.database }}

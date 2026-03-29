@@ -1,19 +1,12 @@
 #!/bin/bash
 
-if [ "$GITHUB_ACTIONS" == "true" ]; then
-    echo "☁️  GitHub Actions detected: Bypassing pyenv and using system Python!"
-else
-    echo "💻 Local environment detected: Setting up pyenv..."
-    source create_venv_pyenv_dev.sh
-fi
-
 # 1. Read the first argument passed to the script, default to 'mysql'
 DB_CHOICE=${1:-mysql}
 
 # 2. Set the Infrastructure Variables based on the choice
-echo "========================================"
-echo " STARTING TEST SUITE FOR: $DB_CHOICE"
-echo "========================================"
+echo "==========================================="
+echo " STARTING LOAD TEST SUITE FOR: $DB_CHOICE"
+echo "==========================================="
 
 docker compose -f scripts/dev/docker-compose.yml up -d adminer mailhog redis minio minio-init
 docker compose -f scripts/dev/docker-compose.yml up -d $DB_CHOICE
@@ -93,41 +86,9 @@ export AWS_ACCESS_KEY_ID="minioadmin"
 export AWS_SECRET_ACCESS_KEY="minioadminpw"
 export S3_ENDPOINT_URL="http://localhost:9000"
 
-# 3. Wipe and initialize the chosen database
-echo "🧹 Wiping $DB_CHOICE database..."
-if [ "$DB_CHOICE" == "sqlite" ]; then
-    # SQLite is physical file, we already wiped it via 'rm -f' above!
-    echo "SQLite test file reset."
-    rm -f "instance/$DB_HOST"
-else
-    # Only run the complex CASCADE drop logic for real databases
-    flask flush-db-force
-fi
+# 3. Seed the database
+python scripts/loadtesting/seed_db.py
 
-flask flush-s3
-flask flush-media-cache
-flask flush-jobs
+# 4. Run the loadtest
+locust --host=http://127.0.0.1:5000
 
-echo "🏗️ Initializing $DB_CHOICE schema..."
-if [ "$DB_CHOICE" == "sqlite" ]; then
-    # Bypassing Alembic migrations for SQLite!
-    # This Python 1-liner instantly builds the perfect schema directly from models.py
-    python -c "from app import create_app, db; app=create_app(); app.app_context().push(); db.create_all()"
-else
-    # Run chronological Alembic migrations for all other heavy databases
-    flask db upgrade
-fi
-
-flask dbinit admin --overwrite
-#flask dbinit icons --no-overwrite --subfolder icons
-flask dbinit currencies --overwrite
-flask dbinit dummyusers --count 3
-flask dbmaint add-missing-guid
-
-# 4. Run Pytest!
-echo "Running Pytest..."
-python -m pytest --cov=app tests/
-
-# 5. Debug
-#echo "Starting Flask development server to inspect result..."
-#flask run --host=0.0.0.0

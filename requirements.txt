@@ -9,7 +9,6 @@ pymysql
 mysqlclient
 psycopg2-binary
 oracledb
-mariadb
 Werkzeug
 MarkupSafe
 email-validator

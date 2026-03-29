@@ -3,10 +3,9 @@
 from datetime import datetime, timezone
 from flask import request, render_template, make_response, flash, redirect, url_for, jsonify, g, current_app
 from flask_login import current_user, login_required
-from flask_uploads import UploadNotAllowed
 from flask_babel import get_locale, _
 
-from app import db, images
+from app import db
 from app.main import bp
 from app.main.forms import ImageForm, EditProfileForm, MessageForm, CurrencyForm, NewUserForm, EditUserForm
 from app.models import Currency, User, Message, Notification, Image, Log, Task, Event, EventUser, EventCurrency, Expense, Settlement, Post
@@ -23,7 +22,7 @@ def before_request():
         try:
             current_user.last_seen = datetime.now(timezone.utc)
             db.session.commit()
-        except Exception as e:
+        except Exception:
             # Fallback protection in case other concurrent requests collide
             db.session.rollback()
     g.locale = str(get_locale())
@@ -158,6 +157,7 @@ def user(guid):
                            user=user)
 
 @bp.route('/new_user', methods=['GET', 'POST'])
+@login_required
 def new_user():
     if not current_user.is_admin:
         flash(_('Only an admin can create new users!'))
@@ -181,6 +181,7 @@ def new_user():
     return render_template('edit_form.html', title=_('New User'), form=form)
 
 @bp.route('/edit_user/<guid>', methods=['GET', 'POST'])
+@login_required
 def edit_user(guid):
     if not current_user.is_admin:
         flash(_('Only an admin can edit users!'))
@@ -471,12 +472,13 @@ def messages():
     form = MessageForm()
     form.recipient_id.choices = users
     recipient_guid = request.args.get('recipient')
+
     if recipient_guid:
         recipient = User.get_by_guid_or_404(recipient_guid)
         form.recipient_id.data = recipient.id
     if form.validate_on_submit():
-        recipient = db.session.get(User, orm.recipient_id.data)
-
+        recipient = db.session.get(User, form.recipient_id.data)
+        
         msg = Message(author=current_user, 
                       recipient=recipient,
                       body=form.message.data)

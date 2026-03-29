@@ -3,10 +3,9 @@
 from datetime import datetime, timezone
 from flask import request, render_template, make_response, flash, redirect, url_for, current_app
 from flask_login import current_user, login_required
-from flask_uploads import UploadNotAllowed
 from flask_babel import _
 
-from app import db, images
+from app import db
 from app.event import bp
 from app.main.forms import ImageForm
 from app.event.forms import PostForm, EventForm, EventEditForm, EventUserForm, BankAccountForm, ExpenseAddUserForm, SelectUserForm, ExpenseForm, SettlementForm, SetRateForm

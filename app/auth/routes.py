@@ -1,5 +1,4 @@
 # coding=utf-8
-import json
 import uuid
 
 from flask import request, render_template, make_response, flash, redirect, url_for, current_app
@@ -15,7 +14,6 @@ from app.auth.email import send_validate_email, send_newuser_notification
 from app.models import Challenge, User, Credential
 from app.db_logging import log_login, log_login_denied, log_logout, log_register, log_reset_password_request, log_reset_password
 
-from flask import Flask, render_template, request
 from webauthn import (
     generate_registration_options,
     verify_registration_response,
@@ -113,12 +111,14 @@ def register():
         return redirect(url_for('main.index'))
     form = RegistrationForm()
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
+    
     if form.validate_on_submit():
         user = User(username=form.username.data, 
                     email=form.email.data,
                     locale=form.locale.data)
         user.set_random_password()
         user.get_token()
+        
         db.session.add(user)
         log_register(request.path, user)
         send_newuser_notification(user)

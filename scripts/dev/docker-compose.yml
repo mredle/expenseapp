@@ -1,18 +1,22 @@
 services:
-  db:
-    image: mariadb:latest
-    container_name: expenseapp-db-dev
+  
+  # 1. MariaDB (Mapped to default 3306)
+  mariadb:
+    image: mariadb:12.2
+    container_name: dev-mariadb
     command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
     restart: on-failure
     healthcheck:
-      test: ["CMD-SHELL", 'mysqladmin ping --silent']
-      interval: 30s
-      timeout: 10s
-      retries: 4
+      # MariaDB explicitly provides a custom script to prevent "access denied" log spam
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     ports:
       - "3306:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: pw
+      MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_USER: user
       MYSQL_PASSWORD: pw
       MYSQL_DATABASE: expenseapp
@@ -23,21 +27,96 @@ services:
        volume:
          nocopy: true
 
+  # 2. MySQL 8 (Mapped to 3307 to avoid collision)
+  mysql:
+    image: mysql:9.6
+    container_name: dev-mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: expenseapp
+      MYSQL_USER: user
+      MYSQL_PASSWORD: pw
+    ports:
+      - "3307:3306" 
+    volumes:
+     - type: volume
+       source: mysql-data
+       target: /var/lib/mysql
+       volume:
+         nocopy: true
+         
+  # 3. PostgreSQL (Mapped to default 5432)
+  postgres:
+    image: postgres:18.3-alpine
+    container_name: dev-postgres
+    restart: unless-stopped
+    healthcheck:
+      # Uses the native Postgres ready-check utility
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pw
+      POSTGRES_DB: expenseapp
+    ports:
+      - "5432:5432"
+    volumes:
+     - type: volume
+       source: postgres-data
+       target: /var/lib/postgresql/data
+       volume:
+         nocopy: true
+
+  # 4. Oracle Autonomous Database Free (Mapped to default 1521)
+  oracle-adb:
+    image: container-registry.oracle.com/database/adb-free:latest
+    container_name: dev-oracle-adb
+    restart: unless-stopped
+    environment:
+      ADMIN_PASSWORD: "SuperSecretPw123!"
+      WALLET_PASSWORD: "SuperSecretPw123!"
+      WORKLOAD_TYPE: ATP
+      DATABASE_NAME: expenseapp
+      APP_USER: user
+      APP_PASSWORD: "App#Password123"
+    ports:
+      - "1521:1521" # Standard TCP
+      - "1522:1522" # mTLS / Wallet connections
+      - "8443:8443" # Oracle REST Data Services (ORDS)
+    volumes:
+     - type: volume
+       source: oracle-adb-data
+       target: /opt/oracle/oradata
+       volume:
+         nocopy: true
+
   adminer:
     image: adminer
     restart: on-failure
-    container_name: expenseapp-adminer-dev
+    container_name: dev-adminer
     environment:
       ADMINER_DEFAULT_SERVER: db
     depends_on:
-      - db
+      - mariadb
+      - mysql
+      - postgres
     ports:
       - "8080:8080"
 
   mailhog:
     image: mailhog/mailhog
     restart: on-failure
-    container_name: expenseapp-mailhog-dev
+    container_name: dev-mailhog
     ports:
      - "1025:1025"
      - "8025:8025"
@@ -47,9 +126,14 @@ services:
       MH_STORAGE: memory
 
   redis:
-    image: redis:7-alpine
+    image: redis:8.6-alpine
+    container_name: dev-redis
     restart: on-failure
-    container_name: expenseapp-redis-dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     command: '--requirepass pw'
     ports:
       - "6379:6379"
@@ -62,8 +146,13 @@ services:
 
   minio:
     image: minio/minio
-    container_name: expenseapp-minio-dev
+    container_name: dev-minio
     restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
       - "9000:9000" # S3 API
       - "9001:9001" # Web Console
@@ -91,12 +180,24 @@ volumes:
   mariadb-data:
     driver: local
     external: false
-    name: expenseapp-mariadb-data
+    name: dev-mariadb-data
+  mysql-data:
+    driver: local
+    external: false
+    name: dev-mysql-data
+  postgres-data:
+    driver: local
+    external: false
+    name: dev-postgres-data
+  oracle-adb-data:
+    driver: local
+    external: false
+    name: dev-oracle-adb-data
   redis-data:
     driver: local
     external: false
-    name: expenseapp-redis-data
+    name: dev-redis-data
   minio-data:
     driver: local
     external: false
-    name: expenseapp-minio-data
+    name: dev-minio-data
