@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# 1. Read the first argument passed to the script, default to 'mysql'
+DB_CHOICE=${1:-mysql}
+
+# 2. Set the Infrastructure Variables based on the choice
+echo "==========================================="
+echo " STARTING LOAD TEST SUITE FOR: $DB_CHOICE"
+echo "==========================================="
+
+docker compose -f scripts/dev/docker-compose.yml up -d adminer mailhog redis minio minio-init
+docker compose -f scripts/dev/docker-compose.yml up -d $DB_CHOICE
+
+if [ "$DB_CHOICE" == "sqlite" ]; then
+    # SQLite uses a fast, in-memory database for testing
+    export DB_TYPE="sqlite"
+    export DB_HOST="dev-sqlite.db"
+    #export DB_HOST=":memory:"
+    #export DATABASE_URL="sqlite:///dev-sqlite.db"
+
+elif [ "$DB_CHOICE" == "mariadb" ]; then
+    # Use your local Docker MariaDB/MySQL container
+    export DB_TYPE="mariadb"
+    export DB_HOST="localhost"
+    export DB_PORT=3306
+    export DB_USER="user"
+    export DB_PW="pw"
+    export DB_NAME="expenseapp"
+
+elif [ "$DB_CHOICE" == "mysql" ]; then
+    # Connects to MySQL on port 3307!
+    export DB_TYPE="mysql"
+    export DB_HOST="localhost"
+    export DB_PORT=3307
+    export DB_USER="user"
+    export DB_PW="pw"
+    export DB_NAME="expenseapp"
+    
+elif [ "$DB_CHOICE" == "postgres" ]; then
+    # Connects to Postgres on port 5432
+    export DB_TYPE="postgres"
+    export DB_HOST="localhost"
+    export DB_PORT=5432
+    export DB_USER="user"
+    export DB_PW="pw"
+    export DB_NAME="expenseapp"
+
+elif [ "$DB_CHOICE" == "oracle-adb" ]; then
+    # Connects to Oracle on port 1521 using the FREE service name
+    export DB_TYPE="oracle"
+    export DB_HOST="localhost"
+    export DB_PORT=1521
+    export DB_USER="ADMIN"
+    export DB_PW="SuperSecretPw123!"
+    export DB_NAME="expenseapp"
+    
+else
+    echo "❌ Unknown database choice: $DB_CHOICE"
+    exit 1
+fi
+
+# We don't need to wait for Docker if we are using SQLite!
+if [ "$DB_CHOICE" != "sqlite" ]; then
+    echo "⏳ Waiting for $DB_CHOICE to become healthy..."
+    
+    # Loop until Docker Inspect specifically returns the string "healthy"
+    until [ "$(docker inspect -f '{{.State.Health.Status}}' dev-$DB_CHOICE)" == "healthy" ]; do
+        sleep 2
+        echo -n "." # Prints dots to show progress without making new lines
+    done
+    
+    echo -e "\n✅ dev-$DB_CHOICE is fully booted and ready!"
+fi
+
+export FLASK_APP="./expenseapp.py"
+export FLASK_DEBUG=1
+
+export MAIL_SERVER="localhost"
+export MAIL_PORT=1025
+export MAIL_USERNAME="user"
+export MAIL_PASSWORD="pw"
+
+export S3_BUCKET_NAME="expenseapp-bucket"
+export S3_REGION="eu-central-1"
+export AWS_ACCESS_KEY_ID="minioadmin"
+export AWS_SECRET_ACCESS_KEY="minioadminpw"
+export S3_ENDPOINT_URL="http://localhost:9000"
+
+# 3. Seed the database
+python scripts/loadtesting/seed_db.py
+
+# 4. Run the loadtest
+locust --host=http://127.0.0.1:5000
+
