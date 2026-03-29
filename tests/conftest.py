@@ -71,7 +71,6 @@ def auth_client(app):
         if not user:
             user = User(username=username, email='test@expenseapp.ch', locale='en')
             user.set_password(password)
-            user.token = 'user_unique_token_123'
             db.session.add(user)
             db.session.commit()
 
@@ -97,7 +96,6 @@ def admin_client(app):
             admin_user = User(username=username, email='testadmin@expenseapp.ch', locale='en')
             admin_user.set_password(password)
             admin_user.is_admin = True
-            admin_user.token = 'admin_unique_token_123'
             db.session.add(admin_user)
             db.session.commit()
 

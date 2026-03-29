@@ -106,6 +106,7 @@ fi
 
 flask flush-s3
 flask flush-media-cache
+flask flush-jobs
 
 echo "🏗️ Initializing $DB_CHOICE schema..."
 if [ "$DB_CHOICE" == "sqlite" ]; then
