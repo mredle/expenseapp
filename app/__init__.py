@@ -1,37 +1,38 @@
-# coding=utf-8
+"""ExpenseApp application factory and extension initialization."""
+
+from __future__ import annotations
 
 import logging
-from logging.handlers import SMTPHandler, RotatingFileHandler
-from sqlalchemy import event
-from sqlalchemy.engine import Engine
-from redis import Redis
-import rq
 import os
-import time
+from logging.handlers import RotatingFileHandler, SMTPHandler
 
-from flask import Flask, request, current_app
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_login import LoginManager, current_user, AnonymousUserMixin
-from flask_mail import Mail
-from flask_bootstrap import Bootstrap
-from flask_moment import Moment
-from flask_babel import Babel, lazy_gettext as _l
-from flask_uploads import UploadSet, IMAGES, configure_uploads
+from flask import Flask, current_app, request
 from flask_apscheduler import APScheduler
+from flask_babel import Babel, lazy_gettext as _l
+from flask_bootstrap import Bootstrap
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from prometheus_flask_exporter import PrometheusMetrics
+from flask_login import AnonymousUserMixin, LoginManager, current_user
+from flask_mail import Mail
+from flask_migrate import Migrate
+from flask_moment import Moment
+from flask_sqlalchemy import SQLAlchemy
+from flask_uploads import IMAGES, UploadSet, configure_uploads
 from prometheus_client import CollectorRegistry
+from prometheus_flask_exporter import PrometheusMetrics
+from redis import Redis
+import rq
 
 from config import Config
 
+
 class Anonymous(AnonymousUserMixin):
-  def __init__(self):
-    self.username = 'Guest'
+    """Anonymous user stub returned when no user is logged in."""
+
+    def __init__(self) -> None:
+        self.username = 'Guest'
 
 
-# creating the Flask application
 db = SQLAlchemy()
 migrate = Migrate()
 login = LoginManager()
@@ -45,12 +46,10 @@ moment = Moment()
 babel = Babel()
 scheduler = APScheduler()
 limiter = Limiter(key_func=get_remote_address)
-#metrics = PrometheusMetrics.for_app_factory()
 
-def get_locale():
-    # if a user is logged in, use the locale from the user settings
-    # otherwise try to guess the language from the user accept
-    # header the browser transmits. The best match wins.
+
+def get_locale() -> str:
+    """Return the best-matching locale for the current request."""
     try:
         if current_user.is_authenticated:
             return current_user.locale
@@ -59,10 +58,12 @@ def get_locale():
     except Exception:
         return 'en'
 
-def create_app(config_class=Config):
+
+def create_app(config_class: type = Config) -> Flask:
+    """Application factory: create and configure the Flask app."""
     app = Flask(__name__)
     app.config.from_object(config_class)
-    
+
     db.init_app(app)
     migrate.init_app(app, db)
     login.init_app(app)
@@ -72,34 +73,33 @@ def create_app(config_class=Config):
     moment.init_app(app)
     babel.init_app(app, locale_selector=get_locale)
     limiter.init_app(app)
-    #metrics.init_app(app)
     if not scheduler.running:
         scheduler.init_app(app)
         scheduler.start()
 
     PrometheusMetrics(app, registry=CollectorRegistry())
-    
+
     app.redis = Redis.from_url(app.config['REDIS_URL'])
     app.task_queue = rq.Queue('expenseapp-tasks', connection=app.redis)
-    
+
     from app.errors import bp as errors_bp
     app.register_blueprint(errors_bp, url_prefix='/error')
-    
+
     from app.auth import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
     from app.media import bp as media_bp
     app.register_blueprint(media_bp, url_prefix='/media')
-    
+
     from app.apis import bp as apis_bp
     app.register_blueprint(apis_bp, url_prefix='/apis')
-    
+
     from app.event import bp as event_bp
     app.register_blueprint(event_bp, url_prefix='/event')
-    
+
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)
-    
+
     if not app.debug and not app.testing:
         if app.config['MAIL_SERVER']:
             auth = None
@@ -115,35 +115,17 @@ def create_app(config_class=Config):
                 credentials=auth, secure=secure)
             mail_handler.setLevel(logging.ERROR)
             app.logger.addHandler(mail_handler)
-            
-            if not os.path.exists('logs'):
-                os.mkdir('logs')
-            file_handler = RotatingFileHandler('logs/errorlog.log', maxBytes=10240,
-                                               backupCount=10)
-            file_handler.setFormatter(logging.Formatter(
-                '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-            file_handler.setLevel(logging.INFO)
-            app.logger.addHandler(file_handler)
-        
-            app.logger.setLevel(logging.INFO)
-            app.logger.info('App startup')
-    
+
+        if not os.path.exists('logs'):
+            os.mkdir('logs')
+        file_handler = RotatingFileHandler('logs/errorlog.log', maxBytes=10240,
+                                           backupCount=10)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('App startup')
+
     return app
-
-# logging.basicConfig()
-# logger = logging.getLogger("myapp.sqltime")
-# logger.setLevel(logging.DEBUG)
-
-# @event.listens_for(Engine, "before_cursor_execute")
-# def before_cursor_execute(conn, cursor, statement,
-#                         parameters, context, executemany):
-#     conn.info.setdefault('query_start_time', []).append(time.time())
-#     logger.debug("Start Query: %s", statement)
-
-# @event.listens_for(Engine, "after_cursor_execute")
-# def after_cursor_execute(conn, cursor, statement,
-#                         parameters, context, executemany):
-#     total = time.time() - conn.info['query_start_time'].pop(-1)
-#     logger.debug("Query Complete!")
-#     logger.debug("Total Time: %f", total)
-    

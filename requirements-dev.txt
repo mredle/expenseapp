@@ -1,6 +1,8 @@
 -r requirements.txt
 pytest
 pytest-cov
+locust
+faker
 spyder
 ipython
 flask-shell-ipython

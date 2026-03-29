@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
+"""Token REST API namespace: issue and revoke authentication tokens."""
+
+from __future__ import annotations
 
 from flask import g
 from flask_restx import Namespace, Resource, fields
+
 from app import db
 from app.apis.auth import basic_auth, token_auth
 
@@ -11,17 +15,22 @@ token = api.model('Token', {
     'token': fields.String(required=True, description='The Token'),
 })
 
+
 @api.route('/')
 class Token(Resource):
+    """Issue or revoke an API authentication token."""
+
     @basic_auth.login_required
     @api.marshal_with(token)
-    def post(self):
+    def post(self) -> dict:
+        """Issue a new token for the authenticated user."""
         token = {'token': g.current_user.get_token()}
         db.session.commit()
         return token
-    
+
     @token_auth.login_required
-    def delete(self):
+    def delete(self) -> tuple:
+        """Revoke the current user's token."""
         g.current_user.revoke_token()
         db.session.commit()
         return '', 204

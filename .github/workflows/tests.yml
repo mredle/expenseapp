@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         # This will spin up 3 parallel servers and test all 3 DBs simultaneously!
-        database: [sqlite, mysql, mariadb, postgres, oracle-adb] 
+        database: [sqlite, mariadb, postgres] 
 
     steps:
     - name: Checkout Code

@@ -1,22 +1,25 @@
 # -*- coding: utf-8 -*-
+"""Shared pytest fixtures: app, client, auth_client, admin_client."""
 
+from __future__ import annotations
+
+import os
+import shutil
+import tempfile
 
 import pytest
-import tempfile
-import shutil
-import os
+
 from app import create_app, db
 from app.models import User
 from config import Config
 
-# 1. Add the "params" argument to the fixture
+
 @pytest.fixture(params=['local', 's3'])
-def app(request):
-    """Creates a fresh Flask app instance for testing, looping through storage backends."""
-    
-    # 1. Create a secure, isolated temporary directory for this test run
+def app(request: pytest.FixtureRequest):
+    """Create a fresh Flask app instance for testing, looping through storage backends."""
+    # Create a secure, isolated temporary directory for this test run
     temp_dir = tempfile.mkdtemp()
-    
+
     # Pre-create the subfolders so Flask doesn't crash trying to save to missing directories
     os.makedirs(os.path.join(temp_dir, 'tmp'), exist_ok=True)
     os.makedirs(os.path.join(temp_dir, 'img'), exist_ok=True)
@@ -26,11 +29,10 @@ def app(request):
         TESTING = True
         WTF_CSRF_ENABLED = False
         RATELIMIT_ENABLED = False
-        STORAGE_DEFAULT_BACKEND = request.param 
+        STORAGE_DEFAULT_BACKEND = request.param
         SECRET_KEY = 'this-is-a-very-long-dummy-secret-key-for-testing-purposes'
-        
-        # 2. OVERRIDE THE PATHS! 
-        # Force the app to save all files to our temp_dir instead of /app/static
+
+        # Override paths to use the temp directory instead of /app/static
         STORAGE_LOCAL_PATH = temp_dir
         IMAGE_ROOT_PATH = temp_dir
         IMAGE_TMP_PATH = 'tmp'
@@ -43,26 +45,26 @@ def app(request):
 
     with app.app_context():
         yield app
-        
-        # --- TEARDOWN PHASE ---
+
+        # Teardown
         db.session.remove()
         db.engine.dispose()
-        
-        # 3. NUKE THE DIRECTORY! 
-        # This silently wipes out all dummy images, thumbnails, and the folders themselves.
+
+        # Wipe all dummy images, thumbnails, and the temp folders
         shutil.rmtree(temp_dir, ignore_errors=True)
+
 
 @pytest.fixture
 def client(app):
     """A test client for the app to simulate browser requests."""
     return app.test_client()
 
+
 @pytest.fixture
-def auth_client(app): 
-    """A test client that is already logged in as a test user."""
-    # 2. ADD this line so it creates its own browser!
-    client = app.test_client() 
-    
+def auth_client(app):
+    """A test client that is already logged in as a regular test user."""
+    client = app.test_client()
+
     username = 'testuser'
     password = 'testpassword'
 
@@ -76,17 +78,17 @@ def auth_client(app):
 
     client.post('/auth/authenticate_password', data={
         'username': username,
-        'password': password
+        'password': password,
     }, follow_redirects=True)
-    
+
     return client
+
 
 @pytest.fixture
 def admin_client(app):
     """A test client that is logged in as an administrator."""
-    # 4. ADD this line so it creates its own browser!
     client = app.test_client()
-    
+
     username = 'testadmin'
     password = 'adminpassword'
 
@@ -101,7 +103,7 @@ def admin_client(app):
 
     client.post('/auth/authenticate_password', data={
         'username': username,
-        'password': password
+        'password': password,
     }, follow_redirects=True)
-    
+
     return client

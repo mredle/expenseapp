@@ -1,6 +1,10 @@
 # coding=utf-8
+"""Event blueprint routes for managing events, expenses, settlements, and users."""
+
+from __future__ import annotations
 
 from datetime import datetime, timezone
+
 from flask import request, render_template, make_response, flash, redirect, url_for, current_app
 from flask_login import current_user, login_required
 from flask_babel import _
@@ -8,147 +12,204 @@ from flask_babel import _
 from app import db
 from app.event import bp
 from app.main.forms import ImageForm
-from app.event.forms import PostForm, EventForm, EventEditForm, EventUserForm, BankAccountForm, ExpenseAddUserForm, SelectUserForm, ExpenseForm, SettlementForm, SetRateForm
+from app.event.forms import (
+    PostForm, EventForm, EventEditForm, EventUserForm,
+    BankAccountForm, ExpenseAddUserForm, SelectUserForm,
+    ExpenseForm, SettlementForm, SetRateForm,
+)
 from app.models import Currency, Event, EventUser, EventCurrency, Expense, Settlement, Post, Image, File
 from app.media.processor import process_and_store_image
 from app.db_logging import log_page_access, log_page_access_denied
 
-# helper function
-def session_can_edit(request, event, author):
-    eventuser_guid_cookie = request.cookies.get('{}.eventuser'.format(event.guid))
+
+def session_can_edit(request: object, event: Event, author: EventUser) -> bool:
+    """Check if the current session cookie grants edit permission for *author*.
+
+    Returns ``True`` if the cookie-identified event user matches *author*, or
+    the logged-in user has admin rights on the event.
+    """
+    eventuser_guid_cookie = request.cookies.get(f'{event.guid}.eventuser')
     eventuser_cookie = EventUser.get_by_guid_or_404(eventuser_guid_cookie)
-    
-    return (author==eventuser_cookie) or event.can_edit(current_user)
-   
-def get_eventuser_from_cookie(event, request):
-    eventuser_guid = request.cookies.get('{}.eventuser'.format(event.guid))
+    return (author == eventuser_cookie) or event.can_edit(current_user)
+
+
+def get_eventuser_from_cookie(event: Event, request: object) -> EventUser | None:
+    """Retrieve the ``EventUser`` identified by the session cookie for *event*.
+
+    Returns ``None`` if no cookie is set or the user is not part of the event.
+    """
+    eventuser_guid = request.cookies.get(f'{event.guid}.eventuser')
     if eventuser_guid is None:
         return None
-    
+
     eventuser = EventUser.get_by_guid_or_404(eventuser_guid)
     if eventuser not in event.users:
         return None
-    else:
-        return eventuser
+    return eventuser
 
-# routes for rendered pages
+
+# ---------------------------------------------------------------------------
+# Index
+# ---------------------------------------------------------------------------
+
 @bp.route('/index')
 @login_required
-def index():
+def index() -> str:
+    """List all events the current user administers (or all events for admins)."""
     log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
-    
+
     if current_user.is_admin:
         events = Event.query.order_by(Event.closed.asc(), Event.date.desc()).paginate(
-            page=page, 
-            per_page=current_app.config['ITEMS_PER_PAGE'], 
-            error_out=False
+            page=page,
+            per_page=current_app.config['ITEMS_PER_PAGE'],
+            error_out=False,
         )
     else:
         events = current_user.events_admin.order_by(Event.closed.asc(), Event.date.desc()).paginate(
-            page=page, 
-            per_page=current_app.config['ITEMS_PER_PAGE'], 
-            error_out=False
+            page=page,
+            per_page=current_app.config['ITEMS_PER_PAGE'],
+            error_out=False,
         )
-        
+
     next_url = url_for('event.index', page=events.next_num) if events.has_next else None
     prev_url = url_for('event.index', page=events.prev_num) if events.has_prev else None
-    
-    return render_template('event/index.html', 
-                           title=_('Hi %(username)s, your events:', username=current_user.username), 
-                           events=events.items, 
-                           next_url=next_url, prev_url=prev_url)
+
+    return render_template(
+        'event/index.html',
+        title=_('Hi %(username)s, your events:', username=current_user.username),
+        events=events.items,
+        next_url=next_url,
+        prev_url=prev_url,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Event user profile
+# ---------------------------------------------------------------------------
 
 @bp.route('/user/<guid>')
-def user(guid):
+def user(guid: str) -> str:
+    """Display an event user's profile."""
     log_page_access(request, current_user)
     eventuser = EventUser.get_by_guid_or_404(guid)
-    
-    return render_template('event/user.html', 
-                           title = _('User %(username)s', username = eventuser.username), 
-                           eventuser = eventuser,
-                           can_edit = session_can_edit(request, eventuser.event, eventuser))
+
+    return render_template(
+        'event/user.html',
+        title=_('User %(username)s', username=eventuser.username),
+        eventuser=eventuser,
+        can_edit=session_can_edit(request, eventuser.event, eventuser),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Select user (cookie-based session)
+# ---------------------------------------------------------------------------
 
 @bp.route('/select_user/<event_guid>', methods=['GET', 'POST'])
-def select_user(event_guid):
+def select_user(event_guid: str) -> str:
+    """Let the visitor select which event user they are (stored in a cookie)."""
     event = Event.get_by_guid_or_404(event_guid)
     log_page_access(request, current_user)
-    
+
     form = SelectUserForm()
     form.user_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
         eventuser = db.session.get(EventUser, form.user_id.data)
         flash(_('You selected user %(username)s as context', username=eventuser.username))
         response = make_response(redirect(url_for('event.main', guid=event.guid)))
-        response.set_cookie(key = '{}.eventuser'.format(event_guid), 
-                            value = str(eventuser.guid),
-                            max_age = 31536000)
+        response.set_cookie(
+            key=f'{event_guid}.eventuser',
+            value=str(eventuser.guid),
+            max_age=31536000,
+            httponly=True,
+            samesite='Lax',
+        )
         return response
-    
-    return render_template('edit_form.html', 
-                           title=_('Select user'), 
-                           form=form)
+
+    return render_template('edit_form.html', title=_('Select user'), form=form)
+
+
+# ---------------------------------------------------------------------------
+# Event main page
+# ---------------------------------------------------------------------------
 
 @bp.route('/main/<guid>', methods=['GET', 'POST'])
-def main(guid):
+def main(guid: str) -> str:
+    """Display the event main page with posts and stats."""
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
     eventuser = get_eventuser_from_cookie(event, request)
     if eventuser is None:
         return redirect(url_for('event.select_user', event_guid=guid))
-    
+
     form = PostForm()
     if form.validate_on_submit():
-        post = Post(body=form.post.data, 
-                    author=eventuser, 
-                    timestamp=datetime.now(timezone.utc), 
-                    event=event)
+        post = Post(
+            body=form.post.data,
+            author=eventuser,
+            timestamp=datetime.now(timezone.utc),
+            event=event,
+        )
         db.session.add(post)
         db.session.commit()
         flash(_('Your post is now live!'))
         return redirect(url_for('event.main', guid=guid))
-    
+
     page = request.args.get('page', 1, type=int)
     posts = event.posts.order_by(Post.timestamp.desc()).paginate(
-            page=page, 
-            per_page=current_app.config['ITEMS_PER_PAGE'], 
-            error_out=False
-        )
+        page=page,
+        per_page=current_app.config['ITEMS_PER_PAGE'],
+        error_out=False,
+    )
     next_url = url_for('event.main', guid=event.guid, page=posts.next_num) if posts.has_next else None
     prev_url = url_for('event.main', guid=event.guid, page=posts.prev_num) if posts.has_prev else None
-    return render_template('event/main.html', 
-                           form=form, 
-                           event=event, 
-                           eventuser=eventuser, 
-                           stats=event.get_stats(),
-                           posts=posts.items,
-                           next_url=next_url, prev_url=prev_url)
+    return render_template(
+        'event/main.html',
+        form=form,
+        event=event,
+        eventuser=eventuser,
+        stats=event.get_stats(),
+        posts=posts.items,
+        next_url=next_url,
+        prev_url=prev_url,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Currencies
+# ---------------------------------------------------------------------------
 
 @bp.route('/currencies/<guid>')
-def currencies(guid):
+def currencies(guid: str) -> str:
+    """List the allowed currencies for an event."""
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
     eventcurrencies = event.eventcurrencies.paginate(
-            page=page, 
-            per_page=current_app.config['ITEMS_PER_PAGE'], 
-            error_out=False
-        )
+        page=page,
+        per_page=current_app.config['ITEMS_PER_PAGE'],
+        error_out=False,
+    )
     next_url = url_for('event.currencies', page=eventcurrencies.next_num) if eventcurrencies.has_next else None
     prev_url = url_for('event.currencies', page=eventcurrencies.prev_num) if eventcurrencies.has_prev else None
-    return render_template('event/eventcurrencies.html', 
-                           title=_('Allowed currencies'), 
-                           event=event, 
-                           eventcurrencies=eventcurrencies.items, 
-                           next_url=next_url, prev_url=prev_url)
+    return render_template(
+        'event/eventcurrencies.html',
+        title=_('Allowed currencies'),
+        event=event,
+        eventcurrencies=eventcurrencies.items,
+        next_url=next_url,
+        prev_url=prev_url,
+    )
+
 
 @bp.route('/set_rate/<guid>/<currency_guid>', methods=['GET', 'POST'])
 @login_required
-def set_rate(guid, currency_guid):
+def set_rate(guid: str, currency_guid: str) -> str:
+    """Set the exchange rate for a currency within an event."""
     event = Event.get_by_guid_or_404(guid)
     currency = Currency.get_by_guid_or_404(currency_guid)
     eventcurrency = EventCurrency.query.filter_by(currency_id=currency.id, event_id=event.id).first_or_404()
-    print(eventcurrency, eventcurrency.event_id, eventcurrency.currency_id, eventcurrency.inCHF)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to edit your own event!'))
         log_page_access_denied(request, current_user)
@@ -157,7 +218,7 @@ def set_rate(guid, currency_guid):
     if event.closed:
         flash(_('Your are only allowed to edit an open event!'))
         return redirect(url_for('event.main', guid=event.guid))
-    
+
     form = SetRateForm()
     if form.validate_on_submit():
         eventcurrency.inCHF = form.inCHF.data
@@ -166,13 +227,17 @@ def set_rate(guid, currency_guid):
         return redirect(url_for('event.currencies', guid=event.guid))
     elif request.method == 'GET':
         form.inCHF.data = eventcurrency.inCHF
-    return render_template('edit_form.html', 
-                           title=_('Set rate'), 
-                           form=form)
-  
+    return render_template('edit_form.html', title=_('Set rate'), form=form)
+
+
+# ---------------------------------------------------------------------------
+# Create / edit event
+# ---------------------------------------------------------------------------
+
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
-def new():
+def new() -> str:
+    """Create a new event."""
     log_page_access(request, current_user)
     form = EventForm()
     form.base_currency_id.choices = [(c.id, c.code) for c in Currency.query.order_by(Currency.code.asc())]
@@ -180,23 +245,27 @@ def new():
     if form.validate_on_submit():
         base_currency = db.session.get(Currency, form.base_currency_id.data)
         currencies = [db.session.get(Currency, currency_id) for currency_id in form.currency_id.data]
-        event = Event(name=form.name.data, 
-                      date=form.date.data,
-                      admin=current_user,
-                      base_currency=base_currency,
-                      currencies=currencies,
-                      exchange_fee=form.exchange_fee.data,
-                      closed=False,
-                      fileshare_link=form.fileshare_link.data, 
-                      description=form.description.data, 
-                      db_created_by=current_user.username)
-        user = EventUser(username=current_user.username,
-                         email=current_user.email, 
-                         weighting=1.0,
-                         locale=current_user.locale, 
-                         about_me=current_user.about_me, 
-                         db_created_by=current_user.username)
-        
+        event = Event(
+            name=form.name.data,
+            date=form.date.data,
+            admin=current_user,
+            base_currency=base_currency,
+            currencies=currencies,
+            exchange_fee=form.exchange_fee.data,
+            closed=False,
+            fileshare_link=form.fileshare_link.data,
+            description=form.description.data,
+            db_created_by=current_user.username,
+        )
+        user = EventUser(
+            username=current_user.username,
+            email=current_user.email,
+            weighting=1.0,
+            locale=current_user.locale,
+            about_me=current_user.about_me,
+            db_created_by=current_user.username,
+        )
+
         event.add_user(user)
         event.add_currency(base_currency)
         db.session.add(event)
@@ -205,18 +274,18 @@ def new():
         db.session.commit()
         flash(_('Your new event has been added.'))
         return redirect(url_for('event.main', guid=event.guid))
-    
+
     CHF = Currency.query.filter_by(code='CHF').first()
     form.base_currency_id.data = CHF.id
     form.currency_id.data = [CHF.id]
     form.date.data = datetime.now(timezone.utc)
-    return render_template('edit_form.html', 
-                           title=_('New Event'), 
-                           form=form)
+    return render_template('edit_form.html', title=_('New Event'), form=form)
+
 
 @bp.route('/edit/<guid>', methods=['GET', 'POST'])
 @login_required
-def edit(guid):
+def edit(guid: str) -> str:
+    """Edit an existing event's details and currencies."""
     event = Event.get_by_guid_or_404(guid)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to edit your own event!'))
@@ -238,19 +307,19 @@ def edit(guid):
         event.base_currency = db.session.get(Currency, form.base_currency_id.data)
         event.exchange_fee = form.exchange_fee.data
         event.accountant = db.session.get(EventUser, form.accountant_id.data)
-        
+
         # add new currencies
         for currency_id in form.currency_id.data:
             currency = db.session.get(Currency, currency_id)
             if currency not in event.currencies:
                 event.currencies.append(currency)
-        
+
         # remove currencies
         for currency in event.currencies:
             if currency.id not in form.currency_id.data:
-                eventcurrency = event.eventcurrencies.filter(EventCurrency.currency_id==currency.id).first()
+                eventcurrency = event.eventcurrencies.filter(EventCurrency.currency_id == currency.id).first()
                 event.eventcurrencies.remove(eventcurrency)
-        
+
         event.add_currency(event.base_currency)
         db.session.commit()
         flash(_('Your changes have been saved.'))
@@ -264,26 +333,26 @@ def edit(guid):
         form.currency_id.data = [c.id for c in event.currencies]
         form.exchange_fee.data = event.exchange_fee
         form.accountant_id.data = event.accountant_id
-    return render_template('edit_form.html', 
-                           title=_('Edit Event'), 
-                           form=form)
+    return render_template('edit_form.html', title=_('Edit Event'), form=form)
+
 
 @bp.route('/edit_picture/<guid>', methods=['GET', 'POST'])
 @login_required
-def edit_picture(guid):
+def edit_picture(guid: str) -> str:
+    """Upload or replace the event cover picture."""
     event = Event.get_by_guid_or_404(guid)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to edit your own event!'))
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.main', guid=event.guid))
     log_page_access(request, current_user)
-    
+
     form = ImageForm()
     if form.validate_on_submit():
         if 'image' not in request.files or request.files['image'].filename == '':
             flash(_('Invalid or empty image.'))
             return redirect(url_for('event.main', guid=guid))
-            
+
         file_obj = request.files['image']
         try:
             new_image = process_and_store_image(file_obj.stream, file_obj.filename)
@@ -291,16 +360,20 @@ def edit_picture(guid):
             db.session.commit()
             flash(_('Your changes have been saved.'))
         except Exception as e:
-            current_app.logger.error(f"Failed to upload event picture: {str(e)}")
+            current_app.logger.error(f"Failed to upload event picture: {e}")
             flash(_('An error occurred while uploading your image.'))
-            
+
         return redirect(url_for('event.main', guid=guid))
-    return render_template('edit_form.html', 
-                           title=_('Event Picture'), 
-                           form=form)
-    
+    return render_template('edit_form.html', title=_('Event Picture'), form=form)
+
+
+# ---------------------------------------------------------------------------
+# Event users
+# ---------------------------------------------------------------------------
+
 @bp.route('/users/<guid>', methods=['GET', 'POST'])
-def users(guid):
+def users(guid: str) -> str:
+    """List event users and add new ones."""
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
     form = EventUserForm()
@@ -309,34 +382,41 @@ def users(guid):
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))
             return redirect(url_for('main.event', guid=event.guid))
-        user = EventUser(username=form.username.data, 
-                         email=form.email.data,
-                         weighting=form.weighting.data,
-                         locale=form.locale.data,
-                         about_me=form.about_me.data)
+        user = EventUser(
+            username=form.username.data,
+            email=form.email.data,
+            weighting=form.weighting.data,
+            locale=form.locale.data,
+            about_me=form.about_me.data,
+        )
         event.add_user(user)
         db.session.commit()
         flash(_('User %(username)s has been added to event %(event_name)s.', username=user.username, event_name=event.name))
         return redirect(url_for('event.users', guid=guid))
-    
+
     page = request.args.get('page', 1, type=int)
     users = event.users.order_by(EventUser.username.asc()).paginate(
-            page=page, 
-            per_page=current_app.config['ITEMS_PER_PAGE'], 
-            error_out=False
-        )
+        page=page,
+        per_page=current_app.config['ITEMS_PER_PAGE'],
+        error_out=False,
+    )
     next_url = url_for('event.users', guid=guid, page=users.next_num) if users.has_next else None
     prev_url = url_for('event.users', guid=guid, page=users.prev_num) if users.has_prev else None
-    return render_template('event/users.html', 
-                           form=form,
-                           event=event,
-                           can_edit=event.can_edit(current_user),
-                           users=users.items,
-                           next_url=next_url, prev_url=prev_url)
+    return render_template(
+        'event/users.html',
+        form=form,
+        event=event,
+        can_edit=event.can_edit(current_user),
+        users=users.items,
+        next_url=next_url,
+        prev_url=prev_url,
+    )
+
 
 @bp.route('/add_user/<guid>/<user_guid>')
 @login_required
-def add_user(guid, user_guid):
+def add_user(guid: str, user_guid: str) -> str:
+    """Add an existing event user back to the event."""
     event = Event.get_by_guid_or_404(guid)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to edit your own event!'))
@@ -352,9 +432,11 @@ def add_user(guid, user_guid):
     flash(_('User %(username)s has been added to event %(event_name)s.', username=user.username, event_name=event.name))
     return redirect(url_for('event.users', guid=guid))
 
+
 @bp.route('/remove_user/<guid>/<user_guid>')
 @login_required
-def remove_user(guid, user_guid):
+def remove_user(guid: str, user_guid: str) -> str:
+    """Remove a user from the event."""
     event = Event.get_by_guid_or_404(guid)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to edit your own event!'))
@@ -372,15 +454,17 @@ def remove_user(guid, user_guid):
     flash(_('User %(username)s has been removed from event %(event_name)s.', username=user.username, event_name=event.name))
     return redirect(url_for('event.users', guid=guid))
 
+
 @bp.route('/edit_profile/<guid>', methods=['GET', 'POST'])
-def edit_profile(guid):
+def edit_profile(guid: str) -> str:
+    """Edit an event user's profile details."""
     eventuser = EventUser.get_by_guid_or_404(guid)
     if not session_can_edit(request, eventuser.event, eventuser):
         flash(_('Your are only allowed to edit your own user!'))
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.main', guid=eventuser.event.guid))
     log_page_access(request, current_user)
-    
+
     form = EventUserForm()
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
     if form.validate_on_submit():
@@ -398,29 +482,31 @@ def edit_profile(guid):
         form.weighting.data = eventuser.weighting
         form.about_me.data = eventuser.about_me
         form.locale.data = eventuser.locale
-    return render_template('edit_form.html', 
-                           title=_('Edit Profile'), 
-                           form=form)
+    return render_template('edit_form.html', title=_('Edit Profile'), form=form)
+
 
 @bp.route('/edit_bank_account/<guid>', methods=['GET', 'POST'])
-def edit_bank_account(guid):
+def edit_bank_account(guid: str) -> str:
+    """Edit an event user's bank account details."""
     eventuser = EventUser.get_by_guid_or_404(guid)
     if not session_can_edit(request, eventuser.event, eventuser):
         flash(_('Your are only allowed to edit your own user!'))
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.main', guid=eventuser.event.guid))
     log_page_access(request, current_user)
-    
+
     form = BankAccountForm()
     if form.validate_on_submit():
-        eventuser.iban = form.iban.data, 
-        eventuser.bank = form.bank.data, 
-        eventuser.name = form.name.data, 
-        eventuser.address = form.address.data, 
-        eventuser.address_suffix = form.address_suffix.data, 
-        eventuser.zip_code = form.zip_code.data, 
-        eventuser.city = form.city.data, 
-        eventuser.country = form.country.data, 
+        # BUG FIX: removed trailing commas that created tuples instead of
+        # assigning scalar values (all 8 fields were affected).
+        eventuser.iban = form.iban.data
+        eventuser.bank = form.bank.data
+        eventuser.name = form.name.data
+        eventuser.address = form.address.data
+        eventuser.address_suffix = form.address_suffix.data
+        eventuser.zip_code = form.zip_code.data
+        eventuser.city = form.city.data
+        eventuser.country = form.country.data
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('event.user', guid=eventuser.guid))
@@ -433,25 +519,25 @@ def edit_bank_account(guid):
         form.zip_code.data = eventuser.zip_code
         form.city.data = eventuser.city
         form.country.data = eventuser.country
-    return render_template('edit_form.html', 
-                           title=_('Edit Bank Account'), 
-                           form=form)
+    return render_template('edit_form.html', title=_('Edit Bank Account'), form=form)
+
 
 @bp.route('/edit_profile_picture/<guid>', methods=['GET', 'POST'])
-def edit_profile_picture(guid):
+def edit_profile_picture(guid: str) -> str:
+    """Upload or replace an event user's profile picture."""
     eventuser = EventUser.get_by_guid_or_404(guid)
     if not session_can_edit(request, eventuser.event, eventuser):
         flash(_('Your are only allowed to edit your own user!'))
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.main', guid=eventuser.event.guid))
     log_page_access(request, current_user)
-    
+
     form = ImageForm()
     if form.validate_on_submit():
         if 'image' not in request.files or request.files['image'].filename == '':
             flash(_('Invalid or empty image.'))
             return redirect(url_for('event.user', guid=eventuser.guid))
-            
+
         file_obj = request.files['image']
         try:
             new_image = process_and_store_image(file_obj.stream, file_obj.filename)
@@ -459,37 +545,49 @@ def edit_profile_picture(guid):
             db.session.commit()
             flash(_('Your changes have been saved.'))
         except Exception as e:
-            current_app.logger.error(f"Failed to upload user profile picture: {str(e)}")
+            current_app.logger.error(f"Failed to upload user profile picture: {e}")
             flash(_('An error occurred while uploading your image.'))
-            
+
         return redirect(url_for('event.user', guid=eventuser.guid))
-    return render_template('edit_form.html', 
-                           title=_('Profile Picture'), 
-                           form=form)
+    return render_template('edit_form.html', title=_('Profile Picture'), form=form)
+
+
+# ---------------------------------------------------------------------------
+# Balance
+# ---------------------------------------------------------------------------
 
 @bp.route('/balance/<guid>', methods=['GET'])
-def balance(guid):
+def balance(guid: str) -> str:
+    """Display the event balance sheet and draft settlements."""
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
     eventuser = get_eventuser_from_cookie(event, request)
-    
+
     draft_settlements = event.calculate_balance()
     balances_str, total_expenses_str = event.get_balance()
-    return render_template('event/balance.html', 
-                           event=event, 
-                           eventuser=eventuser,
-                           draft_settlements=draft_settlements,
-                           balances_str=balances_str, 
-                           total_expenses_str=total_expenses_str)
+    return render_template(
+        'event/balance.html',
+        event=event,
+        eventuser=eventuser,
+        draft_settlements=draft_settlements,
+        balances_str=balances_str,
+        total_expenses_str=total_expenses_str,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Expenses
+# ---------------------------------------------------------------------------
 
 @bp.route('/expenses/<guid>', methods=['GET', 'POST'])
-def expenses(guid):
+def expenses(guid: str) -> str:
+    """List expenses for an event and allow adding new ones."""
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
     eventuser = get_eventuser_from_cookie(event, request)
     if eventuser is None:
         return redirect(url_for('event.select_user', event_guid=guid))
-    
+
     form = ExpenseForm()
     form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
@@ -497,51 +595,60 @@ def expenses(guid):
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))
             return redirect(url_for('main.event', guid=event.guid))
-        expense = Expense(user=eventuser, 
-                          event=event, 
-                          currency=db.session.get(Currency, form.currency_id.data),
-                          amount=form.amount.data, 
-                          affected_users=[db.session.get(EventUser, user_id) for user_id in form.affected_users_id.data], 
-                          date=form.date.data,
-                          description=form.description.data, 
-                          db_created_by=(current_user.username if current_user.is_anonymous else 'anonymous'))
-        
+        # BUG FIX: inverted is_anonymous logic — use is_authenticated to get
+        # the real username, fall back to 'anonymous' for unauthenticated users.
+        expense = Expense(
+            user=eventuser,
+            event=event,
+            currency=db.session.get(Currency, form.currency_id.data),
+            amount=form.amount.data,
+            affected_users=[db.session.get(EventUser, user_id) for user_id in form.affected_users_id.data],
+            date=form.date.data,
+            description=form.description.data,
+            db_created_by=current_user.username if current_user.is_authenticated else 'anonymous',
+        )
+
         with db.session.no_autoflush:
             image = Image.query.join(File).filter(File.original_filename.like('expense%')).first()
-        
+
         if image:
             expense.image = image
         db.session.add(expense)
         db.session.commit()
         flash(_('Your new expense has been added to event %(event_name)s.', event_name=event.name))
         return redirect(url_for('event.expenses', guid=guid))
-    
+
     form.currency_id.data = event.base_currency.id
     form.date.data = datetime.now(timezone.utc)
     form.affected_users_id.data = [u.id for u in event.users]
     page = request.args.get('page', 1, type=int)
-    
+
     filter_eventuser = request.args.get('filter', '', type=str)
     filters = []
-    if filter_eventuser.upper()=='OWN':
-        filters.append(Expense.user==eventuser)
-    
+    if filter_eventuser.upper() == 'OWN':
+        filters.append(Expense.user == eventuser)
+
     expenses = event.expenses.filter(*filters).order_by(Expense.date.desc()).paginate(
-            page=page, 
-            per_page=current_app.config['ITEMS_PER_PAGE'], 
-            error_out=False
-        )
+        page=page,
+        per_page=current_app.config['ITEMS_PER_PAGE'],
+        error_out=False,
+    )
     next_url = url_for('event.expenses', guid=event.guid, filter=filter_eventuser, page=expenses.next_num) if expenses.has_next else None
     prev_url = url_for('event.expenses', guid=event.guid, filter=filter_eventuser, page=expenses.prev_num) if expenses.has_prev else None
-    return render_template('event/expenses.html', 
-                           form=form, 
-                           event=event, 
-                           eventuser=eventuser,
-                           expenses=expenses.items,
-                           next_url=next_url, prev_url=prev_url)
+    return render_template(
+        'event/expenses.html',
+        form=form,
+        event=event,
+        eventuser=eventuser,
+        expenses=expenses.items,
+        next_url=next_url,
+        prev_url=prev_url,
+    )
+
 
 @bp.route('/add_receipt/<guid>', methods=['GET', 'POST'])
-def add_receipt(guid):
+def add_receipt(guid: str) -> str:
+    """Upload a receipt image for an expense."""
     expense = Expense.get_by_guid_or_404(guid)
     event = expense.event
     log_page_access(request, current_user)
@@ -552,13 +659,13 @@ def add_receipt(guid):
         flash(_('Your are only allowed to edit your own expense!'))
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.expenses', guid=expense.event.guid))
-    
+
     form = ImageForm()
     if form.validate_on_submit():
         if 'image' not in request.files or request.files['image'].filename == '':
             flash(_('Invalid or empty image.'))
             return redirect(url_for('event.expenses', guid=expense.event.guid))
-            
+
         file_obj = request.files['image']
         try:
             new_image = process_and_store_image(file_obj.stream, file_obj.filename)
@@ -566,16 +673,16 @@ def add_receipt(guid):
             db.session.commit()
             flash(_('Your changes have been saved.'))
         except Exception as e:
-            current_app.logger.error(f"Failed to upload receipt: {str(e)}")
+            current_app.logger.error(f"Failed to upload receipt: {e}")
             flash(_('An error occurred while uploading your image.'))
-            
+
         return redirect(url_for('event.expenses', guid=expense.event.guid))
-    return render_template('edit_form.html', 
-                           title=_('Add Receipt'), 
-                           form=form)
-    
+    return render_template('edit_form.html', title=_('Add Receipt'), form=form)
+
+
 @bp.route('/edit_expense/<guid>', methods=['GET', 'POST'])
-def edit_expense(guid):
+def edit_expense(guid: str) -> str:
+    """Edit an existing expense."""
     expense = Expense.get_by_guid_or_404(guid)
     event = expense.event
     log_page_access(request, current_user)
@@ -586,12 +693,14 @@ def edit_expense(guid):
         flash(_('Your are only allowed to edit your own expense!'))
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.expenses', guid=expense.event.guid))
-    
+
     form = ExpenseForm()
     form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.affected_users_id.choices = [(u.id, u.username) for u in event.users]
     if form.validate_on_submit():
-        expense.currency = db.session.get(Currency, form.currency_id.data),
+        # BUG FIX: removed trailing comma that created a tuple instead of
+        # assigning the Currency object to expense.currency.
+        expense.currency = db.session.get(Currency, form.currency_id.data)
         expense.amount = form.amount.data
         expense.affected_users = [db.session.get(EventUser, user_id) for user_id in form.affected_users_id.data]
         expense.date = form.date.data
@@ -605,12 +714,12 @@ def edit_expense(guid):
         form.affected_users_id.data = [u.id for u in expense.affected_users]
         form.date.data = expense.date
         form.description.data = expense.description
-    return render_template('edit_form.html', 
-                           title=_('Edit Expense'), 
-                           form=form)
+    return render_template('edit_form.html', title=_('Edit Expense'), form=form)
+
 
 @bp.route('/remove_expense/<guid>')
-def remove_expense(guid):
+def remove_expense(guid: str) -> str:
+    """Remove an expense from an event."""
     expense = Expense.get_by_guid_or_404(guid)
     event = expense.event
     log_page_access(request, current_user)
@@ -621,7 +730,7 @@ def remove_expense(guid):
         flash(_('Your are only allowed to edit your own expense!'))
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.expenses', guid=expense.event.guid))
-    
+
     if expense in event.expenses:
         amount_str = expense.get_amount_str()
         event.expenses.remove(expense)
@@ -629,12 +738,14 @@ def remove_expense(guid):
         flash(_('Expense over %(amount_str)s has been removed from event %(event_name)s.', amount_str=amount_str, event_name=event.name))
     return redirect(url_for('event.expenses', guid=event.guid))
 
+
 @bp.route('/expense_users/<guid>', methods=['GET', 'POST'])
-def expense_users(guid):
+def expense_users(guid: str) -> str:
+    """Manage the users affected by an expense."""
     expense = Expense.get_by_guid_or_404(guid)
     event = expense.event
     log_page_access(request, current_user)
-    
+
     form = ExpenseAddUserForm()
     form.user_id.choices = [(u.id, u.username) for u in event.users.order_by(EventUser.username.asc()) if u not in expense.affected_users]
     if form.validate_on_submit():
@@ -645,30 +756,35 @@ def expense_users(guid):
             flash(_('Your are only allowed to edit your own expense!'))
             log_page_access_denied(request, current_user)
             return redirect(url_for('event.expenses', guid=expense.event.guid))
-    
+
         users = [db.session.get(EventUser, user_id) for user_id in form.user_id.data]
         expense.add_users(users)
         db.session.commit()
         flash(_('User %(username)s has been added to the expense.', username=' and '.join([u.username for u in users])))
         return redirect(url_for('event.expense_users', guid=guid))
-    
+
     page = request.args.get('page', 1, type=int)
     users = expense.affected_users.order_by(EventUser.username.asc()).paginate(
-            page=page, 
-            per_page=current_app.config['ITEMS_PER_PAGE'], 
-            error_out=False
-        )
+        page=page,
+        per_page=current_app.config['ITEMS_PER_PAGE'],
+        error_out=False,
+    )
     next_url = url_for('event.expense_users', guid=guid, page=users.next_num) if users.has_next else None
     prev_url = url_for('event.expense_users', guid=guid, page=users.prev_num) if users.has_prev else None
-    return render_template('event/expense_users.html', 
-                           form=form,
-                           expense=expense,
-                           can_edit=session_can_edit(request, event, expense.user),
-                           users=users.items,
-                           next_url=next_url, prev_url=prev_url)
+    return render_template(
+        'event/expense_users.html',
+        form=form,
+        expense=expense,
+        can_edit=session_can_edit(request, event, expense.user),
+        users=users.items,
+        next_url=next_url,
+        prev_url=prev_url,
+    )
+
 
 @bp.route('/expense_add_user/<guid>/<user_guid>')
-def expense_add_user(guid, user_guid):
+def expense_add_user(guid: str, user_guid: str) -> str:
+    """Add a single user to an expense's affected users list."""
     expense = Expense.get_by_guid_or_404(guid)
     event = expense.event
     log_page_access(request, current_user)
@@ -679,15 +795,17 @@ def expense_add_user(guid, user_guid):
         flash(_('Your are only allowed to edit your own expense!'))
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.expenses', guid=expense.event.guid))
-    
+
     user = EventUser.get_by_guid_or_404(user_guid)
     expense.add_user(user)
     db.session.commit()
     flash(_('User %(username)s has been added to the expense.', username=user.username))
     return redirect(url_for('event.expense_users', guid=guid))
 
+
 @bp.route('/expense_remove_user/<guid>/<user_guid>')
-def expense_remove_user(guid, user_guid):
+def expense_remove_user(guid: str, user_guid: str) -> str:
+    """Remove a user from an expense's affected users list."""
     expense = Expense.get_by_guid_or_404(guid)
     event = expense.event
     log_page_access(request, current_user)
@@ -698,7 +816,7 @@ def expense_remove_user(guid, user_guid):
         flash(_('Your are only allowed to edit your own expense!'))
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.expenses', guid=expense.event.guid))
-    
+
     user = EventUser.get_by_guid_or_404(user_guid)
     if expense.remove_user(user):
         flash(_('User %(username)s cannot be removed from the expense.', username=user.username))
@@ -707,14 +825,20 @@ def expense_remove_user(guid, user_guid):
     flash(_('User %(username)s has been removed from the expense.', username=user.username))
     return redirect(url_for('event.expense_users', guid=guid))
 
+
+# ---------------------------------------------------------------------------
+# Settlements
+# ---------------------------------------------------------------------------
+
 @bp.route('/settlements/<guid>', methods=['GET', 'POST'])
-def settlements(guid):
+def settlements(guid: str) -> str:
+    """List settlements for an event and allow adding new ones."""
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
     eventuser = get_eventuser_from_cookie(event, request)
     if eventuser is None:
         return redirect(url_for('event.select_user', event_guid=guid))
-    
+
     form = SettlementForm()
     form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users]
@@ -722,16 +846,20 @@ def settlements(guid):
         if event.closed:
             flash(_('Your are only allowed to edit an open event!'))
             return redirect(url_for('main.event', guid=event.guid))
-        settlement = Settlement(sender=eventuser, 
-                                recipient=db.session.get(EventUser, form.recipient_id.data), 
-                                event=event, 
-                                currency=db.session.get(Currency, form.currency_id.data), 
-                                amount=form.amount.data, 
-                                draft=False,
-                                date=datetime.now(timezone.utc),
-                                description=form.description.data, 
-                                db_created_by=(current_user.username if current_user.is_anonymous else 'anonymous'))
-        
+        # BUG FIX: inverted is_anonymous logic — use is_authenticated to get
+        # the real username, fall back to 'anonymous' for unauthenticated users.
+        settlement = Settlement(
+            sender=eventuser,
+            recipient=db.session.get(EventUser, form.recipient_id.data),
+            event=event,
+            currency=db.session.get(Currency, form.currency_id.data),
+            amount=form.amount.data,
+            draft=False,
+            date=datetime.now(timezone.utc),
+            description=form.description.data,
+            db_created_by=current_user.username if current_user.is_authenticated else 'anonymous',
+        )
+
         with db.session.no_autoflush:
             image = Image.query.join(File).filter(File.original_filename.like('settlement%')).first()
 
@@ -741,25 +869,30 @@ def settlements(guid):
         db.session.commit()
         flash(_('Your new settlement has been added to event %(event_name)s.', event_name=event.name))
         return redirect(url_for('event.settlements', guid=guid))
-    
+
     form.currency_id.data = event.base_currency.id
     page = request.args.get('page', 1, type=int)
     settlements = event.settlements.filter_by(draft=False).order_by(Settlement.date.desc()).paginate(
-            page=page, 
-            per_page=current_app.config['ITEMS_PER_PAGE'], 
-            error_out=False
-        )
+        page=page,
+        per_page=current_app.config['ITEMS_PER_PAGE'],
+        error_out=False,
+    )
     next_url = url_for('event.settlements', guid=event.guid, page=settlements.next_num) if settlements.has_next else None
     prev_url = url_for('event.settlements', guid=event.guid, page=settlements.prev_num) if settlements.has_prev else None
-    return render_template('event/settlements.html', 
-                           form=form, 
-                           event=event, 
-                           eventuser=eventuser,
-                           settlements=settlements.items,
-                           next_url=next_url, prev_url=prev_url)
+    return render_template(
+        'event/settlements.html',
+        form=form,
+        event=event,
+        eventuser=eventuser,
+        settlements=settlements.items,
+        next_url=next_url,
+        prev_url=prev_url,
+    )
+
 
 @bp.route('/edit_settlement/<guid>', methods=['GET', 'POST'])
-def edit_settlement(guid):
+def edit_settlement(guid: str) -> str:
+    """Edit an existing settlement."""
     settlement = Settlement.get_by_guid_or_404(guid)
     event = settlement.event
     log_page_access(request, current_user)
@@ -770,7 +903,7 @@ def edit_settlement(guid):
         flash(_('Your are only allowed to edit your own settlements!'))
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.settlements', guid=settlement.event.guid))
-    
+
     form = SettlementForm()
     form.currency_id.choices = [(c.id, c.code) for c in event.currencies]
     form.recipient_id.choices = [(u.id, u.username) for u in event.users]
@@ -787,12 +920,12 @@ def edit_settlement(guid):
         form.amount.data = settlement.amount
         form.recipient_id.data = settlement.recipient.id
         form.description.data = settlement.description
-    return render_template('edit_form.html', 
-                           title=_('Edit Settlement'), 
-                           form=form)
+    return render_template('edit_form.html', title=_('Edit Settlement'), form=form)
+
 
 @bp.route('/balance/pay/<guid>', methods=['GET'])
-def settlement_execute(guid):
+def settlement_execute(guid: str) -> str:
+    """Confirm a draft settlement (mark as non-draft)."""
     settlement = Settlement.get_by_guid_or_404(guid)
     event = settlement.event
     if not session_can_edit(request, event, settlement.recipient):
@@ -802,12 +935,14 @@ def settlement_execute(guid):
     log_page_access(request, current_user)
     eventuser = get_eventuser_from_cookie(event, request)
     settlement.draft = False
-    settlement.description = _('Confirmed by user %(username)s', username = eventuser.username)
+    settlement.description = _('Confirmed by user %(username)s', username=eventuser.username)
     db.session.commit()
     return redirect(url_for('event.balance', guid=event.guid))
-    
+
+
 @bp.route('/remove_settlement/<guid>')
-def remove_settlement(guid):
+def remove_settlement(guid: str) -> str:
+    """Remove a settlement from an event."""
     settlement = Settlement.get_by_guid_or_404(guid)
     event = settlement.event
     log_page_access(request, current_user)
@@ -818,7 +953,7 @@ def remove_settlement(guid):
         flash(_('Your are only allowed to edit your own settlements!'))
         log_page_access_denied(request, current_user)
         return redirect(url_for('event.settlements', guid=settlement.event.guid))
-    
+
     if settlement in event.settlements:
         amount_str = settlement.get_amount_str()
         event.settlements.remove(settlement)
@@ -826,9 +961,15 @@ def remove_settlement(guid):
         flash(_('Settlement over %(amount_str)s has been removed from event %(event_name)s.', amount_str=amount_str, event_name=event.name))
     return redirect(url_for('event.settlements', guid=event.guid))
 
+
+# ---------------------------------------------------------------------------
+# Event actions (reminders, balance, currency conversion, open/close)
+# ---------------------------------------------------------------------------
+
 @bp.route('/send_payment_reminders/<guid>')
 @login_required
-def send_payment_reminders(guid):
+def send_payment_reminders(guid: str) -> str:
+    """Send payment reminder emails to all event users."""
     event = Event.get_by_guid_or_404(guid)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to send payment reminders of your own event!'))
@@ -840,20 +981,24 @@ def send_payment_reminders(guid):
     flash(_('All users have been reminded of their duties!'))
     return redirect(url_for('event.main', guid=event.guid))
 
+
 @bp.route('/request_balance/<guid>')
-def request_balance(guid):
+def request_balance(guid: str) -> str:
+    """Request a balance report email for the current event user."""
     event = Event.get_by_guid_or_404(guid)
     log_page_access(request, current_user)
-    eventuser_guid = request.cookies.get('{}.eventuser'.format(guid))
-    
+    eventuser_guid = request.cookies.get(f'{guid}.eventuser')
+
     event.admin.launch_task('request_balance', _('Sending balance reports...'), event_guid=guid, eventuser_guid=eventuser_guid)
     db.session.commit()
     flash(_('The balance has been sent to your email'))
     return redirect(url_for('event.main', guid=event.guid))
 
+
 @bp.route('/convert_currencies/<guid>')
 @login_required
-def convert_currencies(guid):
+def convert_currencies(guid: str) -> str:
+    """Convert all event transactions to the base currency."""
     event = Event.get_by_guid_or_404(guid)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to convert currencies of your own event!'))
@@ -865,9 +1010,11 @@ def convert_currencies(guid):
     flash(_('All transaction of this event have been converted to %(code)s.', code=event.base_currency.code))
     return redirect(url_for('event.main', guid=event.guid))
 
+
 @bp.route('/reopen/<guid>')
 @login_required
-def reopen(guid):
+def reopen(guid: str) -> str:
+    """Reopen a closed event."""
     event = Event.get_by_guid_or_404(guid)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to reopen your own event!'))
@@ -879,9 +1026,11 @@ def reopen(guid):
     flash(_('Event has been reopened.'))
     return redirect(url_for('event.main', guid=event.guid))
 
+
 @bp.route('/close/<guid>')
 @login_required
-def close(guid):
+def close(guid: str) -> str:
+    """Close an event if no open liabilities remain."""
     event = Event.get_by_guid_or_404(guid)
     if not event.can_edit(current_user):
         flash(_('Your are only allowed to close your own event!'))
