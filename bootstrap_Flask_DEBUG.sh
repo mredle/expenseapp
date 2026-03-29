@@ -1,6 +1,6 @@
 #!/bin/bash
 
-docker-compose -f scripts/dev/docker-compose.yml  up -d
+docker compose -f scripts/dev/docker-compose.yml  up -d
 source create_venv_pyenv_dev.sh
 
 export FLASK_APP="./expenseapp.py"
@@ -27,18 +27,21 @@ while true; do
     echo "Upgrade command failed, retrying in 10 secs..."
 done
 
+#echo "Performing development factory reset..."
+flask flush-s3
+flask flush-db-force
+flask flush-media-cache
+flask flush-jobs
+
 flask db upgrade
 flask dbinit admin --overwrite
-flask dbinit icons --no-overwrite --subfolder icons
+flask dbinit icons --overwrite --subfolder icons
 flask dbinit currencies --overwrite
 flask dbinit dummyusers --count 3
 flask dbmaint add-missing-guid
 flask translate compile
 
-#echo "Performing development factory reset..."
-#flask flush-s3
-#flask flush-db
-#flask flush-media-cache
-
 echo "Starting Flask development server..."
-flask run --host=0.0.0.0
+export FLASK_DEBUG=0
+exec gunicorn -b :5000 --access-logfile - --error-logfile - expenseapp:app
+#flask run --host=0.0.0.0

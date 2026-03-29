@@ -101,20 +101,68 @@ scripts/dev/               # Dev Docker Compose, migration helpers
 ## 7. Code Style & Conventions
 
 ### File Headers
-All Python files use a UTF-8 encoding declaration:
-```python
-# -*- coding: utf-8 -*-
-```
-or
+Every Python file MUST start with these two lines, in this exact order:
 ```python
 # coding=utf-8
+"""Module docstring describing the file's purpose."""
+```
+Followed immediately by:
+```python
+from __future__ import annotations
+```
+
+### Module Docstrings
+Every `.py` file MUST have a module-level docstring immediately after the encoding declaration. Keep it to one concise line describing the module's purpose:
+```python
+# coding=utf-8
+"""Flask application factory and extension initialization."""
+from __future__ import annotations
+```
+
+### Future Annotations
+Every `.py` file MUST include `from __future__ import annotations` as the first import. This enables PEP 604 union syntax (`X | None`) and deferred evaluation of type hints throughout the codebase.
+
+### Type Hints
+All functions and methods MUST have complete type annotations on all parameters and return types:
+```python
+def create_app(config_class: type = Config) -> Flask:
+    ...
+
+def get_by_guid_or_404(cls, guid: str) -> Event:
+    ...
+
+def process_image(data: bytes, max_size: int = 1024) -> tuple[bytes, int, int]:
+    ...
+```
+
+Rules:
+- Use built-in generics (`list[str]`, `dict[str, int]`, `tuple[int, ...]`) — never `typing.List`, `typing.Dict`, etc.
+- Use PEP 604 union syntax (`str | None`) — never `typing.Optional[str]` or `typing.Union[str, None]`.
+- Use `-> None` for functions that don't return a value.
+- Flask route functions return `-> str | Response` (or the specific return type if known).
+- Test functions always return `-> None`.
+- Fixture functions annotate their return type (e.g., `-> Flask`, `-> FlaskClient`).
+- Use `Any` sparingly and only when the type is genuinely dynamic.
+
+### String Formatting
+Always use f-strings. Never use `str.format()` or `%`-style formatting:
+```python
+# Correct
+message = f"User {username} logged in from {ip_address}"
+logger.info(f"Processing event {event.guid}")
+
+# Wrong
+message = "User {} logged in from {}".format(username, ip_address)
+message = "User %s logged in from %s" % (username, ip_address)
 ```
 
 ### Import Ordering
-Imports follow this grouping order (no blank lines between groups in practice):
+Imports follow three groups separated by blank lines:
 1. Standard library (`os`, `sys`, `json`, `uuid`, `datetime`, etc.)
 2. Third-party libraries (`flask`, `flask_login`, `flask_babel`, `sqlalchemy`, `PIL`, etc.)
 3. Local application imports (`from app import db`, `from app.models import ...`)
+
+Within each group, sort alphabetically. Use `from X import Y` style for specific names; use `import X` for modules used with qualified access.
 
 ### Naming Conventions
 - **Classes:** PascalCase (`User`, `EventUser`, `StorageProvider`, `AuthenticatePasswordForm`)
@@ -125,6 +173,30 @@ Imports follow this grouping order (no blank lines between groups in practice):
 - **Test files:** `test_<module>.py`, test functions: `test_<description>` (no classes)
 - **Templates:** lowercase with underscores, organized by blueprint subdirectory
 - **Database tables:** lowercase plural (`users`, `files`, `log`)
+
+### No Python 2 Patterns
+This is a Python 3.14+ codebase. Never use legacy patterns:
+```python
+# Wrong — Python 2 patterns
+class Foo(object):
+    def __init__(self):
+        super(Foo, self).__init__()
+
+# Correct — Modern Python 3
+class Foo:
+    def __init__(self):
+        super().__init__()
+```
+
+### No Debug Code in Production
+Never leave `print()` statements in application code. Use `app.logger` or `current_app.logger` instead:
+```python
+# Wrong
+print(f"Debug: {variable}")
+
+# Correct
+current_app.logger.debug(f"Variable value: {variable}")
+```
 
 ### Blueprint Pattern
 Each blueprint lives in its own package under `app/`:
@@ -149,6 +221,40 @@ Blueprints are registered in `create_app()` with a URL prefix.
 - Use `db.Column(db.Identity())` for auto-increment primary keys (cross-DB compatible).
 - Use the custom `GUID` type from models.py for UUID columns (handles PostgreSQL UUID vs CHAR(32)).
 - Relationships use `db.relationship()` with `back_populates`.
+- Use keyword arguments for `paginate()`: `paginate(page=page, per_page=per_page, error_out=False)`.
+- Use `db.session.get(Model, id)` instead of the deprecated `Model.query.get(id)`.
+
+### Datetime Handling
+Always use timezone-aware datetimes. Never use deprecated naive UTC functions:
+```python
+# Wrong — deprecated in Python 3.12+
+from datetime import datetime
+now = datetime.utcnow()
+
+# Correct
+from datetime import datetime, timezone
+now = datetime.now(timezone.utc)
+```
+
+### Security
+- Never log raw request headers — sanitize sensitive headers (`Authorization`, `Cookie`, `X-Api-Key`, etc.) before logging.
+- Set `httponly=True` and `samesite='Lax'` on all cookies set via `response.set_cookie()`.
+- All API mutation endpoints (POST, PUT, DELETE) MUST require authentication (`@login_required` or `@token_auth.login_required`).
+- Never reflect user input directly in responses without escaping (XSS prevention).
+- Never hardcode secrets; use `os.environ.get()` with fallbacks for local dev.
+
+### Response Construction
+When returning error responses with Flask's `make_response`, use the tuple form correctly:
+```python
+# Wrong — attaches status to the wrong object
+return make_response({'error': 'msg'}), 401
+
+# Correct — status code inside make_response
+return make_response({'error': 'msg'}, 401)
+```
+
+### Event Routes Access Model
+Event routes (`/event/*`) intentionally do NOT use `@login_required`. The GUID-based access model allows non-registered participants to interact via shared links. Do NOT add `@login_required` to event routes.
 
 ### File Storage
 - **Always use the `StorageProvider`** (`app/storage.py`). Never write raw `open(file, 'w')` for media/images.
@@ -164,6 +270,7 @@ Blueprints are registered in `create_app()` with a URL prefix.
 - Route-level: Flask error handlers in `app/errors/handlers.py` with JSON/HTML content negotiation.
 - Background tasks: wrap in `try/except Exception`, log via `app.logger.error()`, always call `_set_task_progress(100)` on failure.
 - DB errors: call `db.session.rollback()` before returning error responses.
+- Use `current_app` instead of `app` inside CLI commands and request handlers — `app` is not available in those scopes.
 
 ### Testing Conventions
 - Fixtures are defined in `tests/conftest.py`: `app`, `client`, `auth_client`, `admin_client`.
@@ -173,9 +280,20 @@ Blueprints are registered in `create_app()` with a URL prefix.
 - Mock external services with `unittest.mock.patch` (e.g., `@patch('app.email.send_email')`).
 - Use `with app.app_context():` when querying the database inside tests.
 - Use `pytest.mark.parametrize` for testing multiple routes/inputs.
-- Each test function has a docstring explaining what it tests.
+- Each test function MUST have a docstring explaining what it tests.
+- All test functions MUST have type hints (parameters and `-> None` return).
+- Use `FlaskClient` type for `client`/`auth_client`/`admin_client` fixtures.
+- Use `Flask` type for the `app` fixture.
+- Prefix unused variables with `_` (e.g., `_args, kwargs = mock.call_args`).
 
 ### Configuration
 - All config lives in `config.py` (single `Config` class), driven by environment variables with sensible defaults.
 - Never hardcode secrets; use `os.environ.get()` with fallbacks for local dev.
 - Copy `.env.sample` to `.env` for local overrides.
+
+### Common Pitfalls to Avoid
+- **Trailing-comma tuples:** `x = form.field.data,` creates a tuple `(value,)` — not a scalar. Never leave a trailing comma after a form field assignment.
+- **Inverted boolean logic:** When checking `current_user.is_authenticated` vs `is_anonymous`, double-check the conditional branches assign the correct values.
+- **Duplicate column names:** When defining SQLAlchemy model columns, ensure each attribute name is unique (e.g., don't define `height` twice when you need `width` and `height`).
+- **`__repr__` correctness:** Ensure `__repr__` methods reference attributes that actually exist on the model.
+- **Unreachable code:** Never place duplicate `except` blocks after a bare `except:` — the second block is dead code.

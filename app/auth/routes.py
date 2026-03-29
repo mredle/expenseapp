@@ -1,51 +1,77 @@
-# coding=utf-8
+"""Authentication routes: password login, FIDO2/WebAuthn, registration, and password reset."""
+
+from __future__ import annotations
+
 import uuid
+from urllib.parse import urljoin, urlparse
 
-from flask import request, render_template, make_response, flash, redirect, url_for, current_app
-from flask_login import current_user, login_user, logout_user
+from flask import current_app, flash, make_response, redirect, render_template, request, url_for
 from flask_babel import _
-from urllib.parse import urlparse, urljoin
-
-from app import db
-from app import limiter
-from app.auth import bp
-from app.auth.forms import AuthenticatePasswordForm, RegistrationForm, ResetUserRequestForm, RegisterFIDO2Form, RegisterPasswordForm
-from app.auth.email import send_validate_email, send_newuser_notification
-from app.models import Challenge, User, Credential
-from app.db_logging import log_login, log_login_denied, log_logout, log_register, log_reset_password_request, log_reset_password
-
+from flask_login import current_user, login_user, logout_user
 from webauthn import (
-    generate_registration_options,
-    verify_registration_response,
     generate_authentication_options,
-    verify_authentication_response,
+    generate_registration_options,
     options_to_json,
+    verify_authentication_response,
+    verify_registration_response,
 )
 from webauthn.helpers import (
-    parse_registration_credential_json,
     parse_authentication_credential_json,
-)
-from webauthn.helpers.structs import (
-    AuthenticatorSelectionCriteria,
-    UserVerificationRequirement,
-    PublicKeyCredentialDescriptor,
-    ResidentKeyRequirement,
+    parse_registration_credential_json,
 )
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
+from webauthn.helpers.structs import (
+    AuthenticatorSelectionCriteria,
+    PublicKeyCredentialDescriptor,
+    ResidentKeyRequirement,
+    UserVerificationRequirement,
+)
 
-def is_safe_url(target):
+from app import db, limiter
+from app.auth import bp
+from app.auth.email import send_newuser_notification, send_validate_email
+from app.auth.forms import (
+    AuthenticatePasswordForm,
+    RegisterFIDO2Form,
+    RegisterPasswordForm,
+    RegistrationForm,
+    ResetUserRequestForm,
+)
+from app.db_logging import (
+    log_login,
+    log_login_denied,
+    log_logout,
+    log_register,
+    log_reset_password,
+    log_reset_password_request,
+)
+from app.models import Challenge, Credential, User
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def is_safe_url(target: str) -> bool:
+    """Return ``True`` if *target* is a same-origin URL (open-redirect guard)."""
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
-# routes for rendered pages
+
+# ---------------------------------------------------------------------------
+# Rendered page routes
+# ---------------------------------------------------------------------------
+
 @bp.route('/login')
 def login():
+    """Redirect to the default FIDO2 authentication page."""
     return redirect(url_for('auth.authenticate_fido2'))
 
 
 @bp.route('/authenticate_fido2', methods=['GET'])
 def authenticate_fido2():
+    """Show the FIDO2 passwordless sign-in page."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     return render_template('auth/authenticate_fido2.html', title=_('Sign In'))
@@ -53,6 +79,7 @@ def authenticate_fido2():
 
 @bp.route('/authenticate_fido2_error', methods=['GET'])
 def authenticate_fido2_error():
+    """Flash a FIDO2 login failure and redirect to index."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     flash(_('Login failed'))
@@ -61,6 +88,7 @@ def authenticate_fido2_error():
 
 @bp.route('/authenticate_fido2_success', methods=['GET'])
 def authenticate_fido2_success():
+    """Flash a FIDO2 login success and redirect to index."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     flash(_('Login successful'))
@@ -70,6 +98,7 @@ def authenticate_fido2_success():
 @bp.route('/authenticate_password', methods=['GET', 'POST'])
 @limiter.limit('12 per minute')
 def authenticate_password():
+    """Handle username/password authentication."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = AuthenticatePasswordForm()
@@ -78,15 +107,15 @@ def authenticate_password():
         user = User.query.filter_by(username=form.username.data).first()
 
         if user is None:
-            # Hash a dummy string to equalize response time
+            # Hash a dummy string to equalise response time
             User('dummy', 'dummy@example.com', 'en').check_password('dummy')
             log_login_denied(request.path, form.username.data)
             flash(_('Invalid username or password'))
-            
+
         elif not user.check_password(form.password.data):
             log_login_denied(request.path, form.username.data)
             flash(_('Invalid username or password'))
-        
+
         else:
             log_login(request.path, user)
             login_user(user, remember=form.remember_me.data)
@@ -94,12 +123,13 @@ def authenticate_password():
             if not next_page or not is_safe_url(next_page):
                 next_page = url_for('main.index')
             return redirect(next_page)
-        
+
     return render_template('auth/authenticate_password.html', title=_('Sign In'), form=form)
 
 
 @bp.route('/logout')
 def logout():
+    """Log the current user out and redirect to index."""
     log_logout(request.path, current_user)
     logout_user()
     return redirect(url_for('main.index'))
@@ -107,18 +137,21 @@ def logout():
 
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
+    """Handle new-user registration."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = RegistrationForm()
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
-    
+
     if form.validate_on_submit():
-        user = User(username=form.username.data, 
-                    email=form.email.data,
-                    locale=form.locale.data)
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            locale=form.locale.data,
+        )
         user.set_random_password()
         user.get_token()
-        
+
         db.session.add(user)
         log_register(request.path, user)
         send_newuser_notification(user)
@@ -130,6 +163,7 @@ def register():
 
 @bp.route('/reset_authentication', methods=['GET', 'POST'])
 def reset_authentication():
+    """Handle a request to reset authentication credentials."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = ResetUserRequestForm()
@@ -140,13 +174,12 @@ def reset_authentication():
         log_reset_password_request(request.path, user)
         flash(_('Please check your email to activate your account'))
         return redirect(url_for('auth.login'))
-    return render_template('edit_form.html', 
-                           title=_('Reset Login'), 
-                           form=form)
+    return render_template('edit_form.html', title=_('Reset Login'), form=form)
 
 
 @bp.route('/register_fido2/<token>', methods=['GET'])
-def register_fido2(token):
+def register_fido2(token: str):
+    """Show the FIDO2 device-registration page for a validated token."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     user = User.verify_reset_password_token(token)
@@ -154,27 +187,32 @@ def register_fido2(token):
         return redirect(url_for('main.index'))
     form = RegisterFIDO2Form()
     form.email.default = user.email
-    form.process() # process choices & default
+    form.process()  # process choices & default
     if form.validate_on_submit():
         log_reset_password('/register_fido2/<token>', user)
         flash(_('Your device is now registered for passwordless authentication'))
         return redirect(url_for('auth.login'))
 
-    response = make_response(render_template('auth/register_fido2.html', 
-                                             title=_('Enable passwordless authentication'), 
-                                             form=form,
-                                             token=token))
-    response.set_cookie(key = 'register_fido2.token', 
-                        value = token,
-                        max_age=3600,
-                        secure=True,       # Only send over HTTPS
-                        httponly=True,     # Hide from JavaScript
-                        samesite='Strict') # Protect against CSRF
+    response = make_response(render_template(
+        'auth/register_fido2.html',
+        title=_('Enable passwordless authentication'),
+        form=form,
+        token=token,
+    ))
+    response.set_cookie(
+        key='register_fido2.token',
+        value=token,
+        max_age=3600,
+        secure=True,
+        httponly=True,
+        samesite='Strict',
+    )
     return response
 
 
 @bp.route('/register_password/<token>', methods=['GET', 'POST'])
-def register_password(token):
+def register_password(token: str):
+    """Allow the user to set a password after token validation."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     user = User.verify_reset_password_token(token)
@@ -186,23 +224,30 @@ def register_password(token):
         log_reset_password('/register_password/<token>', user)
         flash(_('Your password has been set'))
         return redirect(url_for('auth.login'))
-    return render_template('auth/register_password.html', 
-                           title=_('Set your password'), 
-                           form=form,
-                           token=token)
+    return render_template(
+        'auth/register_password.html',
+        title=_('Set your password'),
+        form=form,
+        token=token,
+    )
 
+
+# ---------------------------------------------------------------------------
+# WebAuthn JSON API routes
+# ---------------------------------------------------------------------------
 
 @bp.route('/generate-registration-options', methods=['GET'])
 def handler_generate_registration_options():
+    """Return WebAuthn registration options as JSON."""
     if current_user.is_authenticated:
-        user = current_user._get_current_object()  # Unwraps the proxy here
+        user = current_user._get_current_object()
     else:
         token = request.cookies.get('register_fido2.token')
         user = User.verify_reset_password_token(token)
-        
+
     if not user:
-        return make_response({'error': 'Unauthorized'}), 401
-    
+        return make_response({'error': 'Unauthorized'}, 401)
+
     options = generate_registration_options(
         rp_id=current_app.config['RP_ID'],
         rp_name=current_app.config['RP_NAME'],
@@ -214,7 +259,7 @@ def handler_generate_registration_options():
         ],
         authenticator_selection=AuthenticatorSelectionCriteria(
             user_verification=UserVerificationRequirement.PREFERRED,
-            resident_key=ResidentKeyRequirement.REQUIRED
+            resident_key=ResidentKeyRequirement.REQUIRED,
         ),
         supported_pub_key_algs=[
             COSEAlgorithmIdentifier.ECDSA_SHA_256,
@@ -228,27 +273,30 @@ def handler_generate_registration_options():
     db.session.commit()
 
     response = make_response(options_to_json(options))
-    response.set_cookie(key = 'register_fido2.session', 
-                        value = str(challenge.guid),
-                        max_age=3600,
-                        secure=True,       # Only send over HTTPS
-                        httponly=True,     # Hide from JavaScript
-                        samesite='Strict') # Protect against CSRF
+    response.set_cookie(
+        key='register_fido2.session',
+        value=str(challenge.guid),
+        max_age=3600,
+        secure=True,
+        httponly=True,
+        samesite='Strict',
+    )
     return response
 
 
 @bp.route('/verify-registration-response', methods=['POST'])
 def handler_verify_registration_response():
+    """Verify a WebAuthn registration response and store the credential."""
     data = request.get_json()
-    
+
     if current_user.is_authenticated:
-        user = current_user._get_current_object()  # Unwraps the proxy here
+        user = current_user._get_current_object()
     else:
         token = request.cookies.get('register_fido2.token')
         user = User.verify_reset_password_token(token)
-        
+
     if not user:
-        return make_response({'error': 'Unauthorized'}), 401
+        return make_response({'error': 'Unauthorized'}, 401)
 
     session_id = request.cookies.get('register_fido2.session')
     challenge = Challenge.query.filter_by(guid=session_id).first()
@@ -260,34 +308,38 @@ def handler_verify_registration_response():
             expected_challenge=challenge.challenge,
             expected_rp_id=current_app.config['RP_ID'],
             expected_origin=current_app.config['RP_ORIGIN'],
-            require_user_verification=False
+            require_user_verification=False,
         )
     except Exception as err:
-        current_app.logger.error(f"WebAuthn Error: {str(err)}")
+        current_app.logger.error(f'WebAuthn Error: {err}')
         return {'verified': False, 'msg': 'Invalid credential or server error', 'status': 400}
-    
-    new_credential = Credential(id=verification.credential_id,
-                                public_key = verification.credential_public_key,
-                                sign_count = verification.sign_count,
-                                transports = data.get('response', {}).get('transports', []),
-                                user = user)
+
+    new_credential = Credential(
+        id=verification.credential_id,
+        public_key=verification.credential_public_key,
+        sign_count=verification.sign_count,
+        transports=data.get('response', {}).get('transports', []),
+        user=user,
+    )
 
     user.credentials.append(new_credential)
     db.session.commit()
 
     response = make_response({'verified': True})
-    response.set_cookie(key = 'register_fido2.session', 
-                        value = '',
-                        expires=0,
-                        secure=True,       # Only send over HTTPS
-                        httponly=True,     # Hide from JavaScript
-                        samesite='Strict') # Protect against CSRF
+    response.set_cookie(
+        key='register_fido2.session',
+        value='',
+        expires=0,
+        secure=True,
+        httponly=True,
+        samesite='Strict',
+    )
     return response
 
 
 @bp.route('/generate-authentication-options', methods=['GET'])
 def handler_generate_authentication_options():
-
+    """Return WebAuthn authentication options as JSON."""
     options = generate_authentication_options(
         rp_id=current_app.config['RP_ID'],
         user_verification=UserVerificationRequirement.PREFERRED,
@@ -298,19 +350,22 @@ def handler_generate_authentication_options():
     db.session.commit()
 
     response = make_response(options_to_json(options))
-    response.set_cookie(key = 'authenticate_fido2.session', 
-                        value = str(challenge.guid),
-                        max_age=3600,
-                        secure=True,       # Only send over HTTPS
-                        httponly=True,     # Hide from JavaScript
-                        samesite='Strict') # Protect against CSRF
+    response.set_cookie(
+        key='authenticate_fido2.session',
+        value=str(challenge.guid),
+        max_age=3600,
+        secure=True,
+        httponly=True,
+        samesite='Strict',
+    )
     return response
 
 
 @bp.route('/verify-authentication-response', methods=['POST'])
 def handler_verify_authentication_response():
+    """Verify a WebAuthn authentication response and log the user in."""
     data = request.get_json()
-    
+
     session_id = request.cookies.get('authenticate_fido2.session')
     challenge = Challenge.query.filter_by(guid=session_id).first()
 
@@ -320,10 +375,10 @@ def handler_verify_authentication_response():
         # Extract the user's GUID from the resident key's user_handle
         if not credential.response.user_handle:
             raise Exception('No user handle returned. Resident key required.')
-            
+
         user_guid_hex = credential.response.user_handle.decode('utf-8')
         user = User.query.filter_by(guid=uuid.UUID(user_guid_hex)).first()
-        
+
         if not user:
             raise Exception('User associated with this credential not found.')
 
@@ -336,7 +391,7 @@ def handler_verify_authentication_response():
 
         if user_credential is None:
             raise Exception('Could not find corresponding public key in DB')
-        
+
         # Verify the assertion
         verification = verify_authentication_response(
             credential=credential,
@@ -348,10 +403,10 @@ def handler_verify_authentication_response():
             require_user_verification=False,
         )
     except Exception as err:
-        current_app.logger.error(f"WebAuthn Error: {str(err)}")
+        current_app.logger.error(f'WebAuthn Error: {err}')
         return {'verified': False, 'msg': 'Invalid credential or server error', 'status': 400}
 
-    # Update our credential's sign count to what the authenticator says it is now
+    # Update credential sign count
     user_credential.sign_count = verification.new_sign_count
     challenge.user = user
     log_login(request.path, user)
@@ -359,10 +414,12 @@ def handler_verify_authentication_response():
     db.session.commit()
 
     response = make_response({'verified': True})
-    response.set_cookie(key = 'authenticate_fido2.session', 
-                        value = '',
-                        expires=0,
-                        secure=True,       # Only send over HTTPS
-                        httponly=True,     # Hide from JavaScript
-                        samesite='Strict') # Protect against CSRF
+    response.set_cookie(
+        key='authenticate_fido2.session',
+        value='',
+        expires=0,
+        secure=True,
+        httponly=True,
+        samesite='Strict',
+    )
     return response

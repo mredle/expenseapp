@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""REST API blueprint setup: Flask-RESTX Api instance and namespace registration."""
+
+from __future__ import annotations
 
 from flask import Blueprint
 from flask_restx import Api
@@ -7,13 +10,14 @@ from .users import api as users
 from .tokens import api as tokens
 
 bp = Blueprint('apis', __name__)
-apis = Api(bp,
+apis = Api(
+    bp,
     title='REST API',
     version='1.0',
-    description='Experimental'
+    description='Experimental',
 )
 
 apis.add_namespace(users)
 apis.add_namespace(tokens)
 
-from app.apis import errors
+from app.apis import errors  # noqa: E402, F401
