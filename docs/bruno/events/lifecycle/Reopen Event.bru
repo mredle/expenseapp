@@ -1,0 +1,15 @@
+meta {
+  name: Reopen Event
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/events/{{event_guid}}/reopen
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

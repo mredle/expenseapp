@@ -1,0 +1,11 @@
+meta {
+  name: Remove Task
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{base_url}}/admin/tasks/{{task_guid}}
+  body: none
+  auth: bearer
+}

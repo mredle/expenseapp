@@ -1,0 +1,33 @@
+meta {
+  name: Create Event
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/events/
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Test Event",
+    "date": "2026-06-15T00:00:00",
+    "base_currency_id": 1,
+    "currency_ids": [1, 2],
+    "exchange_fee": 2.5,
+    "fileshare_link": "",
+    "description": "A test event"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("event_guid", res.body.guid);
+  }
+}

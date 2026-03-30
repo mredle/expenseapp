@@ -1,0 +1,19 @@
+meta {
+  name: List Expenses
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/events/{{event_guid}}/expenses?page=1&per_page=25
+  body: none
+  auth: bearer
+}
+
+headers {
+  X-EventUser-GUID: {{eventuser_guid}}
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

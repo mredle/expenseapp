@@ -1,0 +1,25 @@
+meta {
+  name: Create Post
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/events/{{event_guid}}/posts
+  body: json
+  auth: bearer
+}
+
+headers {
+  X-EventUser-GUID: {{eventuser_guid}}
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "body": "Hello everyone!"
+  }
+}

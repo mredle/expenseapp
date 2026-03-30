@@ -1,0 +1,22 @@
+meta {
+  name: Issue Token
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/tokens/
+  body: none
+  auth: basic
+}
+
+auth:basic {
+  username: {{username}}
+  password: {{password}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setEnvVar("token", res.body.token);
+  }
+}

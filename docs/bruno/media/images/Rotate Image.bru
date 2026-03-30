@@ -1,0 +1,17 @@
+meta {
+  name: Rotate Image
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/media/images/{{image_guid}}/rotate
+  body: json
+  auth: bearer
+}
+
+body:json {
+  {
+    "degree": 90
+  }
+}

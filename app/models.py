@@ -1311,6 +1311,8 @@ class EventUser(Entity, db.Model):
     country = db.Column(db.String(64))
 
     # relationships
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True, nullable=True)
+    user = db.relationship('User', foreign_keys=user_id, backref=db.backref('eventusers', lazy='dynamic'))
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
     event = db.relationship('Event', foreign_keys=event_id, back_populates='users')
     events_accountant = db.relationship('Event', foreign_keys='Event.accountant_id',
@@ -1335,6 +1337,7 @@ class EventUser(Entity, db.Model):
 
     def __init__(self, username: str, email: str, weighting: float,
                  locale: str, about_me: str = '',
+                 user_id: int | None = None,
                  db_created_by: str = 'SYSTEM') -> None:
         Entity.__init__(self, db_created_by)
         self.username = username
@@ -1342,6 +1345,7 @@ class EventUser(Entity, db.Model):
         self.weighting = weighting
         self.locale = locale
         self.about_me = about_me
+        self.user_id = user_id
 
     def __repr__(self) -> str:
         return f'<EventUser {self.username}>'

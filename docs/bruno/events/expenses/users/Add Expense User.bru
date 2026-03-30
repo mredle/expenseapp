@@ -1,0 +1,15 @@
+meta {
+  name: Add Expense User
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/events/{{event_guid}}/expenses/{{expense_guid}}/users/{{eventuser_guid}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

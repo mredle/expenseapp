@@ -1,0 +1,15 @@
+meta {
+  name: Get Event User
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/events/{{event_guid}}/users/{{eventuser_guid}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

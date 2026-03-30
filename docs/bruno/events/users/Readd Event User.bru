@@ -1,0 +1,15 @@
+meta {
+  name: Readd Event User
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/events/{{event_guid}}/users/{{eventuser_guid}}/readd
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

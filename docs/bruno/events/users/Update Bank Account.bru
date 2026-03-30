@@ -1,0 +1,28 @@
+meta {
+  name: Update Bank Account
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{base_url}}/events/{{event_guid}}/users/{{eventuser_guid}}/bank
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "iban": "CH93 0076 2011 6238 5295 7",
+    "bank": "UBS",
+    "name": "Bob Smith",
+    "address": "123 Main St",
+    "address_suffix": "",
+    "zip_code": 8001,
+    "city": "Zurich",
+    "country": "CH"
+  }
+}

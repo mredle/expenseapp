@@ -1,0 +1,15 @@
+meta {
+  name: Convert Currencies
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/events/{{event_guid}}/convert-currencies
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

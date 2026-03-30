@@ -1,16 +1,20 @@
-# -*- coding: utf-8 -*-
-"""Shared pytest fixtures: app, client, auth_client, admin_client."""
+# coding=utf-8
+"""Shared pytest fixtures: app, client, auth_client, admin_client, and API helpers."""
 
 from __future__ import annotations
 
 import os
 import shutil
 import tempfile
+import uuid
+from datetime import datetime, timezone
 
 import pytest
+from flask import Flask
+from flask.testing import FlaskClient
 
 from app import create_app, db
-from app.models import User
+from app.models import Currency, Event, EventUser, Expense, Settlement, User
 from config import Config
 
 
@@ -107,3 +111,140 @@ def admin_client(app):
     }, follow_redirects=True)
 
     return client
+
+
+# ---------------------------------------------------------------------------
+# API test helpers
+# ---------------------------------------------------------------------------
+
+def _get_api_token(app: Flask, client: FlaskClient, username: str, password: str) -> str:
+    """Create a user (if needed), obtain an API token, and return it."""
+    with app.app_context():
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            user = User(username=username, email=f'{username}@expenseapp.ch', locale='en')
+            user.set_password(password)
+            db.session.add(user)
+            db.session.commit()
+        token = user.get_token()
+        db.session.commit()
+        return token
+
+
+def _api_headers(token: str) -> dict[str, str]:
+    """Return common API request headers including bearer auth."""
+    return {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    }
+
+
+@pytest.fixture
+def api_client(app: Flask) -> tuple[FlaskClient, str]:
+    """A test client with a regular-user API token.
+
+    Returns a ``(client, token)`` tuple.
+    """
+    client = app.test_client()
+    token = _get_api_token(app, client, 'apiuser', 'apipassword')
+    return client, token
+
+
+@pytest.fixture
+def api_admin_client(app: Flask) -> tuple[FlaskClient, str]:
+    """A test client with an admin-user API token.
+
+    Returns a ``(client, token)`` tuple.
+    """
+    client = app.test_client()
+    with app.app_context():
+        admin = User.query.filter_by(username='apiadmin').first()
+        if not admin:
+            admin = User(username='apiadmin', email='apiadmin@expenseapp.ch', locale='en')
+            admin.set_password('apiadminpassword')
+            admin.is_admin = True
+            db.session.add(admin)
+            db.session.commit()
+        token = admin.get_token()
+        db.session.commit()
+    return client, token
+
+
+@pytest.fixture
+def api_currency(app: Flask) -> Currency:
+    """Create a test currency (CHF) and return it."""
+    with app.app_context():
+        currency = Currency.query.filter_by(code='CHF').first()
+        if not currency:
+            currency = Currency(
+                code='CHF',
+                name='Swiss Franc',
+                number=756,
+                exponent=2,
+                inCHF=1.0,
+                description='Test currency',
+            )
+            db.session.add(currency)
+            db.session.commit()
+        return currency
+
+
+@pytest.fixture
+def api_second_currency(app: Flask) -> Currency:
+    """Create a second test currency (EUR) and return it."""
+    with app.app_context():
+        currency = Currency.query.filter_by(code='EUR').first()
+        if not currency:
+            currency = Currency(
+                code='EUR',
+                name='Euro',
+                number=978,
+                exponent=2,
+                inCHF=0.93,
+                description='Test currency EUR',
+            )
+            db.session.add(currency)
+            db.session.commit()
+        return currency
+
+
+@pytest.fixture
+def api_event(
+    app: Flask,
+    api_client: tuple[FlaskClient, str],
+    api_currency: Currency,
+) -> Event:
+    """Create a test event with the api_client user as admin and return it."""
+    _client, _token = api_client
+    with app.app_context():
+        user = User.query.filter_by(username='apiuser').first()
+        currency = db.session.get(Currency, api_currency.id)
+        event = Event(
+            name='Test Event',
+            date=datetime.now(timezone.utc),
+            admin=user,
+            base_currency=currency,
+            currencies=[currency],
+            exchange_fee=2.5,
+            fileshare_link='',
+        )
+        db.session.add(event)
+        db.session.flush()
+
+        # Create the admin EventUser
+        eu = EventUser(
+            username=user.username,
+            email=user.email,
+            weighting=1.0,
+            locale='en',
+            user_id=user.id,
+        )
+        eu.event_id = event.id
+        db.session.add(eu)
+        db.session.flush()
+
+        event.accountant = eu
+
+        db.session.commit()
+        return event
