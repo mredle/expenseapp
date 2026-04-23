@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler, SMTPHandler
 from flask import Flask, current_app, request
 from flask_apscheduler import APScheduler
 from flask_babel import Babel, lazy_gettext as _l
-from flask_bootstrap import Bootstrap
+from flask_bootstrap import Bootstrap5
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_login import AnonymousUserMixin, LoginManager, current_user
@@ -41,7 +41,7 @@ login.anonymous_user = Anonymous
 login.login_message = _l('Please log in to access this page.')
 images = UploadSet('images', IMAGES)
 mail = Mail()
-bootstrap = Bootstrap()
+bootstrap = Bootstrap5()
 moment = Moment()
 babel = Babel()
 scheduler = APScheduler()

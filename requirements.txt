@@ -26,7 +26,7 @@ flask-moment
 flask-babel
 flask-httpauth
 flask-wtf
-flask-bootstrap
+bootstrap-flask
 Flask-Reuploaded
 flask-restx
 flask-weasyprint
