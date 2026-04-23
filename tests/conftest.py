@@ -174,39 +174,37 @@ def api_admin_client(app: Flask) -> tuple[FlaskClient, str]:
 @pytest.fixture
 def api_currency(app: Flask) -> Currency:
     """Create a test currency (CHF) and return it."""
-    with app.app_context():
-        currency = Currency.query.filter_by(code='CHF').first()
-        if not currency:
-            currency = Currency(
-                code='CHF',
-                name='Swiss Franc',
-                number=756,
-                exponent=2,
-                inCHF=1.0,
-                description='Test currency',
-            )
-            db.session.add(currency)
-            db.session.commit()
-        return currency
+    currency = Currency.query.filter_by(code='CHF').first()
+    if not currency:
+        currency = Currency(
+            code='CHF',
+            name='Swiss Franc',
+            number=756,
+            exponent=2,
+            inCHF=1.0,
+            description='Test currency',
+        )
+        db.session.add(currency)
+        db.session.commit()
+    return currency
 
 
 @pytest.fixture
 def api_second_currency(app: Flask) -> Currency:
     """Create a second test currency (EUR) and return it."""
-    with app.app_context():
-        currency = Currency.query.filter_by(code='EUR').first()
-        if not currency:
-            currency = Currency(
-                code='EUR',
-                name='Euro',
-                number=978,
-                exponent=2,
-                inCHF=0.93,
-                description='Test currency EUR',
-            )
-            db.session.add(currency)
-            db.session.commit()
-        return currency
+    currency = Currency.query.filter_by(code='EUR').first()
+    if not currency:
+        currency = Currency(
+            code='EUR',
+            name='Euro',
+            number=978,
+            exponent=2,
+            inCHF=0.93,
+            description='Test currency EUR',
+        )
+        db.session.add(currency)
+        db.session.commit()
+    return currency
 
 
 @pytest.fixture
@@ -217,34 +215,33 @@ def api_event(
 ) -> Event:
     """Create a test event with the api_client user as admin and return it."""
     _client, _token = api_client
-    with app.app_context():
-        user = User.query.filter_by(username='apiuser').first()
-        currency = db.session.get(Currency, api_currency.id)
-        event = Event(
-            name='Test Event',
-            date=datetime.now(timezone.utc),
-            admin=user,
-            base_currency=currency,
-            currencies=[currency],
-            exchange_fee=2.5,
-            fileshare_link='',
-        )
-        db.session.add(event)
-        db.session.flush()
+    user = User.query.filter_by(username='apiuser').first()
+    currency = db.session.get(Currency, api_currency.id)
+    event = Event(
+        name='Test Event',
+        date=datetime.now(timezone.utc),
+        admin=user,
+        base_currency=currency,
+        currencies=[currency],
+        exchange_fee=2.5,
+        fileshare_link='',
+    )
+    db.session.add(event)
+    db.session.flush()
 
-        # Create the admin EventUser
-        eu = EventUser(
-            username=user.username,
-            email=user.email,
-            weighting=1.0,
-            locale='en',
-            user_id=user.id,
-        )
-        eu.event_id = event.id
-        db.session.add(eu)
-        db.session.flush()
+    # Create the admin EventUser
+    eu = EventUser(
+        username=user.username,
+        email=user.email,
+        weighting=1.0,
+        locale='en',
+        user_id=user.id,
+    )
+    eu.event_id = event.id
+    db.session.add(eu)
+    db.session.flush()
 
-        event.accountant = eu
+    event.accountant = eu
 
-        db.session.commit()
-        return event
+    db.session.commit()
+    return event

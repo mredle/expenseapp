@@ -1173,7 +1173,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
             'about_me': self.about_me,
             'post_count': post_count,
             '_links': {
-                'self': url_for('apis.users_api_user', id=self.id),
+                'self': url_for('apis.users_api_user', guid=self.guid),
                 'avatar': self.avatar(128),
             },
         }
@@ -1282,7 +1282,12 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     def check_token(token: str) -> User | None:
         """Return the user for *token*, or ``None`` if invalid/expired."""
         user = User.query.filter_by(token=token).first()
-        if user is None or user.token_expiration < datetime.now(timezone.utc):
+        if user is None:
+            return None
+        # Attach UTC timezone if the database loaded a naive datetime.
+        if user.token_expiration and user.token_expiration.tzinfo is None:
+            user.token_expiration = user.token_expiration.replace(tzinfo=timezone.utc)
+        if user.token_expiration < datetime.now(timezone.utc):
             return None
         return user
 

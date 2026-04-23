@@ -24,7 +24,7 @@
                 {% endset %}
                 {% set remove_link %}
                     <span>
-                        <a href="{{ url_for('event.remove_expense', guid=expense.guid) }}">
+                        <a href="{{ url_for('event.remove_expense_route', guid=expense.guid) }}">
                             {{ _('remove') }}
                         </a>
                     </span>

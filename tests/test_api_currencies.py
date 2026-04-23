@@ -26,7 +26,7 @@ def test_list_currencies_success(
 ) -> None:
     """Authenticated user can list currencies and receives paginated results."""
     client, token = api_client
-    resp = client.get('/apis/currencies/', headers=_api_headers(token))
+    resp = client.get('/apis/currencies/?per_page=200', headers=_api_headers(token))
 
     assert resp.status_code == 200
     data = resp.get_json()
