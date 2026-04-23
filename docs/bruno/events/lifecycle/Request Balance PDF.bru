@@ -1,0 +1,21 @@
+meta {
+  name: Request Balance PDF
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/events/{{event_guid}}/request-balance
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "eventuser_guid": "{{eventuser_guid}}"
+  }
+}

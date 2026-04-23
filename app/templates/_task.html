@@ -3,7 +3,7 @@
             <td>
                 {% set remove_link %}
                     <span>
-                        <a href="{{ url_for('main.remove_task', guid=task.guid) }}">
+                        <a href="{{ url_for('main.remove_task_route', guid=task.guid) }}">
                             {{ _('remove') }}
                         </a>
                     </span>

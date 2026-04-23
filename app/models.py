@@ -1173,7 +1173,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
             'about_me': self.about_me,
             'post_count': post_count,
             '_links': {
-                'self': url_for('apis.users_api_user', id=self.id),
+                'self': url_for('apis.users_api_user', guid=self.guid),
                 'avatar': self.avatar(128),
             },
         }
@@ -1282,7 +1282,12 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
     def check_token(token: str) -> User | None:
         """Return the user for *token*, or ``None`` if invalid/expired."""
         user = User.query.filter_by(token=token).first()
-        if user is None or user.token_expiration < datetime.now(timezone.utc):
+        if user is None:
+            return None
+        # Attach UTC timezone if the database loaded a naive datetime.
+        if user.token_expiration and user.token_expiration.tzinfo is None:
+            user.token_expiration = user.token_expiration.replace(tzinfo=timezone.utc)
+        if user.token_expiration < datetime.now(timezone.utc):
             return None
         return user
 
@@ -1311,6 +1316,8 @@ class EventUser(Entity, db.Model):
     country = db.Column(db.String(64))
 
     # relationships
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True, nullable=True)
+    user = db.relationship('User', foreign_keys=user_id, backref=db.backref('eventusers', lazy='dynamic'))
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
     event = db.relationship('Event', foreign_keys=event_id, back_populates='users')
     events_accountant = db.relationship('Event', foreign_keys='Event.accountant_id',
@@ -1335,6 +1342,7 @@ class EventUser(Entity, db.Model):
 
     def __init__(self, username: str, email: str, weighting: float,
                  locale: str, about_me: str = '',
+                 user_id: int | None = None,
                  db_created_by: str = 'SYSTEM') -> None:
         Entity.__init__(self, db_created_by)
         self.username = username
@@ -1342,6 +1350,7 @@ class EventUser(Entity, db.Model):
         self.weighting = weighting
         self.locale = locale
         self.about_me = about_me
+        self.user_id = user_id
 
     def __repr__(self) -> str:
         return f'<EventUser {self.username}>'

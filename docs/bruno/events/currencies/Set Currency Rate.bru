@@ -1,0 +1,21 @@
+meta {
+  name: Set Currency Rate
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{base_url}}/events/{{event_guid}}/currencies/{{currency_guid}}/rate
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "rate": 1.05
+  }
+}

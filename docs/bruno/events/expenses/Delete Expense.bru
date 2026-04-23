@@ -1,0 +1,19 @@
+meta {
+  name: Delete Expense
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{base_url}}/events/{{event_guid}}/expenses/{{expense_guid}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  X-EventUser-GUID: {{eventuser_guid}}
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

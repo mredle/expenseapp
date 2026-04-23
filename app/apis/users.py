@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from flask import request
+from flask import request, url_for
 from flask_restx import Namespace, Resource, fields
 
 from app import db
@@ -87,7 +87,7 @@ class ApiUserList(Resource):
         # BUG FIX: user.to_dict() returns a plain dict — cannot set
         # .status_code or .headers on it.  Return a (body, status, headers)
         # tuple instead, which Flask-RESTX handles correctly.
-        return new_user.to_dict(), 201, {'Location': api.url_for(ApiUserList, guid=new_user.guid)}
+        return new_user.to_dict(), 201, {'Location': url_for('apis.users_api_user', guid=new_user.guid)}
 
 
 @api.route('/<guid>')

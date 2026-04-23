@@ -391,6 +391,46 @@ def register(app) -> None:  # noqa: C901 — CLI registration is inherently comp
 
         click.echo('Successfully added missing guids.')
 
+    @dbmaint.command()
+    def backfill_eventuser_user_id() -> None:
+        """Link existing EventUsers to Users by matching email addresses.
+
+        Sets ``EventUser.user_id`` for every EventUser whose email matches
+        a registered User and whose ``user_id`` is currently NULL.
+        """
+        updated_by = 'flask dbmaint backfill_eventuser_user_id'
+        linked = 0
+        skipped = 0
+
+        # Build a lookup of lowercase email -> User.id for all registered users
+        user_lookup: dict[str, int] = {
+            u.email.lower(): u.id
+            for u in User.query.with_entities(User.id, User.email).all()
+            if u.email
+        }
+
+        # Find all EventUsers that have no user_id set yet
+        unlinked = EventUser.query.filter(EventUser.user_id.is_(None)).all()
+
+        for eu in unlinked:
+            if not eu.email:
+                skipped += 1
+                continue
+            user_id = user_lookup.get(eu.email.lower())
+            if user_id:
+                eu.user_id = user_id
+                eu.db_updated_by = updated_by
+                eu.db_updated_at = datetime.now(timezone.utc)
+                linked += 1
+            else:
+                skipped += 1
+
+        db.session.commit()
+        click.echo(
+            f'Backfill complete: {linked} EventUser(s) linked, '
+            f'{skipped} skipped (no matching User or no email).'
+        )
+
     # ------------------------------------------------------------------
     # Cache / storage flush commands
     # ------------------------------------------------------------------

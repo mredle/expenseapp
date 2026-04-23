@@ -1,0 +1,25 @@
+meta {
+  name: Update Profile
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{base_url}}/events/{{event_guid}}/users/{{eventuser_guid}}/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "username": "Bob Updated",
+    "email": "bob@example.com",
+    "weighting": 1.5,
+    "about_me": "Updated bio",
+    "locale": "en"
+  }
+}

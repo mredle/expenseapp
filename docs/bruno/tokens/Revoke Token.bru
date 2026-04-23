@@ -1,0 +1,11 @@
+meta {
+  name: Revoke Token
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{base_url}}/tokens/
+  body: none
+  auth: bearer
+}

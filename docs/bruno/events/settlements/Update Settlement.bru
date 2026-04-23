@@ -1,0 +1,28 @@
+meta {
+  name: Update Settlement
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{base_url}}/events/{{event_guid}}/settlements/{{settlement_guid}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  X-EventUser-GUID: {{eventuser_guid}}
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "recipient_id": 2,
+    "currency_id": 1,
+    "amount": 30.00,
+    "description": "Updated"
+  }
+}

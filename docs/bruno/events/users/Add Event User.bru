@@ -1,0 +1,31 @@
+meta {
+  name: Add Event User
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/events/{{event_guid}}/users
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "username": "Bob",
+    "email": "bob@example.com",
+    "weighting": 1.0,
+    "locale": "en",
+    "about_me": ""
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("eventuser_guid", res.body.guid);
+  }
+}

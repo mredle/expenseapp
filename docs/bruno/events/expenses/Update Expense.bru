@@ -1,0 +1,29 @@
+meta {
+  name: Update Expense
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{base_url}}/events/{{event_guid}}/expenses/{{expense_guid}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  X-EventUser-GUID: {{eventuser_guid}}
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "currency_id": 1,
+    "amount": 50.00,
+    "affected_user_ids": [1, 2],
+    "date": "2026-06-15T00:00:00",
+    "description": "Updated dinner"
+  }
+}

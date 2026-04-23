@@ -1,0 +1,15 @@
+meta {
+  name: List Event Currencies
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/events/{{event_guid}}/currencies?page=1&per_page=25
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

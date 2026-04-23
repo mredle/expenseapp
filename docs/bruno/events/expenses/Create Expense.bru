@@ -1,0 +1,35 @@
+meta {
+  name: Create Expense
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/events/{{event_guid}}/expenses
+  body: json
+  auth: bearer
+}
+
+headers {
+  X-EventUser-GUID: {{eventuser_guid}}
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "currency_id": 1,
+    "amount": 42.50,
+    "affected_user_ids": [1, 2],
+    "date": "2026-06-15T00:00:00",
+    "description": "Dinner"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setEnvVar("expense_guid", res.body.guid);
+  }
+}

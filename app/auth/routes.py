@@ -1,33 +1,15 @@
+# coding=utf-8
 """Authentication routes: password login, FIDO2/WebAuthn, registration, and password reset."""
 
 from __future__ import annotations
 
-import uuid
 from urllib.parse import urljoin, urlparse
 
 from flask import current_app, flash, make_response, redirect, render_template, request, url_for
 from flask_babel import _
 from flask_login import current_user, login_user, logout_user
-from webauthn import (
-    generate_authentication_options,
-    generate_registration_options,
-    options_to_json,
-    verify_authentication_response,
-    verify_registration_response,
-)
-from webauthn.helpers import (
-    parse_authentication_credential_json,
-    parse_registration_credential_json,
-)
-from webauthn.helpers.cose import COSEAlgorithmIdentifier
-from webauthn.helpers.structs import (
-    AuthenticatorSelectionCriteria,
-    PublicKeyCredentialDescriptor,
-    ResidentKeyRequirement,
-    UserVerificationRequirement,
-)
 
-from app import db, limiter
+from app import limiter
 from app.auth import bp
 from app.auth.email import send_newuser_notification, send_validate_email
 from app.auth.forms import (
@@ -45,7 +27,18 @@ from app.db_logging import (
     log_reset_password,
     log_reset_password_request,
 )
-from app.models import Challenge, Credential, User
+from app.services.auth_service import (
+    authenticate_password,
+    generate_webauthn_authentication_options,
+    generate_webauthn_registration_options,
+    get_registration_user,
+    register_user,
+    request_password_reset,
+    set_user_password,
+    verify_reset_token,
+    verify_webauthn_authentication,
+    verify_webauthn_registration,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -97,28 +90,21 @@ def authenticate_fido2_success():
 
 @bp.route('/authenticate_password', methods=['GET', 'POST'])
 @limiter.limit('12 per minute')
-def authenticate_password():
+def authenticate_password_route():
     """Handle username/password authentication."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     form = AuthenticatePasswordForm()
 
     if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
+        result = authenticate_password(form.username.data, form.password.data)
 
-        if user is None:
-            # Hash a dummy string to equalise response time
-            User('dummy', 'dummy@example.com', 'en').check_password('dummy')
+        if not result.success:
             log_login_denied(request.path, form.username.data)
             flash(_('Invalid username or password'))
-
-        elif not user.check_password(form.password.data):
-            log_login_denied(request.path, form.username.data)
-            flash(_('Invalid username or password'))
-
         else:
-            log_login(request.path, user)
-            login_user(user, remember=form.remember_me.data)
+            log_login(request.path, result.user)
+            login_user(result.user, remember=form.remember_me.data)
             next_page = request.args.get('next')
             if not next_page or not is_safe_url(next_page):
                 next_page = url_for('main.index')
@@ -144,18 +130,14 @@ def register():
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
 
     if form.validate_on_submit():
-        user = User(
+        result = register_user(
             username=form.username.data,
             email=form.email.data,
             locale=form.locale.data,
         )
-        user.set_random_password()
-        user.get_token()
-
-        db.session.add(user)
-        log_register(request.path, user)
-        send_newuser_notification(user)
-        send_validate_email(user)
+        log_register(request.path, result.user)
+        send_newuser_notification(result.user)
+        send_validate_email(result.user)
         flash(_('Please check your email to activate your account'))
         return redirect(url_for('auth.login'))
     return render_template('edit_form.html', title=_('Register'), form=form)
@@ -168,7 +150,7 @@ def reset_authentication():
         return redirect(url_for('main.index'))
     form = ResetUserRequestForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data.lower()).first()
+        user = request_password_reset(form.email.data)
         if user:
             send_validate_email(user)
         log_reset_password_request(request.path, user)
@@ -182,7 +164,7 @@ def register_fido2(token: str):
     """Show the FIDO2 device-registration page for a validated token."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
-    user = User.verify_reset_password_token(token)
+    user = verify_reset_token(token)
     if not user:
         return redirect(url_for('main.index'))
     form = RegisterFIDO2Form()
@@ -215,12 +197,12 @@ def register_password(token: str):
     """Allow the user to set a password after token validation."""
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
-    user = User.verify_reset_password_token(token)
+    user = verify_reset_token(token)
     if not user:
         return redirect(url_for('main.index'))
     form = RegisterPasswordForm()
     if form.validate_on_submit():
-        user.set_password(form.password.data)
+        set_user_password(user, form.password.data)
         log_reset_password('/register_password/<token>', user)
         flash(_('Your password has been set'))
         return redirect(url_for('auth.login'))
@@ -239,43 +221,18 @@ def register_password(token: str):
 @bp.route('/generate-registration-options', methods=['GET'])
 def handler_generate_registration_options():
     """Return WebAuthn registration options as JSON."""
-    if current_user.is_authenticated:
-        user = current_user._get_current_object()
-    else:
-        token = request.cookies.get('register_fido2.token')
-        user = User.verify_reset_password_token(token)
+    token = request.cookies.get('register_fido2.token')
+    user = get_registration_user(current_user, token)
 
     if not user:
         return make_response({'error': 'Unauthorized'}, 401)
 
-    options = generate_registration_options(
-        rp_id=current_app.config['RP_ID'],
-        rp_name=current_app.config['RP_NAME'],
-        user_id=user.guid.hex.encode('utf-8'),
-        user_name=user.username,
-        exclude_credentials=[
-            PublicKeyCredentialDescriptor(id=cred.id, transports=cred.transports)
-            for cred in user.credentials
-        ],
-        authenticator_selection=AuthenticatorSelectionCriteria(
-            user_verification=UserVerificationRequirement.PREFERRED,
-            resident_key=ResidentKeyRequirement.REQUIRED,
-        ),
-        supported_pub_key_algs=[
-            COSEAlgorithmIdentifier.ECDSA_SHA_256,
-            COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256,
-        ],
-    )
+    result = generate_webauthn_registration_options(user)
 
-    challenge = Challenge(options.challenge)
-    challenge.user = user
-    db.session.add(challenge)
-    db.session.commit()
-
-    response = make_response(options_to_json(options))
+    response = make_response(result.options_json)
     response.set_cookie(
         key='register_fido2.session',
-        value=str(challenge.guid),
+        value=result.challenge_guid,
         max_age=3600,
         secure=True,
         httponly=True,
@@ -289,41 +246,17 @@ def handler_verify_registration_response():
     """Verify a WebAuthn registration response and store the credential."""
     data = request.get_json()
 
-    if current_user.is_authenticated:
-        user = current_user._get_current_object()
-    else:
-        token = request.cookies.get('register_fido2.token')
-        user = User.verify_reset_password_token(token)
+    token = request.cookies.get('register_fido2.token')
+    user = get_registration_user(current_user, token)
 
     if not user:
         return make_response({'error': 'Unauthorized'}, 401)
 
     session_id = request.cookies.get('register_fido2.session')
-    challenge = Challenge.query.filter_by(guid=session_id).first()
+    result = verify_webauthn_registration(user, session_id, data)
 
-    try:
-        credential = parse_registration_credential_json(data)
-        verification = verify_registration_response(
-            credential=credential,
-            expected_challenge=challenge.challenge,
-            expected_rp_id=current_app.config['RP_ID'],
-            expected_origin=current_app.config['RP_ORIGIN'],
-            require_user_verification=False,
-        )
-    except Exception as err:
-        current_app.logger.error(f'WebAuthn Error: {err}')
-        return {'verified': False, 'msg': 'Invalid credential or server error', 'status': 400}
-
-    new_credential = Credential(
-        id=verification.credential_id,
-        public_key=verification.credential_public_key,
-        sign_count=verification.sign_count,
-        transports=data.get('response', {}).get('transports', []),
-        user=user,
-    )
-
-    user.credentials.append(new_credential)
-    db.session.commit()
+    if not result.success:
+        return {'verified': False, 'msg': result.error, 'status': 400}
 
     response = make_response({'verified': True})
     response.set_cookie(
@@ -340,19 +273,12 @@ def handler_verify_registration_response():
 @bp.route('/generate-authentication-options', methods=['GET'])
 def handler_generate_authentication_options():
     """Return WebAuthn authentication options as JSON."""
-    options = generate_authentication_options(
-        rp_id=current_app.config['RP_ID'],
-        user_verification=UserVerificationRequirement.PREFERRED,
-    )
+    result = generate_webauthn_authentication_options()
 
-    challenge = Challenge(options.challenge)
-    db.session.add(challenge)
-    db.session.commit()
-
-    response = make_response(options_to_json(options))
+    response = make_response(result.options_json)
     response.set_cookie(
         key='authenticate_fido2.session',
-        value=str(challenge.guid),
+        value=result.challenge_guid,
         max_age=3600,
         secure=True,
         httponly=True,
@@ -367,51 +293,13 @@ def handler_verify_authentication_response():
     data = request.get_json()
 
     session_id = request.cookies.get('authenticate_fido2.session')
-    challenge = Challenge.query.filter_by(guid=session_id).first()
+    result = verify_webauthn_authentication(session_id, data)
 
-    try:
-        credential = parse_authentication_credential_json(data)
+    if not result.success:
+        return {'verified': False, 'msg': result.error, 'status': 400}
 
-        # Extract the user's GUID from the resident key's user_handle
-        if not credential.response.user_handle:
-            raise Exception('No user handle returned. Resident key required.')
-
-        user_guid_hex = credential.response.user_handle.decode('utf-8')
-        user = User.query.filter_by(guid=uuid.UUID(user_guid_hex)).first()
-
-        if not user:
-            raise Exception('User associated with this credential not found.')
-
-        # Find the matching FIDO2 key in Python memory to bypass Oracle's BLOB limitation
-        user_credential = None
-        for cred in user.credentials:
-            if cred.id == credential.raw_id:
-                user_credential = cred
-                break
-
-        if user_credential is None:
-            raise Exception('Could not find corresponding public key in DB')
-
-        # Verify the assertion
-        verification = verify_authentication_response(
-            credential=credential,
-            expected_challenge=challenge.challenge,
-            expected_rp_id=current_app.config['RP_ID'],
-            expected_origin=current_app.config['RP_ORIGIN'],
-            credential_public_key=user_credential.public_key,
-            credential_current_sign_count=user_credential.sign_count,
-            require_user_verification=False,
-        )
-    except Exception as err:
-        current_app.logger.error(f'WebAuthn Error: {err}')
-        return {'verified': False, 'msg': 'Invalid credential or server error', 'status': 400}
-
-    # Update credential sign count
-    user_credential.sign_count = verification.new_sign_count
-    challenge.user = user
-    log_login(request.path, user)
-    login_user(user, remember=True)
-    db.session.commit()
+    log_login(request.path, result.user)
+    login_user(result.user, remember=True)
 
     response = make_response({'verified': True})
     response.set_cookie(

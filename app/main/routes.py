@@ -1,3 +1,4 @@
+# coding=utf-8
 """Main blueprint routes: dashboard, user management, currencies, messaging, and admin tools."""
 
 from __future__ import annotations
@@ -12,21 +13,29 @@ from app import db
 from app.db_logging import log_page_access, log_page_access_denied
 from app.main import bp
 from app.main.forms import CurrencyForm, EditProfileForm, EditUserForm, ImageForm, MessageForm, NewUserForm
-from app.media.processor import process_and_store_image
-from app.models import (
-    Currency,
-    Event,
-    EventCurrency,
-    EventUser,
-    Expense,
-    Image,
-    Log,
-    Message,
-    Notification,
-    Post,
-    Settlement,
-    Task,
-    User,
+from app.models import Currency, Image, Log, User
+from app.services.main_service import (
+    create_currency,
+    create_user,
+    get_notifications,
+    get_statistics,
+    get_user,
+    launch_task,
+    list_currencies,
+    list_logs,
+    list_messages,
+    list_tasks,
+    list_users,
+    mark_messages_read,
+    remove_task,
+    revoke_admin,
+    rotate_image,
+    send_message,
+    set_admin,
+    update_currency,
+    update_profile,
+    update_profile_picture,
+    update_user,
 )
 
 
@@ -82,11 +91,10 @@ def image(guid: str):
 
 @bp.route('/rotate_image/<guid>')
 @login_required
-def rotate_image(guid: str):
+def rotate_image_route(guid: str):
     """Rotate an image by the requested degree."""
     degree = request.args.get('degree', 0, type=int)
-    img = Image.get_by_guid_or_404(guid)
-    img.rotate_image(degree)
+    img = rotate_image(guid, degree)
     log_page_access(request, current_user)
     return redirect(url_for('main.image', guid=img.guid))
 
@@ -101,15 +109,13 @@ def currencies():
     """List all currencies (paginated)."""
     log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
-    pagination = Currency.query.order_by(Currency.code.asc()).paginate(
-        page=page, per_page=current_app.config['ITEMS_PER_PAGE'], error_out=False,
-    )
-    next_url = url_for('main.currencies', page=pagination.next_num) if pagination.has_next else None
-    prev_url = url_for('main.currencies', page=pagination.prev_num) if pagination.has_prev else None
+    result = list_currencies(page)
+    next_url = url_for('main.currencies', page=result.next_num) if result.has_next else None
+    prev_url = url_for('main.currencies', page=result.prev_num) if result.has_prev else None
     return render_template(
         'currencies.html',
         title=_('Current currencies'),
-        currencies=pagination.items,
+        currencies=result.items,
         allow_new=current_user.is_admin,
         next_url=next_url,
         prev_url=prev_url,
@@ -127,17 +133,15 @@ def new_currency():
     log_page_access(request, current_user)
     form = CurrencyForm()
     if form.validate_on_submit():
-        currency = Currency(
+        create_currency(
             code=form.code.data,
             name=form.name.data,
             number=form.number.data,
             exponent=form.exponent.data,
             inCHF=form.inCHF.data,
             description=form.description.data,
-            db_created_by=current_user.username,
+            created_by=current_user.username,
         )
-        db.session.add(currency)
-        db.session.commit()
         flash(_('Your new currency has been added.'))
         return redirect(url_for('main.currencies'))
     return render_template('edit_form.html', title=_('New Currency'), form=form)
@@ -155,13 +159,15 @@ def edit_currency(guid: str):
     currency = Currency.get_by_guid_or_404(guid)
     form = CurrencyForm()
     if form.validate_on_submit():
-        currency.code = form.code.data
-        currency.name = form.name.data
-        currency.number = form.number.data
-        currency.exponent = form.exponent.data
-        currency.inCHF = form.inCHF.data
-        currency.description = form.description.data
-        db.session.commit()
+        update_currency(
+            guid=guid,
+            code=form.code.data,
+            name=form.name.data,
+            number=form.number.data,
+            exponent=form.exponent.data,
+            inCHF=form.inCHF.data,
+            description=form.description.data,
+        )
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.currencies'))
     elif request.method == 'GET':
@@ -184,15 +190,13 @@ def users():
     """List all users (paginated)."""
     log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
-    pagination = User.query.order_by(User.username.asc()).paginate(
-        page=page, per_page=current_app.config['ITEMS_PER_PAGE'], error_out=False,
-    )
-    next_url = url_for('main.users', page=pagination.next_num) if pagination.has_next else None
-    prev_url = url_for('main.users', page=pagination.prev_num) if pagination.has_prev else None
+    result = list_users(page)
+    next_url = url_for('main.users', page=result.next_num) if result.has_next else None
+    prev_url = url_for('main.users', page=result.prev_num) if result.has_prev else None
     return render_template(
         'users.html',
         title=_('Current users'),
-        users=pagination.items,
+        users=result.items,
         next_url=next_url,
         prev_url=prev_url,
     )
@@ -202,7 +206,7 @@ def users():
 @login_required
 def user(guid: str):
     """Show a single user's profile."""
-    u = User.get_by_guid_or_404(guid)
+    u = get_user(guid)
     log_page_access(request, current_user)
     return render_template('user.html', title=_('User %(username)s', username=u.username), user=u)
 
@@ -219,32 +223,29 @@ def new_user():
     form = NewUserForm()
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
     if form.validate_on_submit():
-        u = User(
+        result = create_user(
             username=form.username.data,
             email=form.email.data,
             locale=form.locale.data,
             about_me=form.about_me.data,
+            password=form.password.data,
+            is_admin=form.is_admin.data,
         )
-        u.is_admin = form.is_admin.data
-        u.set_password(form.password.data)
-        u.get_token()
-        db.session.add(u)
-        db.session.commit()
-        flash(_('New user %(username)s created', username=u.username))
+        flash(_('New user %(username)s created', username=result.user.username))
         return redirect(url_for('main.users'))
     return render_template('edit_form.html', title=_('New User'), form=form)
 
 
 @bp.route('/edit_user/<guid>', methods=['GET', 'POST'])
 @login_required
-def edit_user(guid: str):
+def edit_user_route(guid: str):
     """Edit an existing user (admin only)."""
     if not current_user.is_admin:
         flash(_('Only an admin can edit users!'))
         log_page_access_denied(request, current_user)
         return redirect(url_for('main.users'))
     log_page_access(request, current_user)
-    u = User.get_by_guid_or_404(guid)
+    u = get_user(guid)
     admin = User.query.filter_by(username='admin').first()
     if u == admin:
         flash(_('You cannot change the master admin!'))
@@ -252,16 +253,18 @@ def edit_user(guid: str):
     form = EditUserForm(u.username, u.email)
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
     if form.validate_on_submit():
-        # BUG FIX: removed trailing commas that turned these into tuple assignments
-        u.username = form.username.data
-        u.email = form.email.data
-        u.locale = form.locale.data
-        u.about_me = form.about_me.data
-        u.is_admin = form.is_admin.data
-        if form.password.data:
-            u.set_password(form.password.data)
-        u.get_token()
-        db.session.commit()
+        result = update_user(
+            guid=guid,
+            username=form.username.data,
+            email=form.email.data,
+            locale=form.locale.data,
+            about_me=form.about_me.data,
+            is_admin=form.is_admin.data,
+            password=form.password.data if form.password.data else None,
+        )
+        if not result.success:
+            flash(_(result.error))
+            return redirect(url_for('main.users'))
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.users'))
     elif request.method == 'GET':
@@ -275,25 +278,23 @@ def edit_user(guid: str):
 
 @bp.route('/set_admin/<guid>')
 @login_required
-def set_admin(guid: str):
+def set_admin_route(guid: str):
     """Grant admin privileges to a user."""
-    u = User.get_by_guid_or_404(guid)
+    u = get_user(guid)
     if not current_user.is_admin:
         flash(_('Only an admin can set the admin rights!'))
         log_page_access_denied(request, current_user)
-        # BUG FIX: was using username= instead of guid=
         return redirect(url_for('main.user', guid=u.guid))
     log_page_access(request, current_user)
-    u.is_admin = True
-    db.session.commit()
+    set_admin(guid)
     return redirect(url_for('main.user', guid=u.guid))
 
 
 @bp.route('/revoke_admin/<guid>')
 @login_required
-def revoke_admin(guid: str):
+def revoke_admin_route(guid: str):
     """Revoke admin privileges from a user."""
-    u = User.get_by_guid_or_404(guid)
+    u = get_user(guid)
     admin = User.query.filter_by(username='admin').first()
     if u == admin:
         flash(_('You cannot change the master admin!'))
@@ -303,8 +304,7 @@ def revoke_admin(guid: str):
         log_page_access_denied(request, current_user)
         return redirect(url_for('main.user', guid=u.guid))
     log_page_access(request, current_user)
-    u.is_admin = False
-    db.session.commit()
+    revoke_admin(guid)
     return redirect(url_for('main.user', guid=u.guid))
 
 
@@ -331,24 +331,18 @@ def logs():
     log_page_access(request, current_user)
     page = request.args.get('page', 1, type=int)
     severity = request.args.get('severity', None, type=str)
-    filters = []
-    if severity is not None:
-        filters.append(Log.severity == severity.upper())
-    if not current_user.is_admin:
-        filters.append(Log.user == current_user)
-    pagination = Log.query.filter(*filters).order_by(Log.date.desc()).paginate(
-        page=page, per_page=current_app.config['ITEMS_PER_PAGE'], error_out=False,
-    )
-    next_url = url_for('main.logs', severity=severity, page=pagination.next_num) if pagination.has_next else None
-    prev_url = url_for('main.logs', severity=severity, page=pagination.prev_num) if pagination.has_prev else None
-    return render_template('logs.html', logs=pagination.items, title=_('Logs'), next_url=next_url, prev_url=prev_url)
+    result = list_logs(page, severity=severity, user=current_user, is_admin=current_user.is_admin)
+    next_url = url_for('main.logs', severity=severity, page=result.next_num) if result.has_next else None
+    prev_url = url_for('main.logs', severity=severity, page=result.prev_num) if result.has_prev else None
+    return render_template('logs.html', logs=result.items, title=_('Logs'), next_url=next_url, prev_url=prev_url)
 
 
 @bp.route('/log_trace/<id>')
 @login_required
 def log_trace(id: int):
     """Show the trace details of a single log entry."""
-    log = Log.query.get_or_404(id)
+    from app.services.main_service import get_log_trace
+    log = get_log_trace(id)
     if not log.can_view(current_user):
         flash(_('Your are only allowed to view your own logs!'))
         log_page_access_denied(request, current_user)
@@ -385,24 +379,18 @@ def tasks():
     page = request.args.get('page', 1, type=int)
     complete_str = request.args.get('complete', None, type=str)
     complete = False if complete_str == 'False' else True if complete_str == 'True' else None
-    filters = []
-    if complete is not None:
-        filters.append(Task.complete == complete)
-    if not current_user.is_admin:
-        filters.append(Task.user == current_user)
-    pagination = Task.query.filter(*filters).order_by(Task.db_created_at.desc()).paginate(
-        page=page, per_page=current_app.config['ITEMS_PER_PAGE'], error_out=False,
-    )
-    next_url = url_for('main.tasks', complete=complete_str, page=pagination.next_num) if pagination.has_next else None
-    prev_url = url_for('main.tasks', complete=complete_str, page=pagination.prev_num) if pagination.has_prev else None
-    return render_template('tasks.html', tasks=pagination.items, title=_('Tasks'), next_url=next_url, prev_url=prev_url)
+    result = list_tasks(page, complete=complete, user=current_user, is_admin=current_user.is_admin)
+    next_url = url_for('main.tasks', complete=complete_str, page=result.next_num) if result.has_next else None
+    prev_url = url_for('main.tasks', complete=complete_str, page=result.prev_num) if result.has_prev else None
+    return render_template('tasks.html', tasks=result.items, title=_('Tasks'), next_url=next_url, prev_url=prev_url)
 
 
 @bp.route('/remove_task/<guid>')
 @login_required
-def remove_task(guid: str):
+def remove_task_route(guid: str):
     """Remove a completed task."""
-    task = Task.get_by_guid_or_404(guid)
+    from app.models import Task as TaskModel
+    task = TaskModel.get_by_guid_or_404(guid)
     if not task.can_edit(current_user):
         flash(_('Your are only allowed to delete your own task!'))
         log_page_access_denied(request, current_user)
@@ -410,8 +398,7 @@ def remove_task(guid: str):
     log_page_access(request, current_user)
     task_name = task.name
     task_username = task.user.username
-    db.session.delete(task)
-    db.session.commit()
+    remove_task(guid)
     flash(_('Task %(name)s from user %(username)s has been removed', name=task_name, username=task_username))
     return redirect(url_for('main.tasks'))
 
@@ -427,28 +414,27 @@ def start_task():
     log_page_access(request, current_user)
 
     key = request.args.get('key', 'WASTE_TIME', type=str)
+    kwargs = {}
 
     if key == 'WASTE_TIME':
-        amount = request.args.get('amount', 10, type=int)
-        current_user.launch_task('consume_time', _('Consuming %(amount)s s of time...', amount=amount), amount=amount)
+        kwargs['amount'] = request.args.get('amount', 10, type=int)
+    elif key == 'UPDATE_CURRENCIES':
+        kwargs['source'] = request.args.get('source', 'yahoo', type=str)
+    elif key == 'TYPE_ERROR':
+        kwargs['amount'] = request.args.get('amount', 1, type=int)
+
+    result = launch_task(current_user, key, **kwargs)
+
+    if key == 'WASTE_TIME':
         flash(_('A time consuming task is currently in progress'))
     elif key == 'CHECK_CURRENCIES':
-        current_user.launch_task('check_rates_yahoo', _('Checking currencies...'))
         flash(_('Checking online sources for currency rates'))
     elif key == 'UPDATE_CURRENCIES':
-        source = request.args.get('source', 'yahoo', type=str)
-        if source == 'yahoo':
-            current_user.launch_task('update_rates_yahoo', _('Updating currencies...'))
         flash(_('Updating currency rates from known sources'))
     elif key == 'TYPE_ERROR':
-        amount = request.args.get('amount', 1, type=int)
-        for count in range(amount):
-            current_user.launch_task(
-                key.lower(),
-                _('Creating %(count)s/%(amount)s errors of type %(error_type)s ...', count=count + 1, amount=amount, error_type=key),
-            )
+        amount = kwargs.get('amount', 1)
         flash(_('%(amount)s tasks with TypeErrors have been created', amount=amount))
-    db.session.commit()
+
     return redirect(url_for('main.tasks'))
 
 
@@ -457,15 +443,7 @@ def start_task():
 def statistics():
     """Show model statistics (admin sees all models; users see a subset)."""
     log_page_access(request, current_user)
-    if current_user.is_admin:
-        classes = [Currency, User, Message, Notification, Image, Log, Task, Event, EventUser, EventCurrency, Expense, Settlement, Post]
-    else:
-        classes = [Message, Notification, Log, Task, Expense, Settlement, Event, EventUser, EventCurrency, Post]
-
-    stats: list = []
-    for c in classes:
-        stats.extend(c.get_class_stats(current_user))
-
+    stats = get_statistics(current_user, current_user.is_admin)
     return render_template('statistics.html', rows=stats, title=_('Statistics'))
 
 
@@ -478,7 +456,7 @@ def statistics():
 def user_popup(guid: str):
     """Render a user popup card."""
     log_page_access(request, current_user)
-    u = User.get_by_guid_or_404(guid)
+    u = get_user(guid)
     return render_template('user_popup.html', user=u)
 
 
@@ -490,10 +468,7 @@ def edit_profile():
     form = EditProfileForm(current_user.username)
     form.locale.choices = [(x, x) for x in current_app.config['LANGUAGES']]
     if form.validate_on_submit():
-        current_user.username = form.username.data
-        current_user.about_me = form.about_me.data
-        current_user.locale = form.locale.data
-        db.session.commit()
+        update_profile(current_user, form.username.data, form.about_me.data, form.locale.data)
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.user', guid=current_user.guid))
     elif request.method == 'GET':
@@ -516,9 +491,7 @@ def edit_profile_picture():
 
         file_obj = request.files['image']
         try:
-            new_image = process_and_store_image(file_obj.stream, file_obj.filename)
-            current_user.profile_picture = new_image
-            db.session.commit()
+            update_profile_picture(current_user, file_obj.stream, file_obj.filename)
             flash(_('Your changes have been saved.'))
         except Exception as e:
             current_app.logger.error(f'Failed to upload profile picture: {e}')
@@ -537,37 +510,30 @@ def edit_profile_picture():
 def messages():
     """List and compose direct messages."""
     log_page_access(request, current_user)
-    current_user.last_message_read_time = datetime.now(timezone.utc)
-    current_user.add_notification('unread_message_count', 0)
-    db.session.commit()
+    mark_messages_read(current_user)
     user_choices = [(u.id, u.username) for u in User.query.order_by(User.username.asc()) if u != current_user]
     form = MessageForm()
     form.recipient_id.choices = user_choices
     recipient_guid = request.args.get('recipient')
 
     if recipient_guid:
-        recipient = User.get_by_guid_or_404(recipient_guid)
+        recipient = get_user(recipient_guid)
         form.recipient_id.data = recipient.id
     if form.validate_on_submit():
-        recipient = db.session.get(User, form.recipient_id.data)
-        msg = Message(author=current_user, recipient=recipient, body=form.message.data)
-        db.session.add(msg)
-        recipient.add_notification('unread_message_count', recipient.new_messages())
-        db.session.commit()
-        flash(_('Your message has been sent.'))
+        result = send_message(current_user, form.recipient_id.data, form.message.data)
+        if result.success:
+            flash(_('Your message has been sent.'))
         return redirect(url_for('main.messages'))
 
     page = request.args.get('page', 1, type=int)
-    pagination = current_user.messages_sent.union(current_user.messages_received).order_by(
-        Message.timestamp.desc(),
-    ).paginate(page=page, per_page=current_app.config['ITEMS_PER_PAGE'], error_out=False)
-    next_url = url_for('main.messages', page=pagination.next_num) if pagination.has_next else None
-    prev_url = url_for('main.messages', page=pagination.prev_num) if pagination.has_prev else None
+    msg_result = list_messages(current_user, page)
+    next_url = url_for('main.messages', page=msg_result.next_num) if msg_result.has_next else None
+    prev_url = url_for('main.messages', page=msg_result.prev_num) if msg_result.has_prev else None
     return render_template(
         'messages.html',
         title=_('Messages'),
         form=form,
-        messages=pagination.items,
+        messages=msg_result.items,
         next_url=next_url,
         prev_url=prev_url,
     )
@@ -578,13 +544,7 @@ def messages():
 def notifications():
     """Return new notifications as JSON (used for AJAX polling)."""
     since = request.args.get('since', 0.0, type=float)
-    notifs = current_user.notifications.filter(
-        Notification.timestamp > since,
-    ).order_by(Notification.timestamp.asc())
-    return jsonify([
-        {'name': n.name, 'data': n.get_data(), 'timestamp': n.timestamp}
-        for n in notifs
-    ])
+    return jsonify(get_notifications(current_user, since))
 
 
 # ---------------------------------------------------------------------------

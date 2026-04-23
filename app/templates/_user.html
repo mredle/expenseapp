@@ -18,7 +18,7 @@
                 {% endset %}
                 {% set edit_link %}
                     <span>
-                        <a href="{{ url_for('main.edit_user', guid=user.guid) }}">
+                        <a href="{{ url_for('main.edit_user_route', guid=user.guid) }}">
                             {{ _('edit') }}
                         </a>
                     </span>

@@ -1,0 +1,15 @@
+meta {
+  name: Close Event
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/events/{{event_guid}}/close
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

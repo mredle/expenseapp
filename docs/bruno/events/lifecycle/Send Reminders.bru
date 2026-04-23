@@ -1,0 +1,15 @@
+meta {
+  name: Send Reminders
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/events/{{event_guid}}/send-reminders
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

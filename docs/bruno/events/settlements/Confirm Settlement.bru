@@ -1,0 +1,19 @@
+meta {
+  name: Confirm Settlement
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/events/{{event_guid}}/settlements/{{settlement_guid}}/confirm
+  body: none
+  auth: bearer
+}
+
+headers {
+  X-EventUser-GUID: {{eventuser_guid}}
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

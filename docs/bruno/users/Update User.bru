@@ -1,0 +1,19 @@
+meta {
+  name: Update User
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{base_url}}/users/{{user_guid}}
+  body: json
+  auth: bearer
+}
+
+body:json {
+  {
+    "username": "updated",
+    "email": "updated@example.com",
+    "about_me": "Updated bio"
+  }
+}

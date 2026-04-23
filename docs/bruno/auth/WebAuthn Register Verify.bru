@@ -1,0 +1,22 @@
+meta {
+  name: WebAuthn Register Verify
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{base_url}}/auth/webauthn/register/verify
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "session_id": "challenge-guid",
+    "credential": {}
+  }
+}

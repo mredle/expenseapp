@@ -9,10 +9,12 @@ You are assisting with **ExpenseApp**, a Flask web application for managing shar
 - **ORM:** SQLAlchemy via Flask-SQLAlchemy + Flask-Migrate (Alembic)
 - **Database support:** SQLite, MySQL, MariaDB, PostgreSQL, Oracle
 - **Task queue:** Redis + RQ
-- **API layer:** Flask-RESTX (Swagger-documented REST API under `/apis`)
+- **API layer:** Flask-RESTX (Swagger-documented REST API under `/apis`) with 8 namespaces
+- **Service layer:** Business logic extracted into `app/services/` (one service per blueprint)
 - **Auth:** Password-based + WebAuthn/FIDO2
 - **Storage:** Unified `StorageProvider` (`app/storage.py`) supporting local and S3 backends
-- **Testing:** pytest + pytest-cov
+- **Testing:** pytest + pytest-cov (HTML routes + API endpoints)
+- **API testing tool:** Bruno collection at `docs/bruno/`
 - **CI:** GitHub Actions matrix across all supported databases (`.github/workflows/tests.yml`)
 
 ## 2. Environment Setup & Execution
@@ -82,20 +84,49 @@ app/
   email.py                 # Async email sending via Flask-Mail
   cli.py                   # Flask CLI commands (dbinit, translate, flush, etc.)
   db_logging.py            # Structured logging helpers (log_add, log_login, etc.)
+  services/                # Service layer — business logic extracted from routes
+    __init__.py
+    auth_service.py        # Auth: login, register, password reset, WebAuthn
+    main_service.py        # Currencies, users, admin, messaging, profiles
+    event_service.py       # Events, expenses, settlements, posts, event users
+    media_service.py       # File serving with Redis caching
   auth/                    # Auth blueprint (login, register, FIDO2, password reset)
   main/                    # Main blueprint (profile, currencies, users, admin)
   event/                   # Event blueprint (events, expenses, settlements, posts)
   media/                   # Media blueprint (image upload, processing, serving)
   apis/                    # REST API blueprint (Flask-RESTX namespaces)
+    __init__.py            # Api instance + namespace registration
+    auth.py                # HTTPBasicAuth + HTTPTokenAuth handlers
+    errors.py              # API error helpers
+    tokens.py              # Token namespace (issue/revoke)
+    users.py               # Users namespace (CRUD)
+    auth_ns.py             # Auth namespace (login, register, WebAuthn)
+    currencies_ns.py       # Currencies namespace (CRUD)
+    events_ns.py           # Events namespace (full event lifecycle)
+    admin_ns.py            # Admin namespace (stats, logs, tasks)
+    messages_ns.py         # Messages namespace (inbox, send)
+    media_ns.py            # Media namespace (upload, serve)
   errors/                  # Error handlers (404, 500 with JSON/HTML content negotiation)
   templates/               # Jinja2 templates
   static/                  # Static assets (CSS, JS, images)
   translations/            # Babel i18n files
 tests/
-  conftest.py              # Fixtures: app, client, auth_client, admin_client
+  conftest.py              # Fixtures: app, client, auth/admin_client, API helpers
   test_*.py                # Test modules (auth, routes, permissions, uploads, etc.)
+  test_api_*.py            # API test modules (one per namespace)
 migrations/                # Alembic migration versions
 scripts/dev/               # Dev Docker Compose, migration helpers
+docs/
+  bruno/                   # Bruno API testing collection
+    environments/          # Local + Production environment configs
+    auth/                  # Auth endpoint requests
+    tokens/                # Token endpoint requests
+    users/                 # User endpoint requests
+    currencies/            # Currency endpoint requests
+    events/                # Event endpoint requests (with sub-resource folders)
+    admin/                 # Admin endpoint requests
+    messages/              # Message endpoint requests
+    media/                 # Media endpoint requests
 ```
 
 ## 7. Code Style & Conventions
@@ -208,6 +239,83 @@ from app.<blueprint> import routes
 ```
 Blueprints are registered in `create_app()` with a URL prefix.
 
+### Service Layer
+Business logic lives in `app/services/` — one module per blueprint:
+- `auth_service.py` — login, register, password reset, WebAuthn
+- `main_service.py` — currencies, users, admin, messaging, profiles
+- `event_service.py` — events, expenses, settlements, posts, event users
+- `media_service.py` — file serving with Redis caching
+
+**Conventions:**
+- Each service module defines **result dataclasses** at the top (e.g., `AuthResult`, `EventResult`, `PaginatedResult`). Every mutating function returns a result dataclass with at least `success: bool` and `error: str | None`.
+- Service functions are **stateless** — they accept primitives and model instances, never Flask request/session objects.
+- Service functions handle `db.session.add()` / `db.session.commit()` internally; callers do not manage transactions.
+- Route handlers become **thin HTTP wrappers**: parse request, call service, translate result to HTTP response.
+- Both HTML routes and REST API endpoints call the **same service functions**, ensuring consistent behaviour.
+- Both `main_service.py` and `event_service.py` define their own `PaginatedResult` (same shape) because they are independent modules.
+- Use `current_app.logger` for logging inside service functions (they run within a request/app context).
+
+**Example pattern:**
+```python
+# In the service module
+@dataclass
+class CurrencyResult:
+    success: bool
+    currency: Currency | None = None
+    error: str | None = None
+
+def create_currency(code: str, name: str, ...) -> CurrencyResult:
+    if Currency.query.filter_by(code=code).first():
+        return CurrencyResult(success=False, error='Currency code already exists.')
+    currency = Currency(code=code, name=name, ...)
+    db.session.add(currency)
+    db.session.commit()
+    return CurrencyResult(success=True, currency=currency)
+
+# In the route handler (thin wrapper)
+@bp.route('/currency/add', methods=['POST'])
+def add_currency_route() -> str | Response:
+    form = CurrencyForm()
+    if form.validate_on_submit():
+        result = main_service.create_currency(code=form.code.data, ...)
+        if result.success:
+            flash('Currency added.')
+            return redirect(url_for('main.currencies'))
+        flash(result.error)
+    return render_template('add_currency.html', form=form)
+```
+
+### API Namespace Conventions
+The REST API lives under `app/apis/` using Flask-RESTX. There are 8 namespaces: `admin`, `auth`, `currencies`, `events`, `media`, `messages`, `tokens`, `users`.
+
+**Conventions:**
+- Each namespace is a separate file (`*_ns.py` for new namespaces; `tokens.py` and `users.py` are pre-existing).
+- Each file creates `api = Namespace('name', description='...')` and defines `Resource` subclasses.
+- Request/response schemas are defined via `api.model('Name', { ... })` using `flask_restx.fields`.
+- Each namespace has **private `_*_to_dict()` helper functions** to serialise ORM models to dicts (e.g., `_event_to_dict()`, `_currency_to_dict()`).
+- All mutation endpoints (POST, PUT, DELETE) are decorated with `@token_auth.login_required`.
+- The authenticated user is accessed via `g.current_user` (set by `flask-httpauth`).
+- API functions call service layer functions from `app/services/` — they never contain business logic directly.
+- Errors use `bad_request(message)` from `app.apis.errors` for 400 responses.
+- Swagger documentation is auto-generated from `@api.expect()`, `@api.marshal_with()`, and `@api.doc()` decorators.
+
+**Event-scoped API access:**
+- Event endpoints use token auth + an `X-EventUser-GUID` header to identify which EventUser is acting.
+- If the header is omitted, the API auto-resolves via the `user_id` FK on `EventUser` (matching the authenticated user).
+- The helper `_get_eventuser_guid()` reads this header.
+
+**Namespace registration** in `app/apis/__init__.py`:
+```python
+apis.add_namespace(admin)
+apis.add_namespace(auth)
+apis.add_namespace(currencies)
+apis.add_namespace(events)
+apis.add_namespace(media)
+apis.add_namespace(messages)
+apis.add_namespace(tokens)
+apis.add_namespace(users)
+```
+
 ### Model Conventions
 - All domain models inherit from both `Entity` and `db.Model` (e.g., `class File(Entity, db.Model)`)
 - `Entity` provides: `guid`, `db_created_at`, `db_updated_at`, `db_created_by`, `db_updated_by`
@@ -285,6 +393,17 @@ Event routes (`/event/*`) intentionally do NOT use `@login_required`. The GUID-b
 - Use `FlaskClient` type for `client`/`auth_client`/`admin_client` fixtures.
 - Use `Flask` type for the `app` fixture.
 - Prefix unused variables with `_` (e.g., `_args, kwargs = mock.call_args`).
+
+**API test fixtures and helpers:**
+- `api_client(app)` — returns `tuple[FlaskClient, str]` (client, bearer token) for a regular user.
+- `api_admin_client(app)` — returns `tuple[FlaskClient, str]` (client, bearer token) for an admin user.
+- `api_currency(app)` — creates and returns a `Currency` (CHF) for use in API tests.
+- `api_second_currency(app)` — creates and returns a second `Currency` (EUR).
+- `api_event(app, api_client, api_currency)` — creates an `Event` with the `api_client` user as admin and returns it.
+- `_get_api_token(app, client, username, password)` — helper to create a user and obtain a bearer token.
+- `_api_headers(token)` — returns a `dict[str, str]` with `Authorization`, `Content-Type`, and `Accept` headers.
+
+**API test file naming:** One file per namespace — `test_api_<namespace>.py` (e.g., `test_api_events.py`, `test_api_auth.py`).
 
 ### Configuration
 - All config lives in `config.py` (single `Config` class), driven by environment variables with sensible defaults.

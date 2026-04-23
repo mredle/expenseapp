@@ -1,0 +1,18 @@
+meta {
+  name: Launch Task
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/admin/tasks
+  body: json
+  auth: bearer
+}
+
+body:json {
+  {
+    "key": "WASTE_TIME",
+    "amount": 5
+  }
+}

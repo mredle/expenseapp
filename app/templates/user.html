@@ -18,9 +18,9 @@
             {% endif %}
 
             {% if current_user.is_admin and not user.is_admin %}
-            <p><a href="{{ url_for('main.set_admin', guid=user.guid) }}">{{ _('Set admin') }}</a></p>
+            <p><a href="{{ url_for('main.set_admin_route', guid=user.guid) }}">{{ _('Set admin') }}</a></p>
             {% elif current_user.is_admin and user.is_admin %}
-            <p><a href="{{ url_for('main.revoke_admin', guid=user.guid) }}">{{ _('Revoke admin') }}</a></p>
+            <p><a href="{{ url_for('main.revoke_admin_route', guid=user.guid) }}">{{ _('Revoke admin') }}</a></p>
             {% endif %}
             {% if user == current_user %}
             <p><a href="{{ url_for('main.edit_profile') }}">{{ _('Edit your profile') }}</a></p>
