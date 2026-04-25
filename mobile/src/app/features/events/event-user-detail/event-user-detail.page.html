@@ -1,0 +1,64 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start"><ion-back-button></ion-back-button></ion-buttons>
+    <ion-title>{{ eventUser?.username || 'Participant' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="editMode = !editMode"><ion-icon slot="icon-only" name="create-outline"></ion-icon></ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+<ion-content class="ion-padding">
+  <ng-container *ngIf="eventUser">
+    <div class="ion-text-center">
+      <ion-avatar style="width:80px;height:80px;margin:auto;">
+        <img [src]="eventUser.avatar || 'assets/default-avatar.png'" alt="">
+      </ion-avatar>
+      <label class="ion-padding-top" style="display:block;cursor:pointer;">
+        <ion-button fill="outline" size="small">Change Photo</ion-button>
+        <input type="file" accept="image/*" (change)="uploadPicture($event)" style="display:none;">
+      </label>
+    </div>
+
+    <ion-card *ngIf="!editMode">
+      <ion-card-content>
+        <p><strong>Email:</strong> {{ eventUser.email }}</p>
+        <p><strong>Weight:</strong> {{ eventUser.weighting }}</p>
+        <p *ngIf="eventUser.about_me"><strong>About:</strong> {{ eventUser.about_me }}</p>
+        <p><strong>Locale:</strong> {{ eventUser.locale }}</p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="editMode">
+      <ion-card-header><ion-card-title>Edit Profile</ion-card-title></ion-card-header>
+      <ion-card-content>
+        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+          <ion-item><ion-label position="stacked">Name</ion-label><ion-input formControlName="username"></ion-input></ion-item>
+          <ion-item><ion-label position="stacked">Email</ion-label><ion-input formControlName="email" type="email"></ion-input></ion-item>
+          <ion-item><ion-label position="stacked">Weight</ion-label><ion-input formControlName="weighting" type="number" step="0.1"></ion-input></ion-item>
+          <ion-item><ion-label position="stacked">About Me</ion-label><ion-textarea formControlName="about_me" rows="2"></ion-textarea></ion-item>
+          <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="profileForm.invalid">Save Profile</ion-button>
+        </form>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-button expand="block" fill="outline" (click)="bankMode = !bankMode" class="ion-margin">
+      <ion-icon slot="start" name="card-outline"></ion-icon>
+      Bank Account Details
+    </ion-button>
+
+    <ion-card *ngIf="bankMode">
+      <ion-card-header><ion-card-title>Bank Details</ion-card-title></ion-card-header>
+      <ion-card-content>
+        <form [formGroup]="bankForm" (ngSubmit)="saveBank()">
+          <ion-item><ion-label position="stacked">IBAN</ion-label><ion-input formControlName="iban"></ion-input></ion-item>
+          <ion-item><ion-label position="stacked">Bank Name</ion-label><ion-input formControlName="bank"></ion-input></ion-item>
+          <ion-item><ion-label position="stacked">Account Holder</ion-label><ion-input formControlName="name"></ion-input></ion-item>
+          <ion-item><ion-label position="stacked">Address</ion-label><ion-input formControlName="address"></ion-input></ion-item>
+          <ion-item><ion-label position="stacked">City</ion-label><ion-input formControlName="city"></ion-input></ion-item>
+          <ion-item><ion-label position="stacked">Country</ion-label><ion-input formControlName="country"></ion-input></ion-item>
+          <ion-button expand="block" type="submit" class="ion-margin-top">Save Bank Details</ion-button>
+        </form>
+      </ion-card-content>
+    </ion-card>
+  </ng-container>
+</ion-content>

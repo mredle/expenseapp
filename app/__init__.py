@@ -10,6 +10,7 @@ from flask import Flask, current_app, request
 from flask_apscheduler import APScheduler
 from flask_babel import Babel, lazy_gettext as _l
 from flask_bootstrap import Bootstrap5
+from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_login import AnonymousUserMixin, LoginManager, current_user
@@ -93,6 +94,7 @@ def create_app(config_class: type = Config) -> Flask:
 
     from app.apis import bp as apis_bp
     app.register_blueprint(apis_bp, url_prefix='/apis')
+    CORS(app, resources={r'/apis/*': {'origins': '*'}}, supports_credentials=False)
 
     from app.event import bp as event_bp
     app.register_blueprint(event_bp, url_prefix='/event')

@@ -31,4 +31,5 @@ Flask-Reuploaded
 flask-restx
 flask-weasyprint
 flask-apscheduler
+flask-cors
 Flask-Limiter

@@ -1,0 +1,20 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start"><ion-back-button defaultHref="/admin"></ion-back-button></ion-buttons>
+    <ion-title>Statistics</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div *ngIf="loading" class="ion-text-center ion-padding"><ion-spinner></ion-spinner></div>
+
+  <ion-list *ngIf="!loading">
+    <ion-item *ngFor="let s of stats">
+      <ion-label>{{ s.label }}</ion-label>
+      <ion-badge slot="end" color="primary">{{ s.count }}</ion-badge>
+    </ion-item>
+    <ion-item *ngIf="stats.length === 0">
+      <ion-label color="medium" class="ion-text-center">No statistics available.</ion-label>
+    </ion-item>
+  </ion-list>
+</ion-content>

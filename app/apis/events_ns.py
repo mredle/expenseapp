@@ -7,6 +7,7 @@ from datetime import datetime
 
 from flask import g, request
 from flask_restx import Namespace, Resource, fields
+from werkzeug.exceptions import Forbidden
 
 from app import db
 from app.apis.auth import token_auth
@@ -1069,3 +1070,64 @@ class RequestBalance(Resource):
         eventuser_guid = data.get('eventuser_guid')
         event_service.request_balance_pdf(guid, eventuser_guid)
         return {'message': 'Balance report queued'}
+
+
+# ---------------------------------------------------------------------------
+# Image upload endpoints
+# ---------------------------------------------------------------------------
+
+event_image_model = api.model('EventImage', {
+    'guid': fields.String(description='Image GUID'),
+    'url': fields.String(description='Image URL'),
+    'width': fields.Integer(description='Width'),
+    'height': fields.Integer(description='Height'),
+})
+
+
+@api.route('/<guid>/picture')
+class EventPicture(Resource):
+    """Upload a cover picture for an event."""
+
+    @token_auth.login_required
+    @api.marshal_with(event_image_model, code=201)
+    def post(self, guid: str) -> tuple:
+        """Upload event cover picture (multipart/form-data, field: image). Admin only."""
+        from app.models import Event
+        event = Event.get_by_guid_or_404(guid)
+        if event.admin_id != g.current_user.id and not g.current_user.is_admin:
+            raise Forbidden('Only the event admin can upload a cover picture')
+        if 'image' not in request.files or request.files['image'].filename == '':
+            return bad_request('No image file provided')
+        file_obj = request.files['image']
+        image = event_service.update_event_picture(guid, file_obj.stream, file_obj.filename)
+        return {'guid': image.guid, 'url': image.get_url(), 'width': image.width, 'height': image.height}, 201
+
+
+@api.route('/<guid>/users/<user_guid>/picture')
+class EventUserPicture(Resource):
+    """Upload a profile picture for an event user."""
+
+    @token_auth.login_required
+    @api.marshal_with(event_image_model, code=201)
+    def post(self, guid: str, user_guid: str) -> tuple:
+        """Upload event user profile picture (multipart/form-data, field: image)."""
+        if 'image' not in request.files or request.files['image'].filename == '':
+            return bad_request('No image file provided')
+        file_obj = request.files['image']
+        image = event_service.update_event_user_picture(user_guid, file_obj.stream, file_obj.filename)
+        return {'guid': image.guid, 'url': image.get_url(), 'width': image.width, 'height': image.height}, 201
+
+
+@api.route('/<guid>/expenses/<expense_guid>/receipt')
+class ExpenseReceipt(Resource):
+    """Upload a receipt image for an expense."""
+
+    @token_auth.login_required
+    @api.marshal_with(event_image_model, code=201)
+    def post(self, guid: str, expense_guid: str) -> tuple:
+        """Upload expense receipt (multipart/form-data, field: image)."""
+        if 'image' not in request.files or request.files['image'].filename == '':
+            return bad_request('No image file provided')
+        file_obj = request.files['image']
+        image = event_service.add_receipt(expense_guid, file_obj.stream, file_obj.filename)
+        return {'guid': image.guid, 'url': image.get_url(), 'width': image.width, 'height': image.height}, 201

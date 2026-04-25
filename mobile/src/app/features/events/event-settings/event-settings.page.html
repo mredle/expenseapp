@@ -1,0 +1,45 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start"><ion-back-button></ion-back-button></ion-buttons>
+    <ion-title>{{ isNew ? 'New Event' : 'Edit Event' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+<ion-content class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="save()">
+    <ion-item>
+      <ion-label position="stacked">Event Name *</ion-label>
+      <ion-input formControlName="name" placeholder="e.g. Summer Trip 2025"></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="stacked">Date *</ion-label>
+      <ion-input formControlName="date" type="date"></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="stacked">Base Currency *</ion-label>
+      <ion-select formControlName="base_currency_id" placeholder="Select currency">
+        <ion-select-option *ngFor="let c of currencies" [value]="c.id">{{ c.code }} – {{ c.name }}</ion-select-option>
+      </ion-select>
+    </ion-item>
+    <ion-item>
+      <ion-label position="stacked">Allowed Currencies *</ion-label>
+      <ion-select formControlName="currency_ids" [multiple]="true" placeholder="Select currencies">
+        <ion-select-option *ngFor="let c of currencies" [value]="c.id">{{ c.code }} – {{ c.name }}</ion-select-option>
+      </ion-select>
+    </ion-item>
+    <ion-item>
+      <ion-label position="stacked">Exchange Fee (%)</ion-label>
+      <ion-input formControlName="exchange_fee" type="number" step="0.1"></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="stacked">File Share Link</ion-label>
+      <ion-input formControlName="fileshare_link" type="url" placeholder="https://…"></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="stacked">Description</ion-label>
+      <ion-textarea formControlName="description" rows="3"></ion-textarea>
+    </ion-item>
+    <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="form.invalid">
+      {{ isNew ? 'Create Event' : 'Save Changes' }}
+    </ion-button>
+  </form>
+</ion-content>

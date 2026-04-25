@@ -1,0 +1,17 @@
+{
+  "name": "ExpenseApp",
+  "short_name": "ExpenseApp",
+  "theme_color": "#3880ff",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "assets/icon/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ]
+}

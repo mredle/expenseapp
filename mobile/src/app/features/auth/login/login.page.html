@@ -1,0 +1,44 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Expense App</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="logo-area ion-text-center ion-padding-bottom">
+    <h1>Welcome back</h1>
+    <p>Sign in to your account</p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="loginPassword()">
+    <ion-item>
+      <ion-label position="stacked">Username</ion-label>
+      <ion-input formControlName="username" type="text" autocomplete="username" placeholder="Enter username"></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="stacked">Password</ion-label>
+      <ion-input formControlName="password" [type]="showPassword ? 'text' : 'password'" autocomplete="current-password" placeholder="Enter password"></ion-input>
+      <ion-button slot="end" fill="clear" (click)="showPassword = !showPassword">
+        <ion-icon slot="icon-only" [name]="showPassword ? 'eye-off' : 'eye'"></ion-icon>
+      </ion-button>
+    </ion-item>
+
+    <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="form.invalid">
+      Sign In
+    </ion-button>
+  </form>
+
+  <div class="ion-text-center ion-padding-top" *ngIf="webAuthnSupported">
+    <ion-text color="medium">or</ion-text>
+    <ion-button expand="block" fill="outline" (click)="loginWebAuthn()" class="ion-margin-top">
+      <ion-icon slot="start" name="finger-print"></ion-icon>
+      Sign In with Passkey
+    </ion-button>
+  </div>
+
+  <div class="ion-text-center ion-padding-top">
+    <ion-button fill="clear" routerLink="/auth/reset-password">Forgot password?</ion-button>
+    <br>
+    <ion-button fill="clear" routerLink="/auth/register">Create account</ion-button>
+  </div>
+</ion-content>

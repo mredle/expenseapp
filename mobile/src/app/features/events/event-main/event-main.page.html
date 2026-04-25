@@ -1,0 +1,111 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start"><ion-back-button defaultHref="/tabs/events"></ion-back-button></ion-buttons>
+    <ion-title>{{ event?.name || 'Event' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="goTo('settings')"><ion-icon slot="icon-only" name="settings-outline"></ion-icon></ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div *ngIf="loading" class="ion-text-center ion-padding"><ion-spinner></ion-spinner></div>
+
+  <ng-container *ngIf="event">
+    <!-- Event cover image -->
+    <div *ngIf="event.image_url" class="event-cover">
+      <img [src]="event.image_url" alt="Event cover" style="width:100%;max-height:200px;object-fit:cover;">
+    </div>
+
+    <!-- Event info card -->
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>{{ event.name }}</ion-card-title>
+        <ion-card-subtitle>{{ event.date | date:'mediumDate' }} · {{ event.base_currency_code }}</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <p *ngIf="event.description">{{ event.description }}</p>
+        <ion-badge color="success" *ngIf="!event.closed">Active</ion-badge>
+        <ion-badge color="medium" *ngIf="event.closed">Closed</ion-badge>
+        <p class="ion-padding-top">
+          <strong>Admin:</strong> {{ event.admin_username }} &nbsp;
+          <strong>Accountant:</strong> {{ event.accountant_username }}
+        </p>
+        <p><strong>Exchange fee:</strong> {{ event.exchange_fee }}%</p>
+        <p *ngIf="event.stats">
+          {{ event.stats.users }} users · {{ event.stats.expenses }} expenses · {{ event.stats.settlements }} settlements
+        </p>
+        <a *ngIf="event.fileshare_link" [href]="event.fileshare_link" target="_blank">External file share</a>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Quick actions -->
+    <ion-list>
+      <ion-item button (click)="goTo('expenses')">
+        <ion-icon slot="start" name="receipt-outline"></ion-icon>
+        <ion-label>Expenses</ion-label>
+        <ion-badge slot="end" *ngIf="event.stats">{{ event.stats.expenses }}</ion-badge>
+        <ion-icon slot="end" name="chevron-forward"></ion-icon>
+      </ion-item>
+      <ion-item button (click)="goTo('settlements')">
+        <ion-icon slot="start" name="swap-horizontal-outline"></ion-icon>
+        <ion-label>Settlements</ion-label>
+        <ion-badge slot="end" *ngIf="event.stats">{{ event.stats.settlements }}</ion-badge>
+        <ion-icon slot="end" name="chevron-forward"></ion-icon>
+      </ion-item>
+      <ion-item button (click)="goTo('balance')">
+        <ion-icon slot="start" name="bar-chart-outline"></ion-icon>
+        <ion-label>Balance Sheet</ion-label>
+        <ion-icon slot="end" name="chevron-forward"></ion-icon>
+      </ion-item>
+      <ion-item button (click)="goTo('users')">
+        <ion-icon slot="start" name="people-outline"></ion-icon>
+        <ion-label>Participants</ion-label>
+        <ion-badge slot="end" *ngIf="event.stats">{{ event.stats.users }}</ion-badge>
+        <ion-icon slot="end" name="chevron-forward"></ion-icon>
+      </ion-item>
+      <ion-item button (click)="goTo('currencies')">
+        <ion-icon slot="start" name="cash-outline"></ion-icon>
+        <ion-label>Currencies</ion-label>
+        <ion-icon slot="end" name="chevron-forward"></ion-icon>
+      </ion-item>
+      <ion-item button (click)="requestBalance()">
+        <ion-icon slot="start" name="mail-outline"></ion-icon>
+        <ion-label>Email Balance Report</ion-label>
+      </ion-item>
+      <ion-item button (click)="confirmClose()" *ngIf="!event.closed" color="warning">
+        <ion-icon slot="start" name="lock-closed-outline"></ion-icon>
+        <ion-label>Close Event</ion-label>
+      </ion-item>
+      <ion-item button (click)="reopenEvent()" *ngIf="event.closed">
+        <ion-icon slot="start" name="lock-open-outline"></ion-icon>
+        <ion-label>Reopen Event</ion-label>
+      </ion-item>
+    </ion-list>
+
+    <!-- Post feed -->
+    <ion-list-header><ion-label>Posts</ion-label></ion-list-header>
+
+    <!-- New post input -->
+    <ion-item>
+      <ion-textarea [(ngModel)]="newPostBody" placeholder="Write a post…" rows="2" auto-grow></ion-textarea>
+      <ion-button slot="end" fill="clear" (click)="submitPost()" [disabled]="!newPostBody.trim()">
+        <ion-icon slot="icon-only" name="send"></ion-icon>
+      </ion-button>
+    </ion-item>
+
+    <ion-list>
+      <ion-item *ngFor="let post of posts">
+        <ion-label class="ion-text-wrap">
+          <h3><strong>{{ post.author_username }}</strong></h3>
+          <p>{{ post.body }}</p>
+          <p><small>{{ post.timestamp | date:'medium' }}</small></p>
+        </ion-label>
+      </ion-item>
+    </ion-list>
+
+    <ion-infinite-scroll [disabled]="!hasNextPosts" (ionInfinite)="loadMorePosts($event)">
+      <ion-infinite-scroll-content></ion-infinite-scroll-content>
+    </ion-infinite-scroll>
+  </ng-container>
+</ion-content>
