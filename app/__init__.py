@@ -9,7 +9,8 @@ from logging.handlers import RotatingFileHandler, SMTPHandler
 from flask import Flask, current_app, request
 from flask_apscheduler import APScheduler
 from flask_babel import Babel, lazy_gettext as _l
-from flask_bootstrap import Bootstrap
+from flask_bootstrap import Bootstrap5
+from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_login import AnonymousUserMixin, LoginManager, current_user
@@ -41,7 +42,7 @@ login.anonymous_user = Anonymous
 login.login_message = _l('Please log in to access this page.')
 images = UploadSet('images', IMAGES)
 mail = Mail()
-bootstrap = Bootstrap()
+bootstrap = Bootstrap5()
 moment = Moment()
 babel = Babel()
 scheduler = APScheduler()
@@ -93,12 +94,16 @@ def create_app(config_class: type = Config) -> Flask:
 
     from app.apis import bp as apis_bp
     app.register_blueprint(apis_bp, url_prefix='/apis')
+    CORS(app, resources={r'/apis/*': {'origins': '*'}}, supports_credentials=False)
 
     from app.event import bp as event_bp
     app.register_blueprint(event_bp, url_prefix='/event')
 
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)
+
+    from app.mobile import bp as mobile_bp
+    app.register_blueprint(mobile_bp, url_prefix='/mobile')
 
     if not app.debug and not app.testing:
         if app.config['MAIL_SERVER']:

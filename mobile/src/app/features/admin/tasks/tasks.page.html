@@ -1,0 +1,46 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start"><ion-back-button defaultHref="/admin"></ion-back-button></ion-buttons>
+    <ion-title>Tasks</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-item>
+    <ion-label>Show completed</ion-label>
+    <ion-toggle [(ngModel)]="showComplete" (ionChange)="load()"></ion-toggle>
+  </ion-item>
+
+  <ion-item lines="none" class="ion-padding-top">
+    <ion-button slot="end" size="small" (click)="launchCurrencyUpdate()">
+      <ion-icon slot="start" name="refresh"></ion-icon>
+      Update Currencies
+    </ion-button>
+  </ion-item>
+
+  <div *ngIf="loading" class="ion-text-center ion-padding"><ion-spinner></ion-spinner></div>
+
+  <ion-list *ngIf="!loading">
+    <ion-item-sliding *ngFor="let t of tasks">
+      <ion-item>
+        <ion-label>
+          <h2>{{ t.name }}</h2>
+          <p>{{ t.description }}</p>
+          <p><ion-text color="medium">{{ t.username }}</ion-text></p>
+        </ion-label>
+        <ion-progress-bar *ngIf="!t.complete" [value]="t.progress / 100" slot="end"></ion-progress-bar>
+        <ion-badge slot="end" [color]="t.complete ? 'success' : 'warning'">
+          {{ t.complete ? 'Done' : t.progress + '%' }}
+        </ion-badge>
+      </ion-item>
+      <ion-item-options side="end">
+        <ion-item-option color="danger" (click)="confirmDelete(t)">
+          <ion-icon slot="icon-only" name="trash"></ion-icon>
+        </ion-item-option>
+      </ion-item-options>
+    </ion-item-sliding>
+    <ion-item *ngIf="tasks.length === 0">
+      <ion-label color="medium" class="ion-text-center">No tasks.</ion-label>
+    </ion-item>
+  </ion-list>
+</ion-content>

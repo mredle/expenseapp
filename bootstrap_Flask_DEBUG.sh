@@ -42,6 +42,6 @@ flask dbmaint add-missing-guid
 flask translate compile
 
 echo "Starting Flask development server..."
-export FLASK_DEBUG=0
-exec gunicorn -b :5000 --access-logfile - --error-logfile - expenseapp:app
-#flask run --host=0.0.0.0
+flask run --host=0.0.0.0
+#export FLASK_DEBUG=0
+#exec gunicorn -b :5000 --access-logfile - --error-logfile - expenseapp:app

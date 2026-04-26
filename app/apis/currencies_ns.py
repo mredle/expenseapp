@@ -17,6 +17,7 @@ api = Namespace('currencies', description='Currency operations')
 # ---------------------------------------------------------------------------
 
 currency_model = api.model('Currency', {
+    'id': fields.Integer(description='Currency database ID'),
     'guid': fields.String(description='Currency GUID'),
     'code': fields.String(required=True, description='ISO 4217 code (e.g. CHF)'),
     'name': fields.String(required=True, description='Currency name'),
@@ -50,6 +51,7 @@ currency_list_model = api.model('CurrencyList', {
 def _currency_to_dict(currency: object) -> dict:
     """Serialise a Currency model to a dict."""
     return {
+        'id': currency.id,
         'guid': str(currency.guid),
         'code': currency.code,
         'name': currency.name,

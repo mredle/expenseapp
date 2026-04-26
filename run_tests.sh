@@ -71,7 +71,8 @@ if [ "$DB_CHOICE" != "sqlite" ]; then
     echo "⏳ Waiting for $DB_CHOICE to become healthy..."
     
     # Loop until Docker Inspect specifically returns the string "healthy"
-    until [ "$(docker inspect -f '{{.State.Health.Status}}' dev-$DB_CHOICE)" == "healthy" ]; do
+    # Use 'json' format + python to safely handle containers without a Health key
+    until [ "$(docker inspect dev-$DB_CHOICE | python3 -c "import json,sys; d=json.load(sys.stdin); print(d[0].get('State',{}).get('Health',{}).get('Status',''))" 2>/dev/null)" == "healthy" ]; do
         sleep 2
         echo -n "." # Prints dots to show progress without making new lines
     done

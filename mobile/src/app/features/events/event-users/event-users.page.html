@@ -1,0 +1,43 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start"><ion-back-button></ion-back-button></ion-buttons>
+    <ion-title>Participants</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="showForm = !showForm"><ion-icon slot="icon-only" name="add"></ion-icon></ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+<ion-content>
+  <ion-card *ngIf="showForm">
+    <ion-card-header><ion-card-title>Add Participant</ion-card-title></ion-card-header>
+    <ion-card-content>
+      <form [formGroup]="form" (ngSubmit)="addUser()">
+        <ion-item><ion-label position="stacked">Name *</ion-label><ion-input formControlName="username"></ion-input></ion-item>
+        <ion-item><ion-label position="stacked">Email *</ion-label><ion-input formControlName="email" type="email"></ion-input></ion-item>
+        <ion-item><ion-label position="stacked">Weight</ion-label><ion-input formControlName="weighting" type="number" step="0.1"></ion-input></ion-item>
+        <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="form.invalid">Add</ion-button>
+        <ion-button expand="block" fill="outline" (click)="showForm = false">Cancel</ion-button>
+      </form>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-list>
+    <ion-item-sliding *ngFor="let user of users">
+      <ion-item button (click)="viewUser(user.guid)">
+        <ion-avatar slot="start">
+          <img [src]="user.avatar || 'assets/default-avatar.png'" alt="">
+        </ion-avatar>
+        <ion-label>
+          <h2>{{ user.username }}</h2>
+          <p>{{ user.email }}</p>
+        </ion-label>
+        <ion-icon slot="end" name="chevron-forward"></ion-icon>
+      </ion-item>
+      <ion-item-options side="end">
+        <ion-item-option color="danger" (click)="removeUser(user)">
+          <ion-icon slot="icon-only" name="trash"></ion-icon>
+        </ion-item-option>
+      </ion-item-options>
+    </ion-item-sliding>
+  </ion-list>
+</ion-content>

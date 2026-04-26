@@ -1,0 +1,36 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start"><ion-back-button></ion-back-button></ion-buttons>
+    <ion-title>Expense Detail</ion-title>
+  </ion-toolbar>
+</ion-header>
+<ion-content class="ion-padding">
+  <div *ngIf="loading" class="ion-text-center"><ion-spinner></ion-spinner></div>
+  <ng-container *ngIf="expense">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>{{ expense.amount_str }} {{ expense.currency_code }}</ion-card-title>
+        <ion-card-subtitle>{{ expense.description }}</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <p><strong>Paid by:</strong> {{ expense.user_username }}</p>
+        <p><strong>Date:</strong> {{ expense.date | date:'mediumDate' }}</p>
+        <img *ngIf="expense.image_url" [src]="expense.image_url" alt="Receipt" style="max-width:100%;border-radius:8px;margin-top:8px;">
+        <div class="ion-padding-top">
+          <ion-label><strong>Upload Receipt</strong></ion-label>
+          <input type="file" accept="image/*" (change)="uploadReceipt($event)" style="display:block;margin-top:8px;">
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-list-header><ion-label>Affected Users</ion-label></ion-list-header>
+    <ion-list>
+      <ion-item *ngFor="let user of allUsers">
+        <ion-label>{{ user.username }}</ion-label>
+        <ion-checkbox slot="end" [checked]="isAffected(user.guid)"
+          (ionChange)="$event.detail.checked ? addUser(user.guid) : removeUser(user.guid)">
+        </ion-checkbox>
+      </ion-item>
+    </ion-list>
+  </ng-container>
+</ion-content>

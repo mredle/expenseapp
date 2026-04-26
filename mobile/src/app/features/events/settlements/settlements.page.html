@@ -1,0 +1,64 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start"><ion-back-button></ion-back-button></ion-buttons>
+    <ion-title>Settlements</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="showForm = !showForm"><ion-icon slot="icon-only" name="add"></ion-icon></ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+<ion-content>
+  <ion-card *ngIf="showForm">
+    <ion-card-header><ion-card-title>Add Settlement</ion-card-title></ion-card-header>
+    <ion-card-content>
+      <form [formGroup]="form" (ngSubmit)="addSettlement()">
+        <ion-item>
+          <ion-label position="stacked">Recipient *</ion-label>
+          <ion-select formControlName="recipient_id" placeholder="Select">
+            <ion-select-option *ngFor="let u of eventUsers" [value]="u.id">{{ u.username }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Currency *</ion-label>
+          <ion-select formControlName="currency_id" placeholder="Select">
+            <ion-select-option *ngFor="let c of currencies" [value]="c.id">{{ c.code }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Amount *</ion-label>
+          <ion-input formControlName="amount" type="number" step="0.01"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Description</ion-label>
+          <ion-input formControlName="description"></ion-input>
+        </ion-item>
+        <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="form.invalid">Add</ion-button>
+        <ion-button expand="block" fill="outline" (click)="showForm = false">Cancel</ion-button>
+      </form>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-list>
+    <ion-item-sliding *ngFor="let s of settlements">
+      <ion-item>
+        <ion-icon slot="start" [name]="s.draft ? 'hourglass-outline' : 'checkmark-circle-outline'" [color]="s.draft ? 'warning' : 'success'"></ion-icon>
+        <ion-label>
+          <h2>{{ s.amount_str }} {{ s.currency_code }}</h2>
+          <p>{{ s.sender_username }} → {{ s.recipient_username }}</p>
+          <p><small>{{ s.date | date:'shortDate' }} · {{ s.draft ? 'Draft' : 'Confirmed' }}</small></p>
+          <p *ngIf="s.description"><small>{{ s.description }}</small></p>
+        </ion-label>
+        <ion-button *ngIf="s.draft" slot="end" fill="outline" color="success" (click)="confirmSettlement(s)">Confirm</ion-button>
+      </ion-item>
+      <ion-item-options side="end">
+        <ion-item-option color="danger" (click)="deleteSettlement(s)">
+          <ion-icon slot="icon-only" name="trash"></ion-icon>
+        </ion-item-option>
+      </ion-item-options>
+    </ion-item-sliding>
+  </ion-list>
+
+  <ion-infinite-scroll [disabled]="!hasNext" (ionInfinite)="loadMore($event)">
+    <ion-infinite-scroll-content></ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+</ion-content>

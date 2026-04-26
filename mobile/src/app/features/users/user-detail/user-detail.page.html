@@ -1,0 +1,82 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/users"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ user?.username || 'User' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button *ngIf="isSelf || isAdmin" (click)="editMode = !editMode">
+        <ion-icon slot="icon-only" [name]="editMode ? 'close' : 'pencil'"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div *ngIf="loading" class="ion-text-center ion-padding">
+    <ion-spinner></ion-spinner>
+  </div>
+
+  <ng-container *ngIf="!loading && user">
+    <!-- Avatar -->
+    <div class="ion-text-center ion-padding">
+      <img [src]="user._links?.avatar || 'assets/icon/favicon.png'" style="width:96px;height:96px;border-radius:50%;object-fit:cover;" alt="avatar" />
+      <div *ngIf="isSelf" class="ion-padding-top">
+        <label>
+          <ion-button size="small" fill="outline">Change Picture</ion-button>
+          <input type="file" accept="image/*" style="display:none" (change)="onPictureChange($event)" />
+        </label>
+      </div>
+    </div>
+
+    <!-- View mode -->
+    <ion-list *ngIf="!editMode">
+      <ion-item>
+        <ion-label>
+          <p>Username</p>
+          <h2>{{ user.username }}</h2>
+        </ion-label>
+      </ion-item>
+      <ion-item>
+        <ion-label>
+          <p>Email</p>
+          <h2>{{ user.email }}</h2>
+        </ion-label>
+      </ion-item>
+      <ion-item *ngIf="user.about_me">
+        <ion-label>
+          <p>About</p>
+          <h2>{{ user.about_me }}</h2>
+        </ion-label>
+      </ion-item>
+      <ion-item>
+        <ion-label>Admin</ion-label>
+        <ion-toggle slot="end" [checked]="user.is_admin" *ngIf="isAdmin" (ionChange)="toggleAdmin()"></ion-toggle>
+        <ion-badge slot="end" [color]="user.is_admin ? 'warning' : 'medium'" *ngIf="!isAdmin">
+          {{ user.is_admin ? 'Yes' : 'No' }}
+        </ion-badge>
+      </ion-item>
+    </ion-list>
+
+    <!-- Edit mode -->
+    <form *ngIf="editMode" [formGroup]="form" (ngSubmit)="saveProfile()">
+      <ion-list>
+        <ion-item>
+          <ion-label position="stacked">Username</ion-label>
+          <ion-input formControlName="username"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Email</ion-label>
+          <ion-input formControlName="email" type="email"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">About me</ion-label>
+          <ion-textarea formControlName="about_me" rows="3"></ion-textarea>
+        </ion-item>
+      </ion-list>
+      <div class="ion-padding">
+        <ion-button type="submit" expand="block" [disabled]="form.invalid">Save</ion-button>
+      </div>
+    </form>
+  </ng-container>
+</ion-content>

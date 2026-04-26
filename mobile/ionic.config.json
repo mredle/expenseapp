@@ -1,0 +1,7 @@
+{
+  "name": "expenseapp-mobile",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}

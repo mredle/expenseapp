@@ -100,14 +100,19 @@ def authenticate_password(username: str, password: str) -> AuthResult:
 # Registration
 # ---------------------------------------------------------------------------
 
-def register_user(username: str, email: str, locale: str) -> RegistrationResult:
-    """Create a new user account with a random password and API token.
+def register_user(username: str, email: str, locale: str, password: str | None = None) -> RegistrationResult:
+    """Create a new user account and API token.
 
-    Returns a :class:`RegistrationResult` with the newly created user.
-    The caller is responsible for sending notification/validation emails.
+    If *password* is provided it is set directly; otherwise a random password
+    is generated.  Returns a :class:`RegistrationResult` with the newly
+    created user.  The caller is responsible for sending notification/validation
+    emails.
     """
     user = User(username=username, email=email, locale=locale)
-    user.set_random_password()
+    if password:
+        user.set_password(password)
+    else:
+        user.set_random_password()
     user.get_token()
     db.session.add(user)
     return RegistrationResult(success=True, user=user)

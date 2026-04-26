@@ -1,0 +1,62 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Messages</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="openCompose()">
+        <ion-icon slot="icon-only" name="create"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Compose modal -->
+  <ion-card *ngIf="composing">
+    <ion-card-header>
+      <ion-card-title>New Message</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-item>
+        <ion-label position="stacked">Recipient</ion-label>
+        <ion-select [(ngModel)]="recipientId" placeholder="Select recipient">
+          <ion-select-option *ngFor="let u of users" [value]="u.id">{{ u.username }}</ion-select-option>
+        </ion-select>
+      </ion-item>
+      <ion-item>
+        <ion-label position="stacked">Message</ion-label>
+        <ion-textarea [(ngModel)]="composeBody" rows="4" placeholder="Type your message..."></ion-textarea>
+      </ion-item>
+      <div class="ion-padding-top">
+        <ion-button expand="block" (click)="send()" [disabled]="!recipientId || !composeBody.trim() || sending">
+          <ion-spinner *ngIf="sending" name="crescent"></ion-spinner>
+          <span *ngIf="!sending">Send</span>
+        </ion-button>
+        <ion-button fill="clear" expand="block" (click)="cancelCompose()">Cancel</ion-button>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <div *ngIf="loading" class="ion-text-center ion-padding">
+    <ion-spinner></ion-spinner>
+  </div>
+
+  <ion-list *ngIf="!loading && !composing">
+    <ion-item *ngFor="let m of messages">
+      <ion-label>
+        <h2>
+          <strong>{{ m.sender }}</strong>
+          <ion-text color="medium"> → {{ m.recipient }}</ion-text>
+        </h2>
+        <p>{{ m.body }}</p>
+        <p><ion-text color="medium">{{ m.timestamp | date:'medium' }}</ion-text></p>
+      </ion-label>
+    </ion-item>
+    <ion-item *ngIf="messages.length === 0">
+      <ion-label color="medium" class="ion-text-center">No messages.</ion-label>
+    </ion-item>
+  </ion-list>
+</ion-content>

@@ -1,0 +1,46 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start"><ion-back-button></ion-back-button></ion-buttons>
+    <ion-title>Balance Sheet</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="requestPdf()"><ion-icon slot="icon-only" name="mail-outline"></ion-icon></ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+<ion-content class="ion-padding">
+  <div *ngIf="loading" class="ion-text-center"><ion-spinner></ion-spinner></div>
+  <ng-container *ngIf="balance">
+    <ion-card>
+      <ion-card-header><ion-card-title>Total: {{ balance.total_expenses }}</ion-card-title></ion-card-header>
+      <ion-card-content>
+        <ion-grid>
+          <ion-row>
+            <ion-col size="3"><strong>User</strong></ion-col>
+            <ion-col size="2"><strong>Paid</strong></ion-col>
+            <ion-col size="2"><strong>Spent</strong></ion-col>
+            <ion-col size="2"><strong>Sent</strong></ion-col>
+            <ion-col size="3"><strong>Balance</strong></ion-col>
+          </ion-row>
+          <ion-row *ngFor="let row of balance.balances">
+            <ion-col size="3">{{ row.username }}</ion-col>
+            <ion-col size="2">{{ row.paid }}</ion-col>
+            <ion-col size="2">{{ row.spent }}</ion-col>
+            <ion-col size="2">{{ row.sent }}</ion-col>
+            <ion-col size="3" [style.color]="row.balance.startsWith('-') ? 'var(--ion-color-danger)' : 'var(--ion-color-success)'">
+              <strong>{{ row.balance }}</strong>
+            </ion-col>
+          </ion-row>
+        </ion-grid>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-list-header *ngIf="balance.draft_settlements.length"><ion-label>Suggested Payments</ion-label></ion-list-header>
+    <ion-item *ngFor="let s of balance.draft_settlements">
+      <ion-icon slot="start" name="arrow-forward-outline"></ion-icon>
+      <ion-label>
+        <h2>{{ s.sender_username }} → {{ s.recipient_username }}</h2>
+        <p>{{ s.amount_str }} {{ s.currency_code }}</p>
+      </ion-label>
+    </ion-item>
+  </ng-container>
+</ion-content>

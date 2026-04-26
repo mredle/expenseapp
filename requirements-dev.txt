@@ -1,6 +1,7 @@
 -r requirements.txt
 pytest
 pytest-cov
+pytest-playwright
 locust
 faker
 spyder

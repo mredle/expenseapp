@@ -1,0 +1,37 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/auth/login"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Create Account</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <form [formGroup]="form" (ngSubmit)="register()">
+    <ion-item>
+      <ion-label position="stacked">Username</ion-label>
+      <ion-input formControlName="username" type="text" placeholder="Choose a username"></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="stacked">Email</ion-label>
+      <ion-input formControlName="email" type="email" autocomplete="email" placeholder="your@email.com"></ion-input>
+    </ion-item>
+    <ion-item>
+      <ion-label position="stacked">Language</ion-label>
+      <ion-select formControlName="locale" interface="action-sheet">
+        <ion-select-option value="en">English</ion-select-option>
+        <ion-select-option value="de">Deutsch</ion-select-option>
+        <ion-select-option value="fr">Français</ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-button expand="block" type="submit" class="ion-margin-top" [disabled]="form.invalid">
+      Create Account
+    </ion-button>
+  </form>
+
+  <div class="ion-text-center ion-padding-top">
+    <ion-button fill="clear" routerLink="/auth/login">Already have an account? Sign in</ion-button>
+  </div>
+</ion-content>

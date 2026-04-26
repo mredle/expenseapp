@@ -26,9 +26,10 @@ flask-moment
 flask-babel
 flask-httpauth
 flask-wtf
-flask-bootstrap
+bootstrap-flask
 Flask-Reuploaded
 flask-restx
 flask-weasyprint
 flask-apscheduler
+flask-cors
 Flask-Limiter

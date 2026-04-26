@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% import 'bootstrap/wtf.html' as wtf %}
+{% from 'bootstrap/form.html' import render_form %}
 
 {% block app_content %}
     <h1>{{ title }}</h1>
     <div class="row">
         <div class="col-md-4">
-            {{ wtf.quick_form(form) }}
+            {{ render_form(form) }}
             <button id="btnRegister">Register device with FIDO2</button>
         </div>
     </div>
@@ -17,6 +17,7 @@
 {% endblock %}
 
 {% block scripts %}
+    {{ super() }}
     <script src="/static/simplewebauthn-browser.4.1.0.umd.min.js"></script>
     <script src="/static/register_fido2.js"></script>
 {% endblock %}

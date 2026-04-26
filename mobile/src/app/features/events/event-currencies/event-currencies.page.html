@@ -1,0 +1,29 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start"><ion-back-button></ion-back-button></ion-buttons>
+    <ion-title>Currencies</ion-title>
+  </ion-toolbar>
+</ion-header>
+<ion-content>
+  <div *ngIf="loading" class="ion-text-center ion-padding"><ion-spinner></ion-spinner></div>
+  <ion-list>
+    <ion-item *ngFor="let c of currencies">
+      <ion-label>
+        <h2>{{ c.currency_code }} – {{ c.currency_name }}</h2>
+        <p *ngIf="editingCode !== c.currency_code">Rate: {{ c.inCHF }} CHF</p>
+        <ion-item *ngIf="editingCode === c.currency_code" lines="none" class="ion-no-padding">
+          <ion-input [(ngModel)]="newRate" type="number" step="0.0001" placeholder="Rate in CHF"></ion-input>
+          <ion-button slot="end" fill="clear" color="success" (click)="saveRate(c.currency_code)">
+            <ion-icon slot="icon-only" name="checkmark"></ion-icon>
+          </ion-button>
+          <ion-button slot="end" fill="clear" color="medium" (click)="cancelEdit()">
+            <ion-icon slot="icon-only" name="close"></ion-icon>
+          </ion-button>
+        </ion-item>
+      </ion-label>
+      <ion-button slot="end" fill="clear" *ngIf="editingCode !== c.currency_code" (click)="startEdit(c.currency_code, c.inCHF)">
+        <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+      </ion-button>
+    </ion-item>
+  </ion-list>
+</ion-content>

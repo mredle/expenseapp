@@ -1,0 +1,35 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Users</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div *ngIf="loading" class="ion-text-center ion-padding">
+    <ion-spinner></ion-spinner>
+  </div>
+
+  <ion-list *ngIf="!loading">
+    <ion-item *ngFor="let u of users" button (click)="openUser(u.id)">
+      <ion-avatar slot="start">
+        <img [src]="u._links?.avatar || 'assets/icon/favicon.png'" alt="avatar" />
+      </ion-avatar>
+      <ion-label>
+        <h2>{{ u.username }}</h2>
+        <p>{{ u.email }}</p>
+      </ion-label>
+      <ion-badge slot="end" color="warning" *ngIf="u.is_admin">Admin</ion-badge>
+    </ion-item>
+    <ion-item *ngIf="users.length === 0">
+      <ion-label color="medium" class="ion-text-center">No users found.</ion-label>
+    </ion-item>
+  </ion-list>
+
+  <ion-infinite-scroll (ionInfinite)="loadMore($event)" [disabled]="!hasNext">
+    <ion-infinite-scroll-content></ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+</ion-content>

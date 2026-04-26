@@ -1,0 +1,45 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>My Events</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="newEvent()">
+        <ion-icon slot="icon-only" name="add"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div *ngIf="loading && events.length === 0" class="ion-text-center ion-padding">
+    <ion-spinner></ion-spinner>
+  </div>
+
+  <ion-list *ngIf="events.length > 0">
+    <ion-item *ngFor="let event of events" button (click)="openEvent(event.guid)">
+      <ion-thumbnail slot="start" *ngIf="event.image_url">
+        <img [src]="event.image_url" alt="">
+      </ion-thumbnail>
+      <ion-icon slot="start" name="calendar-outline" *ngIf="!event.image_url"></ion-icon>
+      <ion-label>
+        <h2>{{ event.name }}</h2>
+        <p>{{ event.date | date:'mediumDate' }} · {{ event.base_currency_code }}</p>
+        <p *ngIf="event.closed"><ion-badge color="medium">Closed</ion-badge></p>
+      </ion-label>
+      <ion-icon slot="end" name="chevron-forward"></ion-icon>
+    </ion-item>
+  </ion-list>
+
+  <div *ngIf="!loading && events.length === 0" class="ion-text-center ion-padding">
+    <ion-icon name="calendar-outline" size="large" color="medium"></ion-icon>
+    <p color="medium">No events yet. Create your first event!</p>
+    <ion-button (click)="newEvent()">Create Event</ion-button>
+  </div>
+
+  <ion-infinite-scroll [disabled]="!hasNext" (ionInfinite)="loadMore($event)">
+    <ion-infinite-scroll-content></ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+</ion-content>
