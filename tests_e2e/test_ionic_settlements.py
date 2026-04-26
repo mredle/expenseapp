@@ -18,7 +18,7 @@ def _open_settlements(page: Page) -> None:
     if items.count() == 0:
         pytest.skip("No events available for settlements tests.")
     items.first.click()
-    page.wait_for_url("**/event-main/**", timeout=10_000)
+    page.wait_for_url("**/event/*/main", timeout=10_000)
     page.locator("ion-item:has-text('Settlements')").click()
     page.wait_for_url("**/settlements**", timeout=10_000)
     page.wait_for_selector("ion-title:has-text('Settlements')", timeout=10_000)
@@ -41,7 +41,7 @@ class TestIonicSettlementsList:
     def test_add_button_visible(self, page: Page) -> None:
         """'+' button is visible in the settlements toolbar."""
         _open_settlements(page)
-        expect(page.locator("ion-button ion-icon[name='add']").first).to_be_visible()
+        expect(page.locator("ion-button:has(ion-icon[name='add'])").last).to_be_visible()
 
 
 class TestIonicAddSettlementForm:
@@ -50,13 +50,13 @@ class TestIonicAddSettlementForm:
     def test_add_button_opens_form(self, page: Page) -> None:
         """Tapping '+' reveals the Add Settlement card."""
         _open_settlements(page)
-        page.locator("ion-button ion-icon[name='add']").first.click()
+        page.locator("ion-button:has(ion-icon[name='add'])").last.click()
         expect(page.locator("ion-card-title:has-text('Add Settlement')")).to_be_visible(timeout=5_000)
 
     def test_submit_disabled_when_empty(self, page: Page) -> None:
         """Add button in the form is disabled while required fields are blank."""
         _open_settlements(page)
-        page.locator("ion-button ion-icon[name='add']").first.click()
+        page.locator("ion-button:has(ion-icon[name='add'])").last.click()
         page.wait_for_selector("ion-card-title:has-text('Add Settlement')", timeout=5_000)
         btn = page.locator("ion-button[type='submit']").first
         assert btn.get_attribute("disabled") is not None or btn.is_disabled()
@@ -64,7 +64,7 @@ class TestIonicAddSettlementForm:
     def test_cancel_closes_form(self, page: Page) -> None:
         """Clicking Cancel hides the Add Settlement form."""
         _open_settlements(page)
-        page.locator("ion-button ion-icon[name='add']").first.click()
+        page.locator("ion-button:has(ion-icon[name='add'])").last.click()
         page.wait_for_selector("ion-card-title:has-text('Add Settlement')", timeout=5_000)
         page.locator("ion-button:has-text('Cancel')").click()
         page.wait_for_timeout(1_000)

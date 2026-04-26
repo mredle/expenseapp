@@ -60,7 +60,7 @@ def test_create_currency_success(
 ) -> None:
     """Admin can create a new currency and receives 201 with the resource."""
     client, token = api_admin_client
-    code = f'T{uuid.uuid4().hex[:3].upper()}'
+    code = f'T{uuid.uuid4().hex[:2].upper()}'
     payload = {
         'code': code,
         'name': f'Test Currency {code}',
@@ -94,7 +94,7 @@ def test_create_currency_non_admin(
 ) -> None:
     """Regular (non-admin) user receives 403 when creating a currency."""
     client, token = api_client
-    code = f'T{uuid.uuid4().hex[:3].upper()}'
+    code = f'T{uuid.uuid4().hex[:2].upper()}'
     payload = {
         'code': code,
         'name': f'Test Currency {code}',

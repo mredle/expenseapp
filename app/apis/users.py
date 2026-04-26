@@ -26,6 +26,7 @@ user = api.model('User', {
     'email': fields.String(description='The email address'),
     'last_seen': fields.String(description='When user accessed his page last'),
     'about_me': fields.String(description='About the user'),
+    'is_admin': fields.Boolean(description='Whether the user has admin privileges'),
     'post_count': fields.Integer(description='Number of posts'),
     '_links': fields.Nested(link_fields, description='User relevant links'),
 })

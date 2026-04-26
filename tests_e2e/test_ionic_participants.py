@@ -18,9 +18,9 @@ def _open_participants(page: Page) -> None:
     if items.count() == 0:
         pytest.skip("No events available for participants tests.")
     items.first.click()
-    page.wait_for_url("**/event-main/**", timeout=10_000)
+    page.wait_for_url("**/event/*/main", timeout=10_000)
     page.locator("ion-item:has-text('Participants')").click()
-    page.wait_for_url("**/event-users**", timeout=10_000)
+    page.wait_for_url("**/users**", timeout=10_000)
     page.wait_for_selector("ion-title:has-text('Participants')", timeout=10_000)
 
 
@@ -41,7 +41,7 @@ class TestIonicParticipantsList:
     def test_add_button_visible(self, page: Page) -> None:
         """'+' button in the toolbar is visible."""
         _open_participants(page)
-        expect(page.locator("ion-button ion-icon[name='add']").first).to_be_visible()
+        expect(page.locator("ion-button:has(ion-icon[name='add'])").last).to_be_visible()
 
 
 class TestIonicAddParticipantForm:
@@ -50,13 +50,13 @@ class TestIonicAddParticipantForm:
     def test_add_button_opens_form(self, page: Page) -> None:
         """Tapping '+' reveals the Add Participant card."""
         _open_participants(page)
-        page.locator("ion-button ion-icon[name='add']").first.click()
+        page.locator("ion-button:has(ion-icon[name='add'])").last.click()
         expect(page.locator("ion-card-title:has-text('Add Participant')")).to_be_visible(timeout=5_000)
 
     def test_submit_disabled_when_empty(self, page: Page) -> None:
         """Add button is disabled while required Name/Email fields are blank."""
         _open_participants(page)
-        page.locator("ion-button ion-icon[name='add']").first.click()
+        page.locator("ion-button:has(ion-icon[name='add'])").last.click()
         page.wait_for_selector("ion-card-title:has-text('Add Participant')", timeout=5_000)
         btn = page.locator("ion-button[type='submit']").first
         assert btn.get_attribute("disabled") is not None or btn.is_disabled()
@@ -64,7 +64,7 @@ class TestIonicAddParticipantForm:
     def test_cancel_closes_form(self, page: Page) -> None:
         """Clicking Cancel hides the Add Participant form."""
         _open_participants(page)
-        page.locator("ion-button ion-icon[name='add']").first.click()
+        page.locator("ion-button:has(ion-icon[name='add'])").last.click()
         page.wait_for_selector("ion-card-title:has-text('Add Participant')", timeout=5_000)
         page.locator("ion-button:has-text('Cancel')").click()
         page.wait_for_timeout(1_000)

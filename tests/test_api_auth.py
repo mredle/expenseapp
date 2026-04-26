@@ -93,6 +93,39 @@ def test_register_success(app: Flask, client: FlaskClient) -> None:
         assert user is not None
 
 
+def test_register_with_password_returns_token(app: Flask, client: FlaskClient) -> None:
+    """POST /apis/auth/register with a password returns a usable API token."""
+    suffix = uuid.uuid4().hex[:8]
+    username = f'pwreg_{suffix}'
+    email = f'{username}@expenseapp.ch'
+    password = 'S3cretP@ss!'
+
+    resp = client.post('/apis/auth/register', json={
+        'username': username,
+        'email': email,
+        'locale': 'en',
+        'password': password,
+    })
+
+    assert resp.status_code == 201
+    data = resp.get_json()
+    assert 'token' in data
+    token = data['token']
+    guid = data['guid']
+
+    # The token should authenticate subsequent requests
+    me_resp = client.get(
+        f'/apis/users/{guid}',
+        headers={
+            'Authorization': f'Bearer {token}',
+            'Accept': 'application/json',
+        },
+    )
+    assert me_resp.status_code == 200
+    me_data = me_resp.get_json()
+    assert me_data['username'] == username
+
+
 def test_register_duplicate_username(app: Flask, client: FlaskClient) -> None:
     """POST /apis/auth/register with an existing username returns 400."""
     suffix = uuid.uuid4().hex[:8]

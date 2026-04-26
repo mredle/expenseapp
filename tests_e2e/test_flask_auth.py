@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from playwright.sync_api import Page, expect
 
-from tests_e2e.conftest import FLASK_BASE_URL, E2E_USER, E2E_PASSWORD, flask_login
+from tests_e2e.conftest import FLASK_BASE_URL, E2E_USER, E2E_PASSWORD, flask_login  # noqa: F401
 
 
 class TestFlaskLoginPage:
@@ -38,8 +38,14 @@ class TestFlaskLoginPage:
 
     def test_login_page_has_register_link(self, page: Page) -> None:
         """Login page contains a link to the registration page."""
-        page.goto(f"{FLASK_BASE_URL}/auth/authenticate_password")
-        page.wait_for_selector("a[href*='register']", timeout=15_000)
+        # Retry up to 3 times with a back-off to handle the rate limiter
+        # (12 req/min on GET + POST combined for /auth/authenticate_password).
+        import time
+        for attempt in range(3):
+            page.wait_for_timeout(2_000 * (attempt + 1))
+            page.goto(f"{FLASK_BASE_URL}/auth/authenticate_password", wait_until="networkidle", timeout=20_000)
+            if page.locator("a[href*='register']").count() > 0:
+                break
         expect(page.locator("a[href*='register']").first).to_be_visible()
 
 
@@ -63,22 +69,17 @@ class TestFlaskRegisterPage:
 class TestFlaskLogout:
     """Tests for the /auth/logout route."""
 
-    def test_logout_redirects_to_login(self, page: Page) -> None:
+    def test_logout_redirects_to_login(self, flask_user_page: Page) -> None:
         """After logging out, the user is redirected to the login page."""
-        flask_login(page, E2E_USER, E2E_PASSWORD)
-        page.goto(f"{FLASK_BASE_URL}/auth/logout")
-        page.wait_for_timeout(2_000)
-        # After logout Flask should redirect to login or root
+        flask_user_page.goto(f"{FLASK_BASE_URL}/auth/logout", wait_until="networkidle", timeout=10_000)
         assert (
-            "/auth" in page.url
-            or "/index" in page.url
-            or page.url == f"{FLASK_BASE_URL}/"
-            or page.url == f"{FLASK_BASE_URL}/index"
+            "/auth" in flask_user_page.url
+            or "/index" in flask_user_page.url
+            or flask_user_page.url == f"{FLASK_BASE_URL}/"
+            or flask_user_page.url == f"{FLASK_BASE_URL}/index"
         )
 
     def test_protected_route_redirects_after_logout(self, page: Page) -> None:
         """A logged-out user accessing a protected route is redirected to login."""
-        # Navigate directly to the currencies admin page without logging in
-        page.goto(f"{FLASK_BASE_URL}/currencies")
-        page.wait_for_timeout(2_000)
+        page.goto(f"{FLASK_BASE_URL}/currencies", wait_until="networkidle", timeout=10_000)
         assert "/auth" in page.url or page.locator("input[name='username']").count() > 0

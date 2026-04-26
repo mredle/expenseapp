@@ -140,6 +140,32 @@ def _api_headers(token: str) -> dict[str, str]:
     }
 
 
+def _register_and_get_token(client: FlaskClient, username: str, password: str) -> str:
+    """Register a new user via the API and return an API bearer token.
+
+    Both the registration and login are performed on *client* so the same DB
+    connection is used throughout — avoiding cross-connection visibility issues
+    under ``REPEATABLE READ`` isolation (MariaDB/MySQL).
+    """
+    import json as _json
+    suffix = username  # caller already makes username unique
+    reg_resp = client.post(
+        '/apis/auth/register',
+        headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
+        data=_json.dumps({
+            'username': username,
+            'email': f'{suffix}@expenseapp.ch',
+            'password': password,
+        }),
+    )
+    assert reg_resp.status_code == 201, (
+        f'Registration failed ({reg_resp.status_code}): {reg_resp.get_data(as_text=True)}'
+    )
+    token = reg_resp.get_json().get('token')
+    assert token, 'Register response did not include a token'
+    return token
+
+
 @pytest.fixture
 def api_client(app: Flask) -> tuple[FlaskClient, str]:
     """A test client with a regular-user API token.

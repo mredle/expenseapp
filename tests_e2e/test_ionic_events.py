@@ -5,9 +5,15 @@ from __future__ import annotations
 
 import uuid
 
+import pytest
 from playwright.sync_api import Page, expect
 
 from tests_e2e.conftest import IONIC_BASE_URL, E2E_USER, E2E_PASSWORD, ionic_login
+
+# Selector for the '+' add button in any Ionic toolbar.
+# We target the ion-button that contains the add icon rather than the icon
+# itself, because clicking the inner ion-icon is intercepted by its parent.
+_ADD_BTN = "ion-button:has(ion-icon[name='add'])"
 
 
 def _go_to_events(page: Page) -> None:
@@ -36,24 +42,28 @@ class TestIonicEventList:
     def test_add_button_visible(self, page: Page) -> None:
         """A '+' toolbar button to create new events is visible."""
         _go_to_events(page)
-        expect(page.locator("ion-button ion-icon[name='add']").first).to_be_visible(timeout=5_000)
+        expect(page.locator(_ADD_BTN).first).to_be_visible(timeout=5_000)
 
 
 class TestIonicEventCreation:
     """Tests for creating a new event via the event-settings form."""
 
     def test_new_event_form_opens(self, page: Page) -> None:
-        """Clicking the '+' button navigates to the New Event form."""
+        """Clicking the '+' button navigates to the New Event settings form."""
         _go_to_events(page)
-        page.locator("ion-button ion-icon[name='add']").first.click()
-        page.wait_for_selector("ion-title:has-text('New Event')", timeout=10_000)
-        assert "/event-settings" in page.url or page.locator("ion-title:has-text('New Event')").count() > 0
+        page.locator(_ADD_BTN).first.click()
+        # Wait for the New Event title to appear (Ionic page stack may briefly
+        # show both old and new page titles during transition animations).
+        page.wait_for_selector("ion-title:has-text('New Event')", timeout=15_000)
+        # URL must contain /event/new (new-event settings route)
+        assert "/event/new" in page.url
+        assert page.locator("ion-title:has-text('New Event')").count() > 0
 
     def test_save_disabled_when_empty(self, page: Page) -> None:
         """Create Event button is disabled while required fields are blank."""
         _go_to_events(page)
-        page.locator("ion-button ion-icon[name='add']").first.click()
-        page.wait_for_selector("ion-title:has-text('New Event')", timeout=10_000)
+        page.locator(_ADD_BTN).first.click()
+        page.wait_for_selector("ion-title:has-text('New Event')", timeout=15_000)
         btn = page.locator("ion-button[type='submit']")
         assert btn.get_attribute("disabled") is not None or btn.is_disabled()
 
@@ -65,8 +75,9 @@ class TestIonicEventCreation:
         if items.count() == 0:
             pytest.skip("No events available to open.")
         items.first.click()
-        page.wait_for_url("**/event-main/**", timeout=10_000)
-        assert "event-main" in page.url
+        # URL pattern: /event/<guid>/main
+        page.wait_for_url("**/event/*/main", timeout=10_000)
+        assert "/event/" in page.url and "/main" in page.url
 
 
 class TestIonicEventMain:
@@ -80,7 +91,7 @@ class TestIonicEventMain:
         if items.count() == 0:
             pytest.skip("No events available.")
         items.first.click()
-        page.wait_for_url("**/event-main/**", timeout=10_000)
+        page.wait_for_url("**/event/*/main", timeout=10_000)
 
     def test_event_main_shows_action_items(self, page: Page) -> None:
         """Event detail page shows the Expenses, Settlements, and Participants rows."""
@@ -107,12 +118,12 @@ class TestIonicEventMain:
         """Tapping Participants row navigates to the event-users page."""
         self._open_first_event(page)
         page.locator("ion-item:has-text('Participants')").click()
-        page.wait_for_url("**/event-users**", timeout=10_000)
-        assert "event-users" in page.url
+        page.wait_for_url("**/users**", timeout=10_000)
+        assert "users" in page.url
 
     def test_settings_button_navigates(self, page: Page) -> None:
         """Tapping the settings icon navigates to the event-settings page."""
         self._open_first_event(page)
-        page.locator("ion-button ion-icon[name='settings-outline']").click()
-        page.wait_for_url("**/event-settings**", timeout=10_000)
-        assert "event-settings" in page.url
+        page.locator("ion-button:has(ion-icon[name='settings-outline'])").click()
+        page.wait_for_url("**/settings**", timeout=10_000)
+        assert "settings" in page.url

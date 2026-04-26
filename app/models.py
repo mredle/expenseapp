@@ -1171,6 +1171,7 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
             'username': self.username,
             'last_seen': f'{self.last_seen.isoformat()}Z',
             'about_me': self.about_me,
+            'is_admin': self.is_admin,
             'post_count': post_count,
             '_links': {
                 'self': url_for('apis.users_api_user', guid=self.guid),

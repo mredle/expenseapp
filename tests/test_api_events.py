@@ -12,7 +12,7 @@ from flask.testing import FlaskClient
 
 from app import db
 from app.models import Currency, Event, EventUser, Expense, Settlement, User
-from tests.conftest import _api_headers
+from tests.conftest import _api_headers, _register_and_get_token
 
 
 # ---------------------------------------------------------------------------
@@ -295,20 +295,8 @@ def test_add_event_user_permission_denied(
     ctx = _event_ctx(app, api_event)
     suffix = uuid.uuid4().hex[:8]
 
-    # Create a second user with their own token
-    with app.app_context():
-        other = User(
-            username=f'other_{suffix}',
-            email=f'other_{suffix}@test.ch',
-            locale='en',
-        )
-        other.set_password('pass')
-        db.session.add(other)
-        db.session.commit()
-        other_token = other.get_token()
-        db.session.commit()
-
     other_client = app.test_client()
+    other_token = _register_and_get_token(other_client, f'other_{suffix}', 'pass')
     payload = {
         'username': f'blocked_{suffix}',
         'email': f'blocked_{suffix}@test.ch',
@@ -495,19 +483,8 @@ def test_set_currency_rate_permission_denied(
     ctx = _event_ctx(app, api_event)
     suffix = uuid.uuid4().hex[:8]
 
-    with app.app_context():
-        other = User(
-            username=f'rateother_{suffix}',
-            email=f'rateother_{suffix}@test.ch',
-            locale='en',
-        )
-        other.set_password('pass')
-        db.session.add(other)
-        db.session.commit()
-        other_token = other.get_token()
-        db.session.commit()
-
     other_client = app.test_client()
+    other_token = _register_and_get_token(other_client, f'rateother_{suffix}', 'pass')
     payload = {'rate': 9.99}
     resp = other_client.put(
         f'/apis/events/{ctx["event_guid"]}/currencies/{ctx["currency_guid"]}/rate',
@@ -1245,19 +1222,8 @@ def test_close_event_permission_denied(
     ctx = _event_ctx(app, api_event)
     suffix = uuid.uuid4().hex[:8]
 
-    with app.app_context():
-        other = User(
-            username=f'closeother_{suffix}',
-            email=f'closeother_{suffix}@test.ch',
-            locale='en',
-        )
-        other.set_password('pass')
-        db.session.add(other)
-        db.session.commit()
-        other_token = other.get_token()
-        db.session.commit()
-
     other_client = app.test_client()
+    other_token = _register_and_get_token(other_client, f'closeother_{suffix}', 'pass')
     resp = other_client.post(
         f'/apis/events/{ctx["event_guid"]}/close',
         headers=_api_headers(other_token),
@@ -1312,19 +1278,8 @@ def test_convert_currencies_permission_denied(
     ctx = _event_ctx(app, api_event)
     suffix = uuid.uuid4().hex[:8]
 
-    with app.app_context():
-        other = User(
-            username=f'convother_{suffix}',
-            email=f'convother_{suffix}@test.ch',
-            locale='en',
-        )
-        other.set_password('pass')
-        db.session.add(other)
-        db.session.commit()
-        other_token = other.get_token()
-        db.session.commit()
-
     other_client = app.test_client()
+    other_token = _register_and_get_token(other_client, f'convother_{suffix}', 'pass')
     resp = other_client.post(
         f'/apis/events/{ctx["event_guid"]}/convert-currencies',
         headers=_api_headers(other_token),

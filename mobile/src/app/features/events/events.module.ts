@@ -15,7 +15,7 @@ import { EventUserDetailPage } from './event-user-detail/event-user-detail.page'
 import { EventCurrenciesPage } from './event-currencies/event-currencies.page';
 
 const routes: Routes = [
-  { path: 'new', component: EventSettingsPage },
+  { path: 'new/settings', component: EventSettingsPage },
   { path: ':guid/main', component: EventMainPage },
   { path: ':guid/settings', component: EventSettingsPage },
   { path: ':guid/expenses', component: ExpensesPage },

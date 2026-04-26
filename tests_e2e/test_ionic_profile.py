@@ -39,7 +39,7 @@ class TestIonicProfileView:
     def test_edit_button_visible(self, page: Page) -> None:
         """The pencil icon button to toggle edit mode is in the toolbar."""
         _go_to_profile(page)
-        expect(page.locator("ion-button ion-icon[name='pencil']")).to_be_visible()
+        expect(page.locator("ion-button:has(ion-icon[name='pencil'])")).to_be_visible()
 
     def test_logout_button_visible(self, page: Page) -> None:
         """The Logout button is visible on the profile page."""
@@ -53,24 +53,24 @@ class TestIonicProfileEdit:
     def test_edit_mode_shows_form(self, page: Page) -> None:
         """Clicking the pencil icon switches to edit mode with a username input."""
         _go_to_profile(page)
-        page.locator("ion-button ion-icon[name='pencil']").click()
+        page.locator("ion-button:has(ion-icon[name='pencil'])").click()
         expect(page.locator("ion-input[formcontrolname='username']")).to_be_visible(timeout=5_000)
         expect(page.locator("ion-input[formcontrolname='email']")).to_be_visible()
 
     def test_close_icon_exits_edit_mode(self, page: Page) -> None:
         """Clicking the close icon (×) exits edit mode."""
         _go_to_profile(page)
-        page.locator("ion-button ion-icon[name='pencil']").click()
+        page.locator("ion-button:has(ion-icon[name='pencil'])").click()
         page.wait_for_selector("ion-input[formcontrolname='username']", timeout=5_000)
         # Pencil toggled to 'close' icon
-        page.locator("ion-button ion-icon[name='close']").click()
+        page.locator("ion-button:has(ion-icon[name='close'])").click()
         page.wait_for_timeout(1_000)
         assert page.locator("ion-input[formcontrolname='username']").count() == 0
 
     def test_save_button_visible_in_edit_mode(self, page: Page) -> None:
         """Save Changes button is present while in edit mode."""
         _go_to_profile(page)
-        page.locator("ion-button ion-icon[name='pencil']").click()
+        page.locator("ion-button:has(ion-icon[name='pencil'])").click()
         expect(page.locator("ion-button[type='submit']:has-text('Save Changes')")).to_be_visible(timeout=5_000)
 
 

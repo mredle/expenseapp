@@ -26,12 +26,14 @@ register_model = api.model('RegisterRequest', {
     'username': fields.String(required=True, description='Username'),
     'email': fields.String(required=True, description='Email address'),
     'locale': fields.String(description='Preferred locale', default='en'),
+    'password': fields.String(description='Optional password; if omitted a random one is set'),
 })
 
 register_response = api.model('RegisterResponse', {
     'guid': fields.String(description='User GUID'),
     'username': fields.String(description='Username'),
     'email': fields.String(description='Email'),
+    'token': fields.String(description='API bearer token (only present when password is supplied)'),
 })
 
 reset_request_model = api.model('ResetPasswordRequest', {
@@ -119,6 +121,7 @@ class Register(Resource):
         username = data.get('username', '')
         email = data.get('email', '')
         locale = data.get('locale', 'en')
+        password = data.get('password') or None
 
         if not username or not email:
             return bad_request('Username and email are required')
@@ -129,13 +132,17 @@ class Register(Resource):
         if User.query.filter_by(email=email).first():
             return bad_request('Please use a different email address')
 
-        result = auth_service.register_user(username, email, locale)
+        result = auth_service.register_user(username, email, locale, password=password)
         db.session.commit()
-        return {
+        body: dict = {
             'guid': str(result.user.guid),
             'username': result.user.username,
             'email': result.user.email,
-        }, 201
+        }
+        if password:
+            body['token'] = result.user.get_token()
+            db.session.commit()
+        return body, 201
 
 
 @api.route('/reset-password')

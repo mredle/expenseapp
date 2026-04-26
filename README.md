@@ -89,12 +89,12 @@ Both servers must be running before executing E2E tests:
 | Flask backend | `http://localhost:5000` | `./bootstrap_Flask_DEBUG.sh` |
 | Ionic frontend | `http://localhost:4200` | `cd mobile && ng serve` |
 
-Two accounts must exist in the database:
+The E2E suite uses the accounts created automatically by `bootstrap_Flask_DEBUG.sh`:
 
-| Role | Default username | Default password |
-|---|---|---|
-| Regular user | `e2euser` | `e2epassword` |
-| Admin user | `e2eadmin` | `e2eadminpassword` |
+| Role | Default username | Default password | Created by |
+|---|---|---|---|
+| Regular user | `User0` | `User0` | `flask dbinit dummyusers` |
+| Admin user | `admin` | `pw` | `flask dbinit admin` |
 
 #### running the tests
 

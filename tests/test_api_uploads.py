@@ -21,8 +21,8 @@ from flask import Flask
 from flask.testing import FlaskClient
 
 from app import db
-from app.models import Currency, Event, EventUser, Expense, User
-from tests.conftest import _api_headers, _get_api_token
+from app.models import Currency, Event, EventUser, User
+from tests.conftest import _api_headers, _get_api_token, _register_and_get_token
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -304,26 +304,17 @@ def test_upload_event_picture_non_admin_forbidden(
     """A non-admin user cannot upload an event cover picture."""
     suffix = uuid.uuid4().hex[:8]
     with app.app_context():
-        other = User(username=f'notadmin_{suffix}',
-                     email=f'notadmin_{suffix}@expenseapp.ch',
-                     locale='en')
-        other.set_password('password')
-        db.session.add(other)
-        db.session.commit()
         event_guid = str(api_event.guid)
-        other_guid = str(other.guid)
 
-    # Get token for the non-admin user
-    tmp_app = app
-    with tmp_app.test_client() as c:
-        token = _get_api_token(tmp_app, c, f'notadmin_{suffix}', 'password')
-        data, filename = _png_upload()
-        response = c.post(
-            f'/apis/events/{event_guid}/picture',
-            headers={'Authorization': f'Bearer {token}', 'Accept': 'application/json'},
-            data={'image': (io.BytesIO(data), filename)},
-            content_type='multipart/form-data',
-        )
+    other_client = app.test_client()
+    token = _register_and_get_token(other_client, f'notadmin_{suffix}', 'password')
+    data, filename = _png_upload()
+    response = other_client.post(
+        f'/apis/events/{event_guid}/picture',
+        headers={'Authorization': f'Bearer {token}', 'Accept': 'application/json'},
+        data={'image': (io.BytesIO(data), filename)},
+        content_type='multipart/form-data',
+    )
     assert response.status_code == 403
 
 
@@ -401,22 +392,32 @@ def test_upload_event_user_picture_no_file(
 # ---------------------------------------------------------------------------
 
 
-def _create_expense(app: Flask, api_event: Event) -> str:
-    """Create a minimal expense and return its GUID."""
-    with app.app_context():
-        event = db.session.get(Event, api_event.id)
-        eu = EventUser.query.filter_by(event_id=event.id).first()
-        expense = Expense(
-            user=eu,
-            event=event,
-            currency=event.base_currency,
-            amount=10.0,
-            affected_users=[eu],
-            date=datetime.now(timezone.utc),
-        )
-        db.session.add(expense)
-        db.session.commit()
-        return str(expense.guid)
+def _create_expense(
+    client: FlaskClient,
+    token: str,
+    event_guid: str,
+    currency_id: int,
+    eu_id: int,
+) -> str:
+    """Create a minimal expense via the API and return its GUID.
+
+    Using the API (rather than direct ORM) ensures the expense is visible to the
+    same DB connection under strict ``REPEATABLE READ`` isolation (MariaDB/MySQL).
+    """
+    resp = client.post(
+        f'/apis/events/{event_guid}/expenses',
+        headers=_api_headers(token),
+        data=json.dumps({
+            'currency_id': currency_id,
+            'amount': 10.0,
+            'affected_user_ids': [eu_id],
+            'date': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S'),
+        }),
+    )
+    assert resp.status_code == 201, (
+        f'Expense creation failed ({resp.status_code}): {resp.get_data(as_text=True)}'
+    )
+    return resp.get_json()['guid']
 
 
 def test_upload_expense_receipt_success(
@@ -428,7 +429,11 @@ def test_upload_expense_receipt_success(
     client, token = api_client
     with app.app_context():
         event_guid = str(api_event.guid)
-    expense_guid = _create_expense(app, api_event)
+        event = db.session.get(Event, api_event.id)
+        currency_id = event.base_currency.id
+        eu = EventUser.query.filter_by(event_id=event.id).first()
+        eu_id = eu.id
+    expense_guid = _create_expense(client, token, event_guid, currency_id, eu_id)
 
     data, filename = _png_upload()
     response = client.post(
@@ -452,7 +457,11 @@ def test_upload_expense_receipt_no_file(
     client, token = api_client
     with app.app_context():
         event_guid = str(api_event.guid)
-    expense_guid = _create_expense(app, api_event)
+        event = db.session.get(Event, api_event.id)
+        currency_id = event.base_currency.id
+        eu = EventUser.query.filter_by(event_id=event.id).first()
+        eu_id = eu.id
+    expense_guid = _create_expense(client, token, event_guid, currency_id, eu_id)
 
     response = client.post(
         f'/apis/events/{event_guid}/expenses/{expense_guid}/receipt',
@@ -464,16 +473,23 @@ def test_upload_expense_receipt_no_file(
 
 def test_upload_expense_receipt_requires_auth(
     app: Flask,
-    client: FlaskClient,
+    api_client: tuple[FlaskClient, str],
     api_event: Event,
 ) -> None:
     """POST receipt without a token returns 401."""
+    client, token = api_client
     with app.app_context():
         event_guid = str(api_event.guid)
-    expense_guid = _create_expense(app, api_event)
+        event = db.session.get(Event, api_event.id)
+        currency_id = event.base_currency.id
+        eu = EventUser.query.filter_by(event_id=event.id).first()
+        eu_id = eu.id
+    expense_guid = _create_expense(client, token, event_guid, currency_id, eu_id)
 
+    # Now use an unauthenticated client
+    unauth_client = app.test_client()
     data, filename = _png_upload()
-    response = client.post(
+    response = unauth_client.post(
         f'/apis/events/{event_guid}/expenses/{expense_guid}/receipt',
         headers={'Accept': 'application/json'},
         data={'image': (io.BytesIO(data), filename)},

@@ -47,5 +47,5 @@ export class EventListPage implements OnInit {
   }
 
   openEvent(guid: string): void { this.router.navigate(['/event', guid, 'main']); }
-  newEvent(): void { this.router.navigate(['/event', 'new']); }
+  newEvent(): void { this.router.navigate(['/event', 'new', 'settings']); }
 }

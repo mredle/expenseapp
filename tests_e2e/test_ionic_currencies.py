@@ -38,7 +38,7 @@ class TestIonicCurrenciesList:
         """The '+' add button is visible in the toolbar when logged in as admin."""
         _go_to_currencies(page)
         # The add button is only present when isAdmin is true
-        expect(page.locator("ion-button ion-icon[name='add']").first).to_be_visible(timeout=5_000)
+        expect(page.locator("ion-button:has(ion-icon[name='add'])").first).to_be_visible(timeout=5_000)
 
 
 class TestIonicCurrencyCRUD:
@@ -47,13 +47,13 @@ class TestIonicCurrencyCRUD:
     def test_open_add_form(self, page: Page) -> None:
         """Clicking the '+' button reveals the add-currency form card."""
         _go_to_currencies(page)
-        page.locator("ion-button ion-icon[name='add']").first.click()
+        page.locator("ion-button:has(ion-icon[name='add'])").first.click()
         expect(page.locator("ion-card-title:has-text('New Currency')")).to_be_visible(timeout=5_000)
 
     def test_add_currency_save_button_disabled_when_empty(self, page: Page) -> None:
         """Save button is disabled while required fields are empty."""
         _go_to_currencies(page)
-        page.locator("ion-button ion-icon[name='add']").first.click()
+        page.locator("ion-button:has(ion-icon[name='add'])").first.click()
         page.wait_for_selector("ion-card-title:has-text('New Currency')", timeout=5_000)
         btn = page.locator("ion-button[type='submit']").first
         assert btn.get_attribute("disabled") is not None or btn.is_disabled()
@@ -61,16 +61,13 @@ class TestIonicCurrencyCRUD:
     def test_create_currency(self, page: Page) -> None:
         """Filling in the form and saving creates a new currency entry."""
         _go_to_currencies(page)
-        page.locator("ion-button ion-icon[name='add']").first.click()
+        page.locator("ion-button:has(ion-icon[name='add'])").first.click()
         page.wait_for_selector("ion-card-title:has-text('New Currency')", timeout=5_000)
 
         code = f"T{uuid.uuid4().hex[:2].upper()}"  # e.g. "T4A"
-        page.locator("ion-input[formcontrolname='code']").click()
-        page.keyboard.type(code)
-        page.locator("ion-input[formcontrolname='name']").click()
-        page.keyboard.type(f"Test Currency {code}")
-        page.locator("ion-input[formcontrolname='inCHF']").click()
-        page.keyboard.type("1.05")
+        page.locator("ion-input[formcontrolname='code']").locator("input").fill(code)
+        page.locator("ion-input[formcontrolname='name']").locator("input").fill(f"Test Currency {code}")
+        page.locator("ion-input[formcontrolname='inCHF']").locator("input").fill("1.05")
 
         page.locator("ion-button[type='submit']").first.click()
 
@@ -81,7 +78,7 @@ class TestIonicCurrencyCRUD:
     def test_cancel_form(self, page: Page) -> None:
         """Clicking Cancel closes the add form without saving."""
         _go_to_currencies(page)
-        page.locator("ion-button ion-icon[name='add']").first.click()
+        page.locator("ion-button:has(ion-icon[name='add'])").first.click()
         page.wait_for_selector("ion-card-title:has-text('New Currency')", timeout=5_000)
         page.locator("ion-button:has-text('Cancel')").click()
         page.wait_for_timeout(1_000)

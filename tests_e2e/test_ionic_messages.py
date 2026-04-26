@@ -44,13 +44,13 @@ class TestIonicComposeMessage:
     def test_compose_button_opens_form(self, page: Page) -> None:
         """Tapping the compose button reveals the New Message card."""
         _go_to_messages(page)
-        page.locator("ion-button ion-icon[name='create']").click()
+        page.locator("ion-button:has(ion-icon[name='create'])").click()
         expect(page.locator("ion-card-title:has-text('New Message')")).to_be_visible(timeout=5_000)
 
     def test_send_disabled_without_recipient_or_body(self, page: Page) -> None:
         """Send button is disabled when no recipient or message body is filled."""
         _go_to_messages(page)
-        page.locator("ion-button ion-icon[name='create']").click()
+        page.locator("ion-button:has(ion-icon[name='create'])").click()
         page.wait_for_selector("ion-card-title:has-text('New Message')", timeout=5_000)
         btn = page.locator("ion-button:has-text('Send')").first
         assert btn.get_attribute("disabled") is not None or btn.is_disabled()
@@ -58,7 +58,7 @@ class TestIonicComposeMessage:
     def test_cancel_compose_closes_form(self, page: Page) -> None:
         """Clicking Cancel hides the compose form."""
         _go_to_messages(page)
-        page.locator("ion-button ion-icon[name='create']").click()
+        page.locator("ion-button:has(ion-icon[name='create'])").click()
         page.wait_for_selector("ion-card-title:has-text('New Message')", timeout=5_000)
         page.locator("ion-button:has-text('Cancel')").click()
         page.wait_for_timeout(1_000)

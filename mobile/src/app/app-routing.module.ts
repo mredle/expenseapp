@@ -14,7 +14,7 @@ const routes: Routes = [
     loadChildren: () => import('./features/tabs/tabs.module').then(m => m.TabsModule)
   },
   {
-    path: 'event/:guid',
+    path: 'event',
     canActivate: [AuthGuard],
     loadChildren: () => import('./features/events/events.module').then(m => m.EventsModule)
   },
