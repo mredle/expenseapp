@@ -3,9 +3,21 @@
 
 from __future__ import annotations
 
+import os
+
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
+
+# The mobile tests require the Ionic/Angular build output (mobile/www/).
+# In CI the build step is not run, so skip the entire module gracefully.
+_WWW_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', 'mobile', 'www')
+)
+pytestmark = pytest.mark.skipif(
+    not os.path.isfile(os.path.join(_WWW_DIR, 'index.html')),
+    reason='mobile/www/ build output not present — run `ionic build` first',
+)
 
 
 def test_mobile_root_returns_html(app: Flask, client: FlaskClient) -> None:

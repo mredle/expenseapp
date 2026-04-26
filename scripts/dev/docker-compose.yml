@@ -82,6 +82,16 @@ services:
     image: container-registry.oracle.com/database/adb-free:latest
     container_name: dev-oracle-adb
     restart: unless-stopped
+    healthcheck:
+      # ORDS becomes available on 8443 once the ADB instance is fully started
+      test: ["CMD-SHELL", "curl -sk https://localhost:8443/ords/_/db-api/stable/ -o /dev/null -w '%{http_code}' | grep -q 200"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       ADMIN_PASSWORD: "SuperSecretPw123!"
       WALLET_PASSWORD: "SuperSecretPw123!"
@@ -92,7 +102,7 @@ services:
     ports:
       - "1521:1521" # Standard TCP
       - "1522:1522" # mTLS / Wallet connections
-      - "8443:8443" # Oracle REST Data Services (ORDS)
+      - "8444:8443" # Oracle REST Data Services (ORDS)
     volumes:
      - type: volume
        source: oracle-adb-data
