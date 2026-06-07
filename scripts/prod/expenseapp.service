@@ -7,13 +7,22 @@ Type=simple
 User=expenseapp
 Group=expenseapp
 WorkingDirectory=/opt/expenseapp/
+# HOME must point to a writable directory owned by the expenseapp user.
+# A system account created without -m has no real home; set it explicitly here
+# so npm, Angular CLI, and fontconfig find a writable cache location.
+# Run scripts/prod/setup_service_user.sh once after deployment to ensure
+# /opt/expenseapp is owned by expenseapp:expenseapp.
+Environment=HOME=/opt/expenseapp
+Environment=npm_config_cache=/opt/expenseapp/.npm
 ExecStart=/opt/expenseapp/run_as_service.sh
 
 # Poll the app every 2 seconds until it answers
 ExecStartPost=/bin/bash -c 'until curl --silent --output /dev/null http://localhost:5000; do sleep 2; done'
 
-# If it doesn't answer within 120 seconds, kill it and fail
-TimeoutStartSec=300
+# If it doesn't answer within 900 seconds, kill it and fail.
+# The first start builds the mobile PWA (npm ci + Angular production build),
+# which can take several minutes on low-power / RPi hosts.
+TimeoutStartSec=900
 
 # Automatically restart if it fails, hangs, or crashes
 Restart=on-failure

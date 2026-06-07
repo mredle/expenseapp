@@ -38,7 +38,8 @@ sudo apt    install libcairo-dev \
             tcl-dev \
             libtiff-dev \
             tk-dev \
-            zlib1g-dev
+            zlib1g-dev \
+            nodejs
 ```
 
 start app
@@ -115,3 +116,63 @@ E2E_HEADLESS=0 ./run_e2e.sh                     # run with a visible browser win
 | `E2E_ADMIN` | `e2eadmin` | Admin user username |
 | `E2E_ADMIN_PASSWORD` | `e2eadminpassword` | Admin user password |
 | `E2E_HEADLESS` | `1` | Set to `0` to open a visible browser |
+
+## production deployment (systemd)
+
+### 1. install system dependencies
+
+On Debian/Ubuntu:
+```bash
+sudo sh scripts/prod/install_deps_ubuntu.sh
+```
+
+On Oracle Linux 10:
+```bash
+sudo sh scripts/prod/install_deps_oracle_linux_10.sh
+```
+
+### 2. deploy the code
+
+```bash
+sudo git clone git@github.com:mredle/expenseapp.git /opt/expenseapp
+cd /opt/expenseapp
+sudo python3 -m venv venv
+sudo venv/bin/pip install -r requirements.txt
+```
+
+### 3. create the service user and set ownership
+
+Run once after the code is in place. The script is idempotent — safe to re-run:
+
+```bash
+sudo sh scripts/prod/setup_service_user.sh
+```
+
+This creates the `expenseapp` system user/group and runs `chown -R expenseapp:expenseapp /opt/expenseapp` so the service can write `mobile/node_modules/`, `mobile/www/`, `mobile/.angular/cache/`, `.npm/`, and compiled translations.
+
+### 4. configure the environment
+
+```bash
+sudo cp .env.sample /opt/expenseapp/.env
+# edit /opt/expenseapp/.env — set SECRET_KEY, DATABASE_URL, MAIL_*, etc.
+```
+
+### 5. install and start the systemd units
+
+```bash
+sudo cp scripts/prod/expenseapp.service        /etc/systemd/system/
+sudo cp scripts/prod/expenseapp-worker.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now expenseapp expenseapp-worker
+```
+
+The first start builds the mobile PWA (`npm ci` + Angular production build) before gunicorn accepts connections. On low-power hosts (e.g. Raspberry Pi) this can take several minutes — `TimeoutStartSec=900` is set accordingly.
+
+### checking status
+
+```bash
+sudo systemctl status expenseapp
+sudo systemctl status expenseapp-worker
+sudo journalctl -u expenseapp -f
+sudo journalctl -u expenseapp-worker -f
+```
