@@ -1533,7 +1533,7 @@ msgstr "Setze ein Profilbild"
 
 #: app/templates/event/main.html:20
 msgid "Edit event picture"
-msgstr "Profilbild bearbeiten"
+msgstr "Veranstaltungsbild bearbeiten"
 
 #: app/templates/event/main.html:24
 msgid "Set event picture"

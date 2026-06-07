@@ -457,6 +457,7 @@ def _serialize_event(event: Event) -> dict[str, Any]:
     for ec in event.eventcurrencies:
         event_currencies_data.append({
             'currency_guid': str(ec.currency.guid) if ec.currency else None,
+            'currency_code': ec.currency.code if ec.currency else None,
             'inCHF': ec.inCHF,
         })
 
@@ -468,6 +469,7 @@ def _serialize_event(event: Event) -> dict[str, Any]:
         'closed': event.closed,
         'admin_user_guid': str(event.admin.guid) if event.admin else None,
         'base_currency_guid': str(event.base_currency.guid) if event.base_currency else None,
+        'base_currency_code': event.base_currency.code if event.base_currency else None,
         'image_guid': str(event.image.guid) if event.image else None,
         'db_created_at': _dt(event.db_created_at),
         'db_updated_at': _dt(event.db_updated_at),
@@ -979,8 +981,17 @@ def _restore_media(objects: dict, backend_name: str,
 
 
 def restore_currencies(objects: dict, strategy: str,
-                       backend_name: str) -> dict[str, int]:
-    """Restore currencies from a parsed segment objects dict."""
+                       backend_name: str,
+                       currency_remap: dict[str, str] | None = None) -> dict[str, int]:
+    """Restore currencies from a parsed segment objects dict.
+
+    *currency_remap* is an optional dict populated in-place that maps each
+    backup GUID to the DB GUID of the resolved currency.  When a currency is
+    reconciled by code (same code, different GUID), the entry records the
+    translation so that restore_event can locate the correct row.
+    """
+    if currency_remap is None:
+        currency_remap = {}
     _restore_media(objects, backend_name, strategy)
     db.session.flush()
 
@@ -992,11 +1003,16 @@ def restore_currencies(objects: dict, strategy: str,
     restored = 0
     skipped = 0
     for c_dict in objects.get('currencies', []):
+        backup_guid = c_dict.get('guid', '')
         existing = Currency.query.filter(or_(
-            Currency.guid == c_dict['guid'],
+            Currency.guid == backup_guid,
             Currency.code == c_dict['code'],
         )).first()
         if existing:
+            # Always record the remap regardless of strategy.  If this currency
+            # was reconciled by code (DB has same code but different GUID), the
+            # map lets restore_event translate the stale backup GUID to the DB GUID.
+            currency_remap[backup_guid] = str(existing.guid)
             if strategy == 'overwrite':
                 existing.code = c_dict['code']
                 existing.name = c_dict['name']
@@ -1020,20 +1036,30 @@ def restore_currencies(objects: dict, strategy: str,
             description=c_dict.get('description', ''),
             db_created_by=c_dict.get('db_created_by', 'restore'),
         )
-        currency.guid = c_dict['guid']
+        currency.guid = backup_guid
         currency.source = c_dict.get('source')
         currency.image = img
         currency.db_created_at = _parse_dt(c_dict.get('db_created_at'))
         currency.db_updated_at = _parse_dt(c_dict.get('db_updated_at'))
         db.session.add(currency)
+        # For newly created rows the DB GUID equals the backup GUID (identity mapping).
+        currency_remap[backup_guid] = backup_guid
         restored += 1
 
     db.session.flush()
     return {'restored': restored, 'skipped': skipped}
 
 
-def restore_users(objects: dict, strategy: str, backend_name: str) -> dict[str, int]:
-    """Restore users from a parsed segment objects dict."""
+def restore_users(objects: dict, strategy: str, backend_name: str,
+                  user_remap: dict[str, str] | None = None) -> dict[str, int]:
+    """Restore users from a parsed segment objects dict.
+
+    *user_remap* is an optional dict populated in-place that maps each backup
+    GUID to the DB GUID of the resolved User row, enabling restore_event to
+    translate stale GUIDs when a user was reconciled by email / username.
+    """
+    if user_remap is None:
+        user_remap = {}
     _restore_media(objects, backend_name, strategy)
     db.session.flush()
 
@@ -1044,12 +1070,16 @@ def restore_users(objects: dict, strategy: str, backend_name: str) -> dict[str, 
     restored = 0
     skipped = 0
     for u_dict in objects.get('users', []):
+        backup_guid = u_dict.get('guid', '')
         existing = User.query.filter(or_(
-            User.guid == u_dict['guid'],
+            User.guid == backup_guid,
             User.email == (u_dict.get('email') or '').lower(),
             User.username == u_dict['username'],
         )).first()
         if existing:
+            # Record the remap so restore_event can translate stale backup GUIDs
+            # (e.g. after flask dbinit re-seeds users with fresh GUIDs).
+            user_remap[backup_guid] = str(existing.guid)
             if strategy == 'overwrite':
                 existing.username = u_dict['username']
                 existing.email = u_dict['email']
@@ -1067,7 +1097,7 @@ def restore_users(objects: dict, strategy: str, backend_name: str) -> dict[str, 
                     locale=u_dict.get('locale') or 'en',
                     about_me=u_dict.get('about_me') or '',
                     db_created_by=u_dict.get('db_created_by', 'restore'))
-        user.guid = u_dict['guid']
+        user.guid = backup_guid
         user.password_hash = u_dict.get('password_hash')
         user.is_admin = u_dict.get('is_admin', False)
         user.locale = u_dict.get('locale')
@@ -1076,14 +1106,33 @@ def restore_users(objects: dict, strategy: str, backend_name: str) -> dict[str, 
         user.db_created_at = _parse_dt(u_dict.get('db_created_at'))
         user.db_updated_at = _parse_dt(u_dict.get('db_updated_at'))
         db.session.add(user)
+        user_remap[backup_guid] = backup_guid
         restored += 1
 
     db.session.flush()
     return {'users_restored': restored, 'users_skipped': skipped}
 
 
-def restore_event(objects: dict, strategy: str, backend_name: str) -> dict[str, int]:
-    """Restore a single event and all its dependents from a parsed segment dict."""
+def restore_event(objects: dict, strategy: str, backend_name: str,
+                  guid_remap: dict[str, dict[str, str]] | None = None) -> dict[str, int]:
+    """Restore a single event and all its dependents from a parsed segment dict.
+
+    *guid_remap* is an optional nested dict produced by apply_restore::
+
+        {'currency': {backup_guid: db_guid, ...},
+         'user':     {backup_guid: db_guid, ...}}
+
+    When currencies or users were reconciled by natural key (code / email) their
+    DB GUIDs differ from the backup GUIDs.  The remap lets us locate the correct
+    row even for existing backups that only carry GUIDs.  As a second fallback,
+    the event payload now also stores currency codes so event-only restores of
+    recent backups can resolve currencies without the currencies segment.
+    """
+    if guid_remap is None:
+        guid_remap = {}
+    currency_remap: dict[str, str] = guid_remap.get('currency', {})
+    user_remap: dict[str, str] = guid_remap.get('user', {})
+
     _restore_media(objects, backend_name, strategy)
     db.session.flush()
 
@@ -1091,7 +1140,24 @@ def restore_event(objects: dict, strategy: str, backend_name: str) -> dict[str, 
     currencies_by_guid: dict[str, Currency] = {
         str(c.guid): c for c in Currency.query.all()
     }
+    currencies_by_code: dict[str, Currency] = {c.code: c for c in Currency.query.all()}
     users_by_guid: dict[str, User] = {str(u.guid): u for u in User.query.all()}
+
+    def _resolve_currency(guid: str | None, code: str | None = None) -> Currency | None:
+        """Resolve a currency with GUID-remap and code fallback."""
+        if not guid:
+            return currencies_by_code.get(code) if code else None
+        return (
+            currencies_by_guid.get(guid)
+            or currencies_by_guid.get(currency_remap.get(guid, ''))
+            or (currencies_by_code.get(code) if code else None)
+        )
+
+    def _resolve_user(guid: str | None) -> User | None:
+        """Resolve a user with GUID-remap fallback."""
+        if not guid:
+            return None
+        return users_by_guid.get(guid) or users_by_guid.get(user_remap.get(guid, ''))
 
     event_dict = objects.get('event', {})
     existing_event = Event.query.filter(Event.guid == event_dict.get('guid')).first()
@@ -1100,8 +1166,11 @@ def restore_event(objects: dict, strategy: str, backend_name: str) -> dict[str, 
         return {'event_skipped': 1}
 
     if existing_event is None:
-        base_currency = currencies_by_guid.get(event_dict.get('base_currency_guid', ''))
-        admin_user = users_by_guid.get(event_dict.get('admin_user_guid', ''))
+        base_currency = _resolve_currency(
+            event_dict.get('base_currency_guid'),
+            event_dict.get('base_currency_code'),
+        )
+        admin_user = _resolve_user(event_dict.get('admin_user_guid'))
         event = Event(
             name=event_dict['name'],
             date=_parse_dt(event_dict.get('date')) or datetime.now(timezone.utc),
@@ -1133,7 +1202,7 @@ def restore_event(objects: dict, strategy: str, backend_name: str) -> dict[str, 
         if existing_eu:
             eu_guid_to_obj[eu_dict['guid']] = existing_eu
             continue
-        linked_user = users_by_guid.get(eu_dict.get('user_guid', ''))
+        linked_user = _resolve_user(eu_dict.get('user_guid'))
         eu = EventUser(
             username=eu_dict['username'],
             email=eu_dict['email'],
@@ -1153,16 +1222,22 @@ def restore_event(objects: dict, strategy: str, backend_name: str) -> dict[str, 
 
     db.session.flush()
 
-    # Set accountant
+    # Set accountant — use direct scalar FK assignment to avoid ORM circular
+    # dependency: events.accountant_id ↔ eventusers.event_id mutual FK pair
+    # would trigger CircularDependencyError if the ORM relationship is used
+    # when both Event and EventUser are new in the same flush context.
     for eu_dict in objects.get('eventusers', []):
         if eu_dict.get('is_accountant'):
             eu_obj = eu_guid_to_obj.get(eu_dict['guid'])
             if eu_obj:
-                event.accountant = eu_obj
+                event.accountant_id = eu_obj.id
 
     # Restore EventCurrencies
     for ec_dict in objects.get('event_currencies', []):
-        currency = currencies_by_guid.get(ec_dict.get('currency_guid', ''))
+        currency = _resolve_currency(
+            ec_dict.get('currency_guid'),
+            ec_dict.get('currency_code'),
+        )
         if currency:
             existing_ec = EventCurrency.query.filter_by(
                 event_id=event.id, currency_id=currency.id,
@@ -1181,7 +1256,7 @@ def restore_event(objects: dict, strategy: str, backend_name: str) -> dict[str, 
         if Expense.query.filter(Expense.guid == exp_dict['guid']).first():
             continue
         user_obj = eu_guid_to_obj.get(exp_dict.get('user_guid', ''))
-        currency = currencies_by_guid.get(exp_dict.get('currency_guid', ''))
+        currency = _resolve_currency(exp_dict.get('currency_guid'))
         expense = Expense(
             user=user_obj,
             event=event,
@@ -1211,7 +1286,7 @@ def restore_event(objects: dict, strategy: str, backend_name: str) -> dict[str, 
             continue
         sender = eu_guid_to_obj.get(sett_dict.get('sender_guid', ''))
         recipient = eu_guid_to_obj.get(sett_dict.get('recipient_guid', ''))
-        currency = currencies_by_guid.get(sett_dict.get('currency_guid', ''))
+        currency = _resolve_currency(sett_dict.get('currency_guid'))
         sett = Settlement(
             amount=sett_dict.get('amount', 0.0),
             date=_parse_dt(sett_dict.get('date')) or datetime.now(timezone.utc),
@@ -1258,12 +1333,21 @@ def restore_event(objects: dict, strategy: str, backend_name: str) -> dict[str, 
     }
 
 
-def restore_logs(objects: dict, strategy: str) -> dict[str, int]:
+def restore_logs(objects: dict, strategy: str,
+                 user_remap: dict[str, str] | None = None) -> dict[str, int]:
     """Restore Log records from a parsed segment dict."""
+    if user_remap is None:
+        user_remap = {}
     users_by_guid: dict[str, User] = {str(u.guid): u for u in User.query.all()}
+
+    def _resolve_user(guid: str | None) -> User | None:
+        if not guid:
+            return None
+        return users_by_guid.get(guid) or users_by_guid.get(user_remap.get(guid, ''))
+
     restored = 0
     for log_dict in objects.get('logs', []):
-        user = users_by_guid.get(log_dict.get('user_guid', ''))
+        user = _resolve_user(log_dict.get('user_guid'))
         log = Log(
             severity=log_dict.get('severity', 'INFO'),
             module=log_dict.get('module', ''),
@@ -1284,6 +1368,12 @@ def apply_restore(backup_set: BackupSet, strategy: str) -> dict[str, Any]:
 
     Restore order: currencies → users → events → logs → system.
     Returns a dict of per-segment restore counts.
+
+    A shared *guid_remap* table is built as currencies and users are restored.
+    It maps backup GUIDs to DB GUIDs for rows that were reconciled by natural
+    key (currency code / user email+username).  restore_event and restore_logs
+    consume this table so that cross-references in event payloads resolve
+    correctly even after flask dbinit re-seeds with fresh GUIDs.
     """
     # Sort segments: currencies first, then users, then events, then logs, then system
     ORDER = ['currencies', 'users', 'event', 'logs', 'system']
@@ -1291,6 +1381,9 @@ def apply_restore(backup_set: BackupSet, strategy: str) -> dict[str, Any]:
         backup_set.segments,
         key=lambda s: ORDER.index(s.segment_type) if s.segment_type in ORDER else 99,
     )
+
+    # Shared GUID translation tables populated by restore_currencies / restore_users.
+    guid_remap: dict[str, dict[str, str]] = {'currency': {}, 'user': {}}
 
     totals: dict[str, Any] = {}
     for segment in segments:
@@ -1301,13 +1394,15 @@ def apply_restore(backup_set: BackupSet, strategy: str) -> dict[str, Any]:
             objects = payload.get('objects', {})
             backend = backup_set.storage_backend
             if segment.segment_type == 'currencies':
-                counts = restore_currencies(objects, strategy, backend)
+                counts = restore_currencies(objects, strategy, backend,
+                                            guid_remap['currency'])
             elif segment.segment_type == 'users':
-                counts = restore_users(objects, strategy, backend)
+                counts = restore_users(objects, strategy, backend,
+                                       guid_remap['user'])
             elif segment.segment_type == 'event':
-                counts = restore_event(objects, strategy, backend)
+                counts = restore_event(objects, strategy, backend, guid_remap)
             elif segment.segment_type == 'logs':
-                counts = restore_logs(objects, strategy)
+                counts = restore_logs(objects, strategy, guid_remap['user'])
             else:
                 counts = {}
             totals[f'{segment.segment_type}:{segment.segment_key or ""}'] = counts

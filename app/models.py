@@ -492,7 +492,7 @@ class Event(Entity, db.Model):
     admin = db.relationship('User', foreign_keys=admin_id, back_populates='events_admin')
     accountant_id = db.Column(db.Integer, db.ForeignKey('eventusers.id'))
     accountant = db.relationship('EventUser', foreign_keys=accountant_id,
-                                 back_populates='events_accountant')
+                                 back_populates='events_accountant', post_update=True)
     base_currency_id = db.Column(db.Integer, db.ForeignKey('currencies.id'))
     base_currency = db.relationship('Currency', foreign_keys=base_currency_id,
                                     back_populates='events_base_currency')
@@ -1372,7 +1372,8 @@ class EventUser(Entity, db.Model):
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
     event = db.relationship('Event', foreign_keys=event_id, back_populates='users')
     events_accountant = db.relationship('Event', foreign_keys='Event.accountant_id',
-                                        back_populates='accountant', lazy='dynamic')
+                                        back_populates='accountant', lazy='dynamic',
+                                        viewonly=True)
     profile_picture_id = db.Column(db.Integer, db.ForeignKey('images.id'))
     profile_picture = db.relationship('Image', foreign_keys=profile_picture_id)
     expenses = db.relationship('Expense', back_populates='user', lazy='dynamic')

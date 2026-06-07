@@ -47,6 +47,9 @@ flask translate compile
 # Seed the database
 #python scripts/loadtesting/seed_db.py
 
+echo "Building mobile app (Ionic/Angular)..."
+(cd "$(dirname "$0")/mobile" && npm run build)
+
 echo "Starting Flask development server..."
 flask run --host=0.0.0.0
 
