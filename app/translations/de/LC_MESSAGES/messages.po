@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-10-08 15:32+0200\n"
+"POT-Creation-Date: 2026-04-26 21:22+0200\n"
 "PO-Revision-Date: 2018-08-29 22:41+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: de\n"
@@ -16,743 +16,849 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.10.3\n"
+"Generated-By: Babel 2.18.0\n"
 
-#: app/__init__.py:39
+#: app/__init__.py:42
 msgid "Please log in to access this page."
 msgstr "Bitte melde dich an um diese Seite zu sehen."
 
-#: app/models.py:155
+#: app/models.py:182
 msgid "Log entries"
 msgstr "Log-Einträge"
 
-#: app/models.py:203
+#: app/models.py:222
+#, fuzzy
+msgid "Files"
+msgstr "Benutzerprofil"
+
+#: app/models.py:270
 msgid "Thumbnails"
 msgstr "Miniaturansichten"
 
-#: app/models.py:278
+#: app/models.py:318
 msgid "Images"
 msgstr "Bilder"
 
-#: app/models.py:357
+#: app/models.py:378
 msgid "Event currencies"
 msgstr "Währungen in Veranstaltungen"
 
-#: app/models.py:413 app/templates/base.html:22
+#: app/models.py:445 app/templates/base.html:19
 msgid "Currencies"
 msgstr "Währungen"
 
-#: app/models.py:471
+#: app/models.py:518
 msgid "Events"
 msgstr "Veranstaltungen"
 
-#: app/models.py:659 app/templates/event/main.html:37
+#: app/models.py:751 app/templates/event/main.html:37
 #: app/templates/pdf/balance.html:73
 msgid "Expenses"
 msgstr "Ausgaben"
 
-#: app/models.py:749
+#: app/models.py:862
 msgid "Settlements as sender"
 msgstr "Ausgleichszahlungen als Absender"
 
-#: app/models.py:749
+#: app/models.py:862
 msgid "Settlements as recipient"
 msgstr "Ausgleichszahlungen als Empfänger"
 
-#: app/models.py:796
+#: app/models.py:918
 msgid "Posts"
 msgstr "Beiträge"
 
-#: app/models.py:835
+#: app/models.py:962
 msgid "Messages sent"
 msgstr "Nachrichten versendet"
 
-#: app/models.py:835
+#: app/models.py:962
 msgid "Messages received"
 msgstr "Nachrichten empfangen"
 
-#: app/models.py:860
+#: app/models.py:991
 msgid "Notifications"
 msgstr "Benachrichtigungen"
 
-#: app/main/routes.py:313 app/models.py:895 app/templates/administration.html:7
+#: app/main/routes.py:386 app/models.py:1032
+#: app/templates/administration.html:6
 msgid "Tasks"
 msgstr "Aufgaben"
 
-#: app/models.py:1003 app/templates/base.html:23
+#: app/models.py:1160 app/templates/base.html:20
 msgid "Users"
 msgstr "Benutzer"
 
-#: app/models.py:1165
+#: app/models.py:1362
 msgid "Event users"
 msgstr "Benutzer in Veranstaltungen"
 
-#: app/tasks.py:189
+#: app/models.py:1435 app/templates/backups.html:25
+#, fuzzy
+msgid "Backup sets"
+msgstr "Zurück zu den Logeinträgen"
+
+#: app/models.py:1493
+#, fuzzy
+msgid "Backup segments"
+msgstr "Zurück zur Veranstaltung"
+
+#: app/tasks.py:239
 #, python-format
 msgid "Your balance of event %(eventname)s"
 msgstr "Deine Abrechnung für event %(eventname)s"
 
-#: app/tasks.py:222
+#: app/tasks.py:276
 msgid "Please settle your depts!"
 msgstr "Bitte begleiche deine Schulden!"
 
-#: app/tasks.py:380
+#: app/tasks.py:552
 msgid "Performing housekeeping jobs..."
 msgstr "Führe Aufräumarbeiten durch"
 
-#: app/main/routes.py:348 app/tasks.py:387
+#: app/services/main_service.py:355 app/tasks.py:561
 msgid "Checking currencies..."
 msgstr "Währungen überprüfen..."
 
-#: app/main/routes.py:353 app/tasks.py:394
+#: app/services/main_service.py:359 app/tasks.py:570
 msgid "Updating currencies..."
 msgstr "Währungen aktualisieren..."
 
-#: app/auth/email.py:9
+#: app/tasks.py:596
+msgid "Running scheduled backup..."
+msgstr "Geplantes Backup wird ausgeführt..."
+
+#: app/auth/email.py:16
 #, python-format
 msgid "A new user has registered on ExpenseApp: %(username)s (%(email)s)"
 msgstr ""
 "Ein neuer Benutzer hat sich auf der ExpenseApp registriert: %(username)s "
 "(%(email)s)"
 
-#: app/auth/email.py:10
+#: app/auth/email.py:20
 msgid "New user has registered on ExpenseApp!"
 msgstr "Ein neuer Benutzer hat sich bei ExpenseApp registriert!"
 
-#: app/auth/email.py:24
+#: app/auth/email.py:34
 msgid "Validate Your Email"
 msgstr "Validiere deine eMail"
 
-#: app/auth/email.py:38
+#: app/auth/email.py:48
 msgid "Reset Your Password"
 msgstr "Passwort zurücksetzen"
 
-#: app/auth/forms.py:11 app/auth/forms.py:17 app/event/forms.py:63
-#: app/main/forms.py:17 app/main/forms.py:58 app/main/forms.py:80
+#: app/auth/forms.py:16 app/auth/forms.py:25 app/event/forms.py:117
+#: app/main/forms.py:34 app/main/forms.py:74 app/main/forms.py:99
 #: app/templates/pdf/balance.html:35
 msgid "Username"
 msgstr "Benutzername"
 
-#: app/auth/forms.py:12 app/auth/forms.py:40 app/main/forms.py:60
-#: app/main/forms.py:82
+#: app/auth/forms.py:17 app/auth/forms.py:59 app/main/forms.py:76
+#: app/main/forms.py:101
 msgid "Password"
 msgstr "Passwort"
 
-#: app/auth/forms.py:13
+#: app/auth/forms.py:18
 msgid "Remember Me"
 msgstr "Angemeldet bleiben"
 
-#: app/auth/forms.py:14 app/auth/routes.py:44 app/auth/routes.py:80
+#: app/auth/forms.py:19 app/auth/routes.py:70 app/auth/routes.py:113
 msgid "Sign In"
 msgstr "Anmelden"
 
-#: app/auth/forms.py:18 app/auth/forms.py:33 app/auth/forms.py:37
-#: app/event/forms.py:64 app/main/forms.py:59 app/main/forms.py:81
+#: app/auth/forms.py:26 app/auth/forms.py:46 app/auth/forms.py:53
+#: app/event/forms.py:118 app/main/forms.py:75 app/main/forms.py:100
 msgid "Email"
 msgstr "Email"
 
-#: app/auth/forms.py:19 app/event/forms.py:70 app/main/forms.py:21
-#: app/main/forms.py:65 app/main/forms.py:87
+#: app/auth/forms.py:27 app/event/forms.py:128 app/main/forms.py:36
+#: app/main/forms.py:79 app/main/forms.py:104
 msgid "Language"
 msgstr "Sprache"
 
-#: app/auth/forms.py:20 app/auth/routes.py:108
+#: app/auth/forms.py:28 app/auth/routes.py:143
 msgid "Register"
 msgstr "Registrieren"
 
-#: app/auth/forms.py:25 app/main/forms.py:33 app/main/forms.py:72
-#: app/main/forms.py:100
+#: app/auth/forms.py:34 app/main/forms.py:48 app/main/forms.py:87
+#: app/main/forms.py:118
 msgid "Please use a different username."
 msgstr "Bitte einen anderen Benutzernamen wählen."
 
-#: app/auth/forms.py:30 app/main/forms.py:77 app/main/forms.py:106
+#: app/auth/forms.py:40 app/main/forms.py:93 app/main/forms.py:125
 msgid "Please use a different email address."
 msgstr "Bitte eine andere email Adresse wählen."
 
-#: app/auth/forms.py:34
+#: app/auth/forms.py:47
 msgid "Request Password Reset"
 msgstr "Passwort Rücksetzung anfordern"
 
-#: app/auth/forms.py:41 app/main/forms.py:61 app/main/forms.py:83
+#: app/auth/forms.py:61 app/main/forms.py:77 app/main/forms.py:102
 msgid "Repeat Password"
 msgstr "Passwort wiederhohlen"
 
-#: app/auth/forms.py:43
+#: app/auth/forms.py:64
 #, fuzzy
 msgid "Set password"
 msgstr "Passwort zurücksetzen"
 
-#: app/auth/routes.py:51
+#: app/auth/routes.py:78
 msgid "Login failed"
 msgstr "Anmedlung fehlgeschlagen"
 
-#: app/auth/routes.py:59
+#: app/auth/routes.py:87
 msgid "Login successful"
 msgstr "Anmeldung erfolgreich"
 
-#: app/auth/routes.py:72
+#: app/auth/routes.py:104
 msgid "Invalid username or password"
 msgstr "Ungültiger Benutzername oder Passwort"
 
-#: app/auth/routes.py:106 app/auth/routes.py:121
+#: app/auth/routes.py:141 app/auth/routes.py:157
 msgid "Please check your email to activate your account"
 msgstr "Bitte überprüfe deine emails um dein Konto zu aktivieren"
 
-#: app/auth/routes.py:124
+#: app/auth/routes.py:159
 #, fuzzy
 msgid "Reset Login"
 msgstr "Adresse"
 
-#: app/auth/routes.py:140
+#: app/auth/routes.py:175
 msgid "Your device is now registered for passwordless authentication"
 msgstr "Dein Gerät ist nun für die passwortlose Anmeldung freigeschalten"
 
-#: app/auth/routes.py:144
+#: app/auth/routes.py:180
 msgid "Enable passwordless authentication"
 msgstr "Aktiviere die passwortlose Anmeldung"
 
-#: app/auth/routes.py:164
+#: app/auth/routes.py:207
 #, fuzzy
 msgid "Your password has been set"
 msgstr "Dein Passwort wurde zurückgesetzt."
 
-#: app/auth/routes.py:167
+#: app/auth/routes.py:211
 msgid "Set your password"
 msgstr "Setze dein Passwort"
 
-#: app/event/forms.py:11
+#: app/event/forms.py:20
 msgid "Say something"
 msgstr "Sag etwas"
 
-#: app/event/forms.py:13 app/event/forms.py:18 app/event/forms.py:38
-#: app/event/forms.py:60 app/event/forms.py:71 app/event/forms.py:91
-#: app/event/forms.py:96 app/event/forms.py:101 app/event/forms.py:115
-#: app/event/forms.py:126 app/main/forms.py:14 app/main/forms.py:23
-#: app/main/forms.py:40 app/main/forms.py:55 app/main/forms.py:67
-#: app/main/forms.py:89
+#: app/event/forms.py:23 app/event/forms.py:30 app/event/forms.py:68
+#: app/event/forms.py:111 app/event/forms.py:129 app/event/forms.py:164
+#: app/event/forms.py:175 app/event/forms.py:186 app/event/forms.py:212
+#: app/event/forms.py:233 app/main/forms.py:28 app/main/forms.py:37
+#: app/main/forms.py:56 app/main/forms.py:68 app/main/forms.py:81
+#: app/main/forms.py:106
 msgid "Submit"
 msgstr "Senden"
 
-#: app/event/forms.py:16 app/main/forms.py:51
+#: app/event/forms.py:29 app/main/forms.py:66
 msgid "Value in CHF"
 msgstr "Wert in CHF"
 
-#: app/event/forms.py:21 app/event/forms.py:41 app/main/forms.py:43
+#: app/event/forms.py:37 app/event/forms.py:75 app/main/forms.py:62
+#: app/templates/backups.html:30
 msgid "Name"
 msgstr "Name"
 
-#: app/event/forms.py:23 app/event/forms.py:43
+#: app/event/forms.py:41 app/event/forms.py:79
 msgid "Date in Y-m-d"
 msgstr "Datum als Y-m-d"
 
-#: app/event/forms.py:27 app/event/forms.py:47 app/templates/event/main.html:42
+#: app/event/forms.py:46 app/event/forms.py:84 app/templates/event/main.html:42
 msgid "Link to external fileshare"
 msgstr "Link zu externer Datenablage"
 
-#: app/event/forms.py:29 app/event/forms.py:49 app/event/forms.py:113
-#: app/event/forms.py:124 app/main/forms.py:53
+#: app/event/forms.py:50 app/event/forms.py:88 app/event/forms.py:209
+#: app/event/forms.py:230 app/main/forms.py:67
 msgid "Description"
 msgstr "Beschreibung"
 
-#: app/event/forms.py:31 app/event/forms.py:51
+#: app/event/forms.py:54 app/event/forms.py:92
 msgid "Base currency"
 msgstr "Rechnungswährung"
 
-#: app/event/forms.py:33 app/event/forms.py:53 app/event/routes.py:125
+#: app/event/forms.py:59 app/event/forms.py:97 app/event/routes.py:198
 #: app/templates/event/main.html:30 app/templates/pdf/balance.html:17
 msgid "Allowed currencies"
 msgstr "Erlaubte Währungen"
 
-#: app/event/forms.py:35 app/event/forms.py:55
+#: app/event/forms.py:64 app/event/forms.py:102
 msgid "Exchange fee (%)"
 msgstr "Wechselgebühren (%)"
 
-#: app/event/forms.py:58
+#: app/event/forms.py:107
 msgid "Select accountant"
 msgstr "Wähle den Buchhalter"
 
-#: app/event/forms.py:65
+#: app/event/forms.py:120
 msgid "Weighting"
 msgstr "Gewichtung"
 
-#: app/event/forms.py:68 app/main/forms.py:19 app/main/forms.py:63
-#: app/main/forms.py:85
+#: app/event/forms.py:125 app/main/forms.py:35 app/main/forms.py:78
+#: app/main/forms.py:103
 msgid "About me"
 msgstr "Über mich"
 
-#: app/event/forms.py:75 app/templates/email/reminder_email.html:10
+#: app/event/forms.py:136 app/templates/email/reminder_email.html:10
 #: app/templates/event/user.html:27
 msgid "IBAN"
 msgstr "IBAN"
 
-#: app/event/forms.py:77 app/templates/email/reminder_email.html:18
+#: app/event/forms.py:140 app/templates/email/reminder_email.html:18
 #: app/templates/event/user.html:35
 msgid "Bank name"
 msgstr "Bankname"
 
-#: app/event/forms.py:79
+#: app/event/forms.py:144
 msgid "Account owner name"
 msgstr "Kontobesitzer"
 
-#: app/event/forms.py:81
+#: app/event/forms.py:148
 msgid "Address line"
 msgstr "Adresse"
 
-#: app/event/forms.py:83 app/templates/email/reminder_email.html:42
+#: app/event/forms.py:152 app/templates/email/reminder_email.html:42
 #: app/templates/event/user.html:59
 msgid "Address suffix"
 msgstr "Adresszusatz"
 
-#: app/event/forms.py:85
+#: app/event/forms.py:155
 msgid "ZIP"
 msgstr "PLZ"
 
-#: app/event/forms.py:87
+#: app/event/forms.py:157
 msgid "City"
 msgstr "Stadt"
 
-#: app/event/forms.py:89 app/templates/email/reminder_email.html:58
+#: app/event/forms.py:161 app/templates/email/reminder_email.html:58
 #: app/templates/event/user.html:75
 msgid "Country"
 msgstr "Land"
 
-#: app/event/forms.py:94
+#: app/event/forms.py:171
 msgid "Select user (will be saved as cookie)"
 msgstr "Benutzer auswählen (wird als cookie gespeichert)"
 
-#: app/event/forms.py:99
+#: app/event/forms.py:182
 msgid "Add user"
 msgstr "Benutzer hinzufügen"
 
-#: app/event/forms.py:104 app/event/forms.py:118
+#: app/event/forms.py:193 app/event/forms.py:219
 msgid "Currency"
 msgstr "Währung"
 
-#: app/event/forms.py:106 app/event/forms.py:120
+#: app/event/forms.py:197 app/event/forms.py:223
 msgid "Amount"
 msgstr "Betrag"
 
-#: app/event/forms.py:108
+#: app/event/forms.py:199
 msgid "For users"
 msgstr "Für Benutzer"
 
-#: app/event/forms.py:110 app/templates/pdf/balance.html:19
+#: app/event/forms.py:204 app/templates/pdf/balance.html:19
 msgid "Date"
 msgstr "Datum"
 
-#: app/event/forms.py:122 app/main/forms.py:36
+#: app/event/forms.py:225 app/main/forms.py:54
 msgid "Recipient"
 msgstr "Empfänger"
 
-#: app/event/routes.py:49
+#: app/event/routes.py:95
 #, python-format
 msgid "Hi %(username)s, your events:"
 msgstr "Hallo %(username)s, deine Veranstaltungen:"
 
-#: app/event/routes.py:59 app/main/routes.py:142
+#: app/event/routes.py:114 app/main/routes.py:212
 #, python-format
 msgid "User %(username)s"
 msgstr "Benutzer %(username)s"
 
-#: app/event/routes.py:72
+#: app/event/routes.py:134
 #, python-format
 msgid "You selected user %(username)s as context"
 msgstr "Du hast Benutzer %(username)s als Kontext gewählt"
 
-#: app/event/routes.py:80
+#: app/event/routes.py:145
 msgid "Select user"
 msgstr "Wähle den Benutzer"
 
-#: app/event/routes.py:99
+#: app/event/routes.py:164
 msgid "Your post is now live!"
 msgstr "Dein Beitrag ist nun online!"
 
-#: app/event/routes.py:138 app/event/routes.py:207 app/event/routes.py:261
-#: app/event/routes.py:317 app/event/routes.py:335
+#: app/event/routes.py:214 app/event/routes.py:272 app/event/routes.py:315
+#: app/event/routes.py:385 app/event/routes.py:403
 msgid "Your are only allowed to edit your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung bearbeiten!"
 
-#: app/event/routes.py:143 app/event/routes.py:212 app/event/routes.py:288
-#: app/event/routes.py:322 app/event/routes.py:340 app/event/routes.py:467
-#: app/event/routes.py:512 app/event/routes.py:540 app/event/routes.py:575
-#: app/event/routes.py:599 app/event/routes.py:630 app/event/routes.py:649
-#: app/event/routes.py:677 app/event/routes.py:715 app/event/routes.py:763
+#: app/event/routes.py:219 app/event/routes.py:277 app/event/routes.py:351
+#: app/event/routes.py:390 app/event/routes.py:408 app/event/routes.py:555
+#: app/event/routes.py:599 app/event/routes.py:632 app/event/routes.py:669
+#: app/event/routes.py:693 app/event/routes.py:726 app/event/routes.py:745
+#: app/event/routes.py:779 app/event/routes.py:816 app/event/routes.py:866
 msgid "Your are only allowed to edit an open event!"
 msgstr "Du kannst nur eine geöffnete Veranstaltung bearbeiten!"
 
-#: app/event/routes.py:150 app/event/routes.py:241 app/event/routes.py:272
-#: app/event/routes.py:368 app/event/routes.py:400 app/event/routes.py:431
-#: app/event/routes.py:526 app/event/routes.py:557 app/event/routes.py:731
-#: app/main/routes.py:109 app/main/routes.py:192 app/main/routes.py:398
-#: app/main/routes.py:419
+#: app/event/routes.py:225 app/event/routes.py:295 app/event/routes.py:329
+#: app/event/routes.py:439 app/event/routes.py:473 app/event/routes.py:506
+#: app/event/routes.py:616 app/event/routes.py:651 app/event/routes.py:834
+#: app/main/routes.py:172 app/main/routes.py:269 app/main/routes.py:473
+#: app/main/routes.py:496
 msgid "Your changes have been saved."
 msgstr "Deine Änderungen wurden gespeichert."
 
-#: app/event/routes.py:155
+#: app/event/routes.py:229
 msgid "Set rate"
 msgstr "Setze Wechselkurs"
 
-#: app/event/routes.py:191
+#: app/event/routes.py:256
 msgid "Your new event has been added."
 msgstr "Deine neue Veranstaltung wurde hinzugefügt."
 
-#: app/event/routes.py:199 app/templates/event/index.html:6
+#: app/event/routes.py:263 app/templates/event/index.html:5
 msgid "New Event"
 msgstr "Neue Veranstaltung"
 
-#: app/event/routes.py:253
+#: app/event/routes.py:306
 msgid "Edit Event"
 msgstr "Veranstaltung bearbeiten"
 
-#: app/event/routes.py:270 app/event/routes.py:429 app/event/routes.py:524
-#: app/main/routes.py:417
-#, python-format
-msgid "Importing %(filename)s..."
-msgstr "Importiere %(filename)s..."
-
-#: app/event/routes.py:274 app/event/routes.py:433 app/event/routes.py:528
-#: app/main/routes.py:421
+#: app/event/routes.py:323 app/event/routes.py:500 app/event/routes.py:609
+#: app/main/routes.py:490
 msgid "Invalid or empty image."
 msgstr "Ungültiges oder leeres Bild."
 
-#: app/event/routes.py:277
+#: app/event/routes.py:332 app/event/routes.py:509 app/event/routes.py:619
+#: app/main/routes.py:499
+msgid "An error occurred while uploading your image."
+msgstr ""
+
+#: app/event/routes.py:335
 msgid "Event Picture"
 msgstr "Veranstaltungsbild"
 
-#: app/event/routes.py:297 app/event/routes.py:327
+#: app/event/routes.py:361 app/event/routes.py:393
 #, python-format
 msgid "User %(username)s has been added to event %(event_name)s."
 msgstr "Benutzer %(username)s wurde der Veranstaltung %(event_name)s hinzugefügt."
 
-#: app/event/routes.py:344
+#: app/event/routes.py:412
 #, python-format
 msgid "User %(username)s cannot be removed from event %(event_name)s."
 msgstr ""
 "Benutzer %(username)s kann nicht von der Veranstaltung %(event_name)s "
 "entfernt werden."
 
-#: app/event/routes.py:347
+#: app/event/routes.py:414
 #, python-format
 msgid "User %(username)s has been removed from event %(event_name)s."
 msgstr "Benutzer %(username)s wurde aus der Veranstaltung %(event_name)s entfernt."
 
-#: app/event/routes.py:354 app/event/routes.py:384 app/event/routes.py:419
+#: app/event/routes.py:423 app/event/routes.py:455 app/event/routes.py:492
 msgid "Your are only allowed to edit your own user!"
 msgstr "Du darfst nur deinen eigenen Benutzer bearbeiten!"
 
-#: app/event/routes.py:377 app/main/routes.py:405
+#: app/event/routes.py:447 app/main/routes.py:479
 msgid "Edit Profile"
 msgstr "Benutzerprofil bearbeiten"
 
-#: app/event/routes.py:412
+#: app/event/routes.py:484
 msgid "Edit Bank Account"
 msgstr "Bearbeite Bankkonto"
 
-#: app/event/routes.py:436 app/main/routes.py:424
+#: app/event/routes.py:512 app/main/routes.py:502
 msgid "Profile Picture"
 msgstr "Benutzerprofilbild"
 
-#: app/event/routes.py:482
+#: app/event/routes.py:567
 #, python-format
 msgid "Your new expense has been added to event %(event_name)s."
 msgstr "Deine neue Ausgabe wurde der Veranstaltung %(event_name)s hinzugefügt."
 
-#: app/event/routes.py:515 app/event/routes.py:543 app/event/routes.py:578
-#: app/event/routes.py:602 app/event/routes.py:633 app/event/routes.py:652
+#: app/event/routes.py:602 app/event/routes.py:635 app/event/routes.py:672
+#: app/event/routes.py:696 app/event/routes.py:729 app/event/routes.py:748
 msgid "Your are only allowed to edit your own expense!"
 msgstr "Du darfst nur deine eigenen Ausgaben bearbeiten!"
 
-#: app/event/routes.py:531
+#: app/event/routes.py:622
 msgid "Add Receipt"
 msgstr "Beleg hinzufügen"
 
-#: app/event/routes.py:566
+#: app/event/routes.py:659
 msgid "Edit Expense"
 msgstr "Ausgabe bearbeiten"
 
-#: app/event/routes.py:586
+#: app/event/routes.py:678
 #, python-format
 msgid "Expense over %(amount_str)s has been removed from event %(event_name)s."
 msgstr ""
 "Ausgabe von %(amount_str)s wurde aus der Veranstaltung %(event_name)s "
 "entfernt."
 
-#: app/event/routes.py:609 app/event/routes.py:640
+#: app/event/routes.py:701 app/event/routes.py:734
 #, python-format
 msgid "User %(username)s has been added to the expense."
 msgstr "Benutzer %(username)s wurde zur Ausgabe hinzugefügt."
 
-#: app/event/routes.py:658
+#: app/event/routes.py:755
 #, python-format
 msgid "User %(username)s cannot be removed from the expense."
 msgstr "Benutzer %(username)s kann nicht von der Ausgabe entfernt werden."
 
-#: app/event/routes.py:661
+#: app/event/routes.py:757
 #, python-format
 msgid "User %(username)s has been removed from the expense."
 msgstr "Benutzer %(username)s wurde von der Ausgabe entfernt."
 
-#: app/event/routes.py:693
+#: app/event/routes.py:790
 #, python-format
 msgid "Your new settlement has been added to event %(event_name)s."
 msgstr ""
 "Deine neue Ausgleichszahlung wurde der Veranstaltung %(event_name)s "
 "hinzugefügt."
 
-#: app/event/routes.py:718 app/event/routes.py:766
+#: app/event/routes.py:819 app/event/routes.py:869
 msgid "Your are only allowed to edit your own settlements!"
 msgstr "Du darfst nur deine eigenen Ausgleichszahlungen bearbeiten!"
 
-#: app/event/routes.py:739
+#: app/event/routes.py:841
 msgid "Edit Settlement"
 msgstr "Ausgleichszahlung bearbeiten"
 
-#: app/event/routes.py:747
+#: app/event/routes.py:850
 msgid "Your are only allowed to confirm a settlement directed to you!"
 msgstr "Du darfst nur eine an dich gerichtete Ausgleichszahlungen bestätigen!"
 
-#: app/event/routes.py:753
-#, python-format
-msgid "Confirmed by user %(username)s"
-msgstr "Bestätigt von Benutzer %(username)s"
-
-#: app/event/routes.py:774
+#: app/event/routes.py:875
 #, python-format
 msgid "Settlement over %(amount_str)s has been removed from event %(event_name)s."
 msgstr ""
 "Ausgleichszahlung von %(amount_str)s wurde aus der Veranstaltung "
 "%(event_name)s entfernt."
 
-#: app/event/routes.py:782
+#: app/event/routes.py:889
 msgid "Your are only allowed to send payment reminders of your own event!"
 msgstr "Du kannst nur Zahlungserinnerungen deiner eigenen Veranstaltung versenden!"
 
-#: app/event/routes.py:786 app/event/routes.py:797
-msgid "Sending balance reports..."
-msgstr "Sende Abrechnungen..."
-
-#: app/event/routes.py:788
+#: app/event/routes.py:894
 msgid "All users have been reminded of their duties!"
 msgstr "Alle Beteiligten wurden ihrer Pflichten erinnert!"
 
-#: app/event/routes.py:799
+#: app/event/routes.py:905
 msgid "The balance has been sent to your email"
 msgstr "Die Abrechnung wurde an deine email versendet"
 
-#: app/event/routes.py:807
+#: app/event/routes.py:915
 msgid "Your are only allowed to convert currencies of your own event!"
 msgstr "Du kannst nur Währungen deiner eigenen Veranstaltung umwandeln!"
 
-#: app/event/routes.py:813
+#: app/event/routes.py:920
 #, python-format
 msgid "All transaction of this event have been converted to %(code)s."
 msgstr "Alle Beträge dieser Veranstaltung wurden zu %(code)s umgewandelt."
 
-#: app/event/routes.py:821
+#: app/event/routes.py:930
 msgid "Your are only allowed to reopen your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung wieder öffnen!"
 
-#: app/event/routes.py:827
+#: app/event/routes.py:935
 msgid "Event has been reopened."
 msgstr "Veranstaltung wurde wieder geöffnet"
 
-#: app/event/routes.py:835
+#: app/event/routes.py:945
 msgid "Your are only allowed to close your own event!"
 msgstr "Du kannst nur deine eigene Veranstaltung schliessen!"
 
-#: app/event/routes.py:840
+#: app/event/routes.py:951
 msgid "Your are only allowed to close an event with no open liabilities!"
 msgstr "Du kannst nur eine Veranstaltung mit ausgeglichener Bilanz schliessen!"
 
-#: app/event/routes.py:844
+#: app/event/routes.py:953
 msgid "Event has been closed."
 msgstr "Veranstaltung wurde geschlossen"
 
-#: app/main/forms.py:13
+#: app/main/forms.py:27
 msgid "Picture"
 msgstr "Foto"
 
-#: app/main/forms.py:13
+#: app/main/forms.py:27
 msgid "Images only!"
 msgstr "Nur Bilder erlaubt!"
 
-#: app/main/forms.py:22
-msgid "Timezone"
-msgstr "Zeitzone"
-
-#: app/main/forms.py:38
+#: app/main/forms.py:55
 msgid "Message"
 msgstr "Nachricht"
 
-#: app/main/forms.py:45
+#: app/main/forms.py:63
 msgid "ISO-4217-Code"
 msgstr "ISO-4217-Code"
 
-#: app/main/forms.py:47
+#: app/main/forms.py:64
 msgid "ISO-4217-Number"
 msgstr "ISO-4217-Nummer"
 
-#: app/main/forms.py:49
+#: app/main/forms.py:65
 msgid "ISO-4217-Exponent"
 msgstr "ISO-4217-Exponent"
 
-#: app/main/forms.py:66 app/main/forms.py:88 app/templates/event/_user.html:22
+#: app/main/forms.py:80 app/main/forms.py:105 app/templates/event/_user.html:22
 msgid "Administrator"
 msgstr "Administrator"
 
-#: app/main/routes.py:37
+#: app/main/routes.py:90
 msgid "Image"
 msgstr "Bild"
 
-#: app/main/routes.py:60
+#: app/main/routes.py:118
 msgid "Current currencies"
 msgstr "Aktuelle Währungen"
 
-#: app/main/routes.py:69
+#: app/main/routes.py:131
 msgid "Only an admin is allowed to create new currencies!"
 msgstr "Nur ein Admin kann neue Währungen erstellen!"
 
-#: app/main/routes.py:85
+#: app/main/routes.py:146
 msgid "Your new currency has been added."
 msgstr "Deine neue Währung wurde hinzugefügt."
 
-#: app/main/routes.py:88 app/templates/currencies.html:7
+#: app/main/routes.py:148 app/templates/currencies.html:6
 msgid "New Currency"
 msgstr "Neue Währung"
 
-#: app/main/routes.py:95
+#: app/main/routes.py:156
 msgid "Only an admin is allowed to edit currencies!"
 msgstr "Nur ein Admin kann Währungen bearbeiten!"
 
-#: app/main/routes.py:119
+#: app/main/routes.py:181
 msgid "Edit Currency"
 msgstr "Währung bearbeiten"
 
-#: app/main/routes.py:132
+#: app/main/routes.py:199
 msgid "Current users"
 msgstr "Aktuelle Benutzer"
 
-#: app/main/routes.py:148
+#: app/main/routes.py:220
 msgid "Only an admin can create new users!"
 msgstr "Nur ein Administrator kann neue Benutzer erstellen!"
 
-#: app/main/routes.py:164
+#: app/main/routes.py:235
 #, python-format
 msgid "New user %(username)s created"
 msgstr "Neuer Benutzer %(username)s wurde erstellt"
 
-#: app/main/routes.py:166 app/templates/users.html:7
+#: app/main/routes.py:237 app/templates/users.html:6
 msgid "New User"
 msgstr "Neuer Benutzer"
 
-#: app/main/routes.py:171
+#: app/main/routes.py:245
 msgid "Only an admin can edit users!"
 msgstr "Nur ein Administrator kann Benutzer bearbeiten!"
 
-#: app/main/routes.py:178 app/main/routes.py:221
+#: app/main/routes.py:252 app/main/routes.py:301
 msgid "You cannot change the master admin!"
 msgstr "Du kannst den Grossen Administrator nicht verändern!"
 
-#: app/main/routes.py:200
+#: app/main/routes.py:277
 msgid "Edit User"
 msgstr "Benutzer bearbeiten"
 
-#: app/main/routes.py:207
+#: app/main/routes.py:286
 msgid "Only an admin can set the admin rights!"
 msgstr "Nur ein Administrator kann Administratorenrechte vergeben!"
 
-#: app/main/routes.py:224
+#: app/main/routes.py:304
 msgid "Only an admin can revoke the admin rights!"
 msgstr "Nur ein Administrator kann Administratorenrechte zurücksetzen!"
 
-#: app/main/routes.py:237 app/templates/base.html:41
+#: app/main/routes.py:321
+#, fuzzy
+msgid "Only an admin can view the administration page!"
+msgstr "Nur ein Administrator kann Administratorenrechte vergeben!"
+
+#: app/main/routes.py:325 app/templates/base.html:38
 msgid "Administration"
 msgstr "Administration"
 
-#: app/main/routes.py:258 app/templates/administration.html:6
+#: app/main/routes.py:338 app/templates/administration.html:5
 msgid "Logs"
 msgstr "Logeinträge"
 
-#: app/main/routes.py:267
+#: app/main/routes.py:348
 msgid "Your are only allowed to view your own logs!"
 msgstr "Du darfst nur deine eigenen Logeinträge sehen!"
 
-#: app/main/routes.py:273
+#: app/main/routes.py:352
 msgid "Trace"
 msgstr "Trace"
 
-#: app/main/routes.py:279
+#: app/main/routes.py:360
 msgid "Only an admin can create errors!"
 msgstr "Nur ein Administrator kann Fehler erzeugen!"
 
-#: app/main/routes.py:289
+#: app/main/routes.py:370
 #, python-format
 msgid "This flash should never show up: %(test_number)s"
 msgstr "Dieser Popup sollte nie auftauchen: %(test_number)s"
 
-#: app/main/routes.py:321
+#: app/main/routes.py:396
 msgid "Your are only allowed to delete your own task!"
 msgstr "Du kannst nur deine eigenen Aufgaben entfernen!"
 
-#: app/main/routes.py:329
+#: app/main/routes.py:403
 #, python-format
 msgid "Task %(name)s from user %(username)s has been removed"
 msgstr "Aufgabe %(name)s von Benutzer %(username)s wurde entfernt"
 
-#: app/main/routes.py:336
+#: app/main/routes.py:412
 msgid "Only an admin can start tasks!"
 msgstr "Nur ein Administrator kann Aufgaben starten"
 
-#: app/main/routes.py:345 app/main/routes.py:495
-#, python-format
-msgid "Consuming %(amount)s s of time..."
-msgstr "Verbrauche %(amount)s s Zeit..."
-
-#: app/main/routes.py:346 app/main/routes.py:493
+#: app/main/routes.py:430 app/main/routes.py:574
 msgid "A time consuming task is currently in progress"
 msgstr "Eine zeitraubende Aufgabe ist im Gange"
 
-#: app/main/routes.py:349
+#: app/main/routes.py:432
 msgid "Checking online sources for currency rates"
 msgstr "Überprüfe online Quellen für Wechselkurse"
 
-#: app/main/routes.py:354
+#: app/main/routes.py:434
 msgid "Updating currency rates from known sources"
 msgstr "Aktualisiere Wechselkurse aus online Quellen"
 
-#: app/main/routes.py:358
-#, python-format
-msgid "Creating %(count)s/%(amount)s errors of type %(error_type)s ..."
-msgstr "Erzeuge %(count)s/%(amount)s Fehler vom Typ %(error_type)s ..."
-
-#: app/main/routes.py:359
+#: app/main/routes.py:437
 #, python-format
 msgid "%(amount)s tasks with TypeErrors have been created"
 msgstr "%(amount)s Aufgaben mit TypeErrors wurden erzeugt"
 
-#: app/main/routes.py:378 app/templates/administration.html:8
+#: app/main/routes.py:448 app/templates/administration.html:7
 msgid "Statistics"
 msgstr "Statistiken"
 
-#: app/main/routes.py:449
+#: app/main/routes.py:526
 msgid "Your message has been sent."
 msgstr "Deine Nachricht wurde versendet."
 
-#: app/main/routes.py:460 app/templates/base.html:32
+#: app/main/routes.py:535 app/templates/base.html:30
 msgid "Messages"
 msgstr "Nachrichten"
 
-#: app/main/routes.py:482
+#: app/main/routes.py:561
 msgid "An export task is currently in progress"
 msgstr "Ein Exportvorgang läuft schon zur Zeit"
 
-#: app/main/routes.py:484
+#: app/main/routes.py:563
 msgid "Exporting posts..."
 msgstr "Beiträge exportieren..."
 
-#: app/main/routes.py:508 app/templates/administration.html:9
-msgid "Cookies"
-msgstr "Cookies"
+#: app/main/routes.py:578 app/services/main_service.py:351
+#, python-format
+msgid "Consuming %(amount)s s of time..."
+msgstr "Verbrauche %(amount)s s Zeit..."
+
+#: app/main/routes.py:594 app/main/routes.py:641
+msgid "Only an admin can access backups."
+msgstr "Nur ein Administrator kann auf Backups zugreifen."
+
+#: app/main/routes.py:604 app/templates/administration.html:8
+msgid "Backups"
+msgstr "Backups"
+
+#: app/main/routes.py:616
+msgid "Only an admin can create backups."
+msgstr "Nur ein Administrator kann Backups erstellen."
+
+#: app/main/routes.py:626
+#, python-format
+msgid "Running backup %(name)s..."
+msgstr "Backup %(name)s wird ausgeführt..."
+
+#: app/main/routes.py:630
+#, python-format
+msgid "Backup started: %(name)s"
+msgstr "Backup gestartet: %(name)s"
+
+#: app/main/routes.py:632
+#, python-format
+msgid "Failed to create backup: %(error)s"
+msgstr "Backup konnte nicht erstellt werden: %(error)s"
+
+#: app/main/routes.py:647 app/main/routes.py:703
+msgid "Backup not found."
+msgstr "Backup nicht gefunden."
+
+#: app/main/routes.py:649
+msgid "Backup Detail"
+msgstr "Backup-Details"
+
+#: app/main/routes.py:657
+msgid "Only an admin can delete backups."
+msgstr "Nur ein Administrator kann Backups löschen."
+
+#: app/main/routes.py:663
+msgid "Backup deleted."
+msgstr "Backup gelöscht."
+
+#: app/main/routes.py:665
+#, python-format
+msgid "Failed to delete backup: %(error)s"
+msgstr "Backup konnte nicht gelöscht werden: %(error)s"
+
+#: app/main/routes.py:674
+msgid "Only an admin can download backups."
+msgstr "Nur ein Administrator kann Backups herunterladen."
+
+#: app/main/routes.py:680
+#, python-format
+msgid "Failed to export backup: %(error)s"
+msgstr "Backup konnte nicht exportiert werden: %(error)s"
+
+#: app/main/routes.py:696
+msgid "Only an admin can restore backups."
+msgstr "Nur ein Administrator kann Backups wiederherstellen."
+
+#: app/main/routes.py:707
+#, python-format
+msgid "Restoring backup %(name)s..."
+msgstr "Backup %(name)s wird wiederhergestellt..."
+
+#: app/main/routes.py:712
+#, python-format
+msgid "Restore started for backup: %(name)s"
+msgstr "Wiederherstellung gestartet für Backup: %(name)s"
+
+#: app/main/routes.py:721
+msgid "Only an admin can import backups."
+msgstr "Nur ein Administrator kann Backups importieren."
+
+#: app/main/routes.py:726
+msgid "No archive file provided."
+msgstr "Keine Archivdatei angegeben."
+
+#: app/main/routes.py:731
+#, python-format
+msgid "Backup imported: %(name)s"
+msgstr "Backup importiert: %(name)s"
+
+#: app/main/routes.py:733
+#, python-format
+msgid "Failed to import backup: %(error)s"
+msgstr "Backup konnte nicht importiert werden: %(error)s"
+
+#: app/services/event_service.py:722
+#, python-format
+msgid "Confirmed by user %(username)s"
+msgstr "Bestätigt von Benutzer %(username)s"
+
+#: app/services/event_service.py:772 app/services/event_service.py:783
+msgid "Sending balance reports..."
+msgstr "Sende Abrechnungen..."
+
+#: app/services/main_service.py:368
+#, python-format
+msgid "Creating %(count)s/%(amount)s errors of type %(error_type)s ..."
+msgstr "Erzeuge %(count)s/%(amount)s Fehler vom Typ %(error_type)s ..."
 
 #: app/templates/_currency.html:14 app/templates/_user.html:22
 #: app/templates/event/_expense.html:21 app/templates/event/_settlement.html:14
@@ -788,6 +894,15 @@ msgstr "Du hast %(username)s %(when)s geschrieben:"
 msgid "%(username)s wrote you %(when)s:"
 msgstr "%(username)s schrieb dir %(when)s:"
 
+#: app/templates/_pager.html:7 app/templates/_pager.html:9
+#, fuzzy
+msgid "Previous"
+msgstr "Vorherige Benutzer"
+
+#: app/templates/_pager.html:13 app/templates/_pager.html:14
+msgid "Next"
+msgstr ""
+
 #: app/templates/_task.html:7 app/templates/event/_expense.html:28
 #: app/templates/event/_expense_user.html:22
 #: app/templates/event/_settlement.html:21 app/templates/event/_user.html:25
@@ -799,16 +914,17 @@ msgstr "entfernen"
 msgid "Task %(name)s from user %(username)s"
 msgstr "Aufgabe %(name)s von Benutzer %(username)s"
 
-#: app/templates/_task.html:16 app/templates/tasks.html:17
+#: app/templates/_task.html:16 app/templates/base.html:91
+#: app/templates/tasks.html:16
 msgid "Complete"
 msgstr "Abgeschlossen"
 
-#: app/templates/_task.html:18
+#: app/templates/_task.html:20
 #, python-format
 msgid "Pending, progress: %(progress)s"
 msgstr "Offen, Fortschritt: %(progress)s"
 
-#: app/templates/_task.html:24 app/templates/_user.html:27
+#: app/templates/_task.html:26 app/templates/_user.html:27
 #: app/templates/_user.html:29 app/templates/event/_draft_settlement.html:18
 #: app/templates/event/_expense.html:56
 #: app/templates/event/_expense_user.html:27
@@ -819,27 +935,155 @@ msgstr "Offen, Fortschritt: %(progress)s"
 msgid "%(link)s"
 msgstr "%(link)s"
 
-#: app/templates/base.html:4
+#: app/templates/backup_detail.html:5
+msgid "Back to backups"
+msgstr "Zurück zu den Backups"
+
+#: app/templates/backup_detail.html:9
+msgid "GUID"
+msgstr "GUID"
+
+#: app/templates/backup_detail.html:10 app/templates/backup_detail.html:42
+#: app/templates/backups.html:31
+msgid "Type"
+msgstr "Typ"
+
+#: app/templates/backup_detail.html:11 app/templates/backup_detail.html:44
+#: app/templates/backups.html:32
+msgid "Status"
+msgstr "Status"
+
+#: app/templates/backup_detail.html:12 app/templates/backup_detail.html:38
+#: app/templates/backups.html:33
+msgid "Segments"
+msgstr "Segmente"
+
+#: app/templates/backup_detail.html:13 app/templates/backups.html:34
+msgid "Created"
+msgstr "Erstellt"
+
+#: app/templates/backup_detail.html:14
+msgid "Created by"
+msgstr "Erstellt von"
+
+#: app/templates/backup_detail.html:18
+msgid "Download .tar.gz"
+msgstr ".tar.gz herunterladen"
+
+#: app/templates/backup_detail.html:21 app/templates/backups.html:50
+msgid "Delete this backup?"
+msgstr "Dieses Backup löschen?"
+
+#: app/templates/backup_detail.html:21 app/templates/backups.html:50
+msgid "Delete"
+msgstr "Löschen"
+
+#: app/templates/backup_detail.html:25 app/templates/backup_detail.html:35
+msgid "Restore"
+msgstr "Wiederherstellen"
+
+#: app/templates/backup_detail.html:29
+msgid "Conflict strategy"
+msgstr "Konfliktstrategie"
+
+#: app/templates/backup_detail.html:31
+msgid "Skip existing (default)"
+msgstr "Vorhandene überspringen (Standard)"
+
+#: app/templates/backup_detail.html:32
+msgid "Overwrite existing"
+msgstr "Vorhandene überschreiben"
+
+#: app/templates/backup_detail.html:35
+msgid "Restore from this backup? Existing data may be affected."
+msgstr "Von diesem Backup wiederherstellen? Vorhandene Daten können betroffen sein."
+
+#: app/templates/backup_detail.html:43
+msgid "Label"
+msgstr "Bezeichnung"
+
+#: app/templates/backup_detail.html:45
+msgid "Records"
+msgstr "Datensätze"
+
+#: app/templates/backup_detail.html:46
+msgid "Size (bytes)"
+msgstr "Grösse (Bytes)"
+
+#: app/templates/backup_detail.html:47 app/templates/logs.html:7
+msgid "Error"
+msgstr "Fehler"
+
+#: app/templates/backups.html:5 app/templates/logs.html:5
+#: app/templates/statistics.html:5 app/templates/tasks.html:5
+msgid "Back to administration"
+msgstr "Zurück zur Administration"
+
+#: app/templates/backups.html:7
+msgid "Create backup"
+msgstr "Backup erstellen"
+
+#: app/templates/backups.html:11
+msgid "Backup name (optional)"
+msgstr "Backup-Name (optional)"
+
+#: app/templates/backups.html:12
+msgid "Start backup"
+msgstr "Backup starten"
+
+#: app/templates/backups.html:16
+msgid "Import backup"
+msgstr "Backup importieren"
+
+#: app/templates/backups.html:21
+msgid "Import"
+msgstr "Importieren"
+
+#: app/templates/backups.html:35
+msgid "Actions"
+msgstr "Aktionen"
+
+#: app/templates/backups.html:47
+msgid "Download"
+msgstr "Herunterladen"
+
+#: app/templates/backups.html:58
+msgid "No backups found."
+msgstr "Keine Backups gefunden."
+
+#: app/templates/backups.html:65
+msgid "Newer"
+msgstr "Neuer"
+
+#: app/templates/backups.html:70
+msgid "Older"
+msgstr "Älter"
+
+#: app/templates/base.html:6
 msgid "Expense App!"
 msgstr "Ausgaben App"
 
-#: app/templates/base.html:28
+#: app/templates/base.html:21
+msgid "Mobile App"
+msgstr ""
+
+#: app/templates/base.html:26
 msgid "Login"
 msgstr "Anmelden"
 
-#: app/templates/base.html:42
+#: app/templates/base.html:39
 msgid "Profile"
 msgstr "Benutzerprofil"
 
-#: app/templates/base.html:43
+#: app/templates/base.html:40
 msgid "Logout"
 msgstr "Abmelden"
 
-#: app/templates/currencies.html:17 app/templates/event/eventcurrencies.html:15
+#: app/templates/currencies.html:16 app/templates/event/eventcurrencies.html:14
 msgid "Previous currencies"
 msgstr "Verherige Wärhungen"
 
-#: app/templates/currencies.html:22 app/templates/event/eventcurrencies.html:20
+#: app/templates/currencies.html:21 app/templates/event/eventcurrencies.html:19
 msgid "More currencies"
 msgstr "Weitere Währungen"
 
@@ -855,41 +1099,32 @@ msgstr "Drehe das Bild um 90 Grad im GUZS"
 msgid "Turn image upside down"
 msgstr "Drehe das Bild auf den Kopf"
 
-#: app/templates/logs.html:6 app/templates/statistics.html:6
-#: app/templates/tasks.html:6
-msgid "Back to administration"
-msgstr "Zurück zur Administration"
-
-#: app/templates/event/expenses.html:13 app/templates/logs.html:7
-#: app/templates/tasks.html:15
+#: app/templates/event/expenses.html:13 app/templates/logs.html:6
+#: app/templates/tasks.html:14
 msgid "All"
 msgstr "Alle"
 
 #: app/templates/logs.html:8
-msgid "Error"
-msgstr "Fehler"
-
-#: app/templates/logs.html:9
 msgid "Warning"
 msgstr "Warnung"
 
-#: app/templates/logs.html:10
+#: app/templates/logs.html:9
 msgid "Information"
 msgstr "Information"
 
-#: app/templates/logs.html:13
+#: app/templates/logs.html:12
 msgid "Create TypeError"
 msgstr "Erzeuge TypeError"
 
-#: app/templates/logs.html:14 app/templates/tasks.html:12
+#: app/templates/logs.html:13 app/templates/tasks.html:11
 msgid "Create TypeError in task"
 msgstr "Erzeuge TypeError in einer Aufgabe"
 
-#: app/templates/logs.html:23
+#: app/templates/logs.html:22
 msgid "Newer logs"
 msgstr "Neuere Logeinträge"
 
-#: app/templates/logs.html:28
+#: app/templates/logs.html:27
 msgid "Older logs"
 msgstr "Ältere Logeinträge"
 
@@ -901,35 +1136,35 @@ msgstr "Neuere Nachrichten"
 msgid "Older messages"
 msgstr "Ältere Nachrichten"
 
-#: app/templates/tasks.html:8
+#: app/templates/tasks.html:7
 msgid "Start"
 msgstr "Start"
 
-#: app/templates/tasks.html:9
+#: app/templates/tasks.html:8
 msgid "Waste time"
 msgstr "Verschwende Zeit"
 
-#: app/templates/tasks.html:10
+#: app/templates/tasks.html:9
 msgid "Check currencies"
 msgstr "Überprüfe Wechselkurse"
 
-#: app/templates/tasks.html:11
+#: app/templates/tasks.html:10
 msgid "Update currencies"
 msgstr "Aktualisiere Wechselkurse"
 
-#: app/templates/tasks.html:14
+#: app/templates/tasks.html:13
 msgid "History"
 msgstr "Verlauf"
 
-#: app/templates/tasks.html:16
+#: app/templates/tasks.html:15
 msgid "Uncomplete"
 msgstr "Pendent"
 
-#: app/templates/tasks.html:26
+#: app/templates/tasks.html:25
 msgid "Newer tasks"
 msgstr "Neuere Aufgaben"
 
-#: app/templates/tasks.html:31
+#: app/templates/tasks.html:30
 msgid "Older tasks"
 msgstr "Ältere Aufgaben"
 
@@ -958,27 +1193,66 @@ msgstr "Administratorrecht entziehen"
 msgid "Edit your profile"
 msgstr "Benutzerprofil bearbeiten"
 
-#: app/templates/user.html:28
+#: app/templates/user.html:27
+msgid "Register device with FIDO2"
+msgstr ""
+
+#: app/templates/user.html:29
 msgid "Export your posts"
 msgstr "Beiträge exportieren"
 
-#: app/templates/user.html:31
+#: app/templates/user.html:32
 msgid "Consume 10s"
 msgstr "Verbrauche 10s"
 
-#: app/templates/user.html:35
+#: app/templates/user.html:36
 msgid "Send private message"
 msgstr "Private Nachricht senden"
 
+#: app/templates/user.html:52
+msgid "Failed to get registration options."
+msgstr ""
+
+#: app/templates/user.html:66
+msgid "This device is already registered to your account!"
+msgstr ""
+
+#: app/templates/user.html:70
+msgid "Registration was canceled."
+msgstr ""
+
+#: app/templates/user.html:74
+msgid "Authenticator error: "
+msgstr ""
+
+#: app/templates/user.html:89
+msgid "Your device has been successfully registered!"
+msgstr ""
+
+#: app/templates/user.html:93
+#, fuzzy
+msgid "Registration failed: "
+msgstr "Anmedlung fehlgeschlagen"
+
 #: app/templates/event/expense_users.html:17 app/templates/event/users.html:17
-#: app/templates/users.html:17
+#: app/templates/users.html:16
 msgid "Previous users"
 msgstr "Vorherige Benutzer"
 
 #: app/templates/event/expense_users.html:22 app/templates/event/users.html:22
-#: app/templates/users.html:22
+#: app/templates/users.html:21
 msgid "More users"
 msgstr "Mehr Benutzer"
+
+#: app/templates/auth/authenticate_fido2.html:7
+msgid "Waiting for your authenticator device..."
+msgstr ""
+
+#: app/templates/auth/authenticate_fido2.html:8
+msgid ""
+"If you do not have your device, you can cancel the prompt to log in with "
+"a password."
+msgstr ""
 
 #: app/templates/auth/authenticate_fido2.html:13
 #, fuzzy
@@ -1169,50 +1443,50 @@ msgstr "%(when)s: %(sender)s hat %(amount_str)s für %(recipient)s überwiesen:"
 msgid "Weighting: %(weight)0.1f"
 msgstr "Gewichtung: %(weight)0.1f"
 
-#: app/templates/event/balance.html:5
-#: app/templates/event/eventcurrencies.html:6
+#: app/templates/event/balance.html:4
+#: app/templates/event/eventcurrencies.html:5
 #: app/templates/event/expenses.html:5 app/templates/event/settlements.html:5
 #: app/templates/event/user.html:4 app/templates/event/users.html:5
 msgid "Back to event"
 msgstr "Zurück zur Veranstaltung"
 
-#: app/templates/event/balance.html:6 app/templates/event/main.html:40
+#: app/templates/event/balance.html:5 app/templates/event/main.html:40
 msgid "Send balance sheet as PDF to my email"
 msgstr "Sende Abrechnung als PDF an meine email"
 
-#: app/templates/event/balance.html:7 app/templates/pdf/balance.html:28
+#: app/templates/event/balance.html:6 app/templates/pdf/balance.html:28
 msgid "Summary"
 msgstr "Zusammenfassung"
 
-#: app/templates/event/balance.html:8 app/templates/pdf/balance.html:29
+#: app/templates/event/balance.html:7 app/templates/pdf/balance.html:29
 msgid "Total expenses "
 msgstr "Total Ausgaben "
 
-#: app/templates/event/balance.html:16
+#: app/templates/event/balance.html:15
 msgid "Expenses paid"
 msgstr "Ausgaben bezahlt"
 
-#: app/templates/event/balance.html:19
+#: app/templates/event/balance.html:18
 msgid "Expenses involved"
 msgstr "In Ausgaben verwickelt"
 
-#: app/templates/event/balance.html:22
+#: app/templates/event/balance.html:21
 msgid "Sent to users"
 msgstr "Benutzern gesendet"
 
-#: app/templates/event/balance.html:25
+#: app/templates/event/balance.html:24
 msgid "Received from users"
 msgstr "Von Benutzern erhalten"
 
-#: app/templates/event/balance.html:28 app/templates/pdf/balance.html:50
+#: app/templates/event/balance.html:27 app/templates/pdf/balance.html:50
 msgid "Balance"
 msgstr "Saldo"
 
-#: app/templates/event/balance.html:36
+#: app/templates/event/balance.html:35
 msgid "Financial compensation"
 msgstr "Finanzausgleich"
 
-#: app/templates/event/balance.html:37 app/templates/event/main.html:28
+#: app/templates/event/balance.html:36 app/templates/event/main.html:28
 #: app/templates/pdf/balance.html:15 app/templates/pdf/balance.html:60
 msgid "Accountant"
 msgstr "Buchhalter"
@@ -1237,11 +1511,11 @@ msgstr "Neuere Ausgaben"
 msgid "Older expenses"
 msgstr "Ältere Ausgaben"
 
-#: app/templates/event/index.html:15
+#: app/templates/event/index.html:14
 msgid "Newer events"
 msgstr "Neuere Veranstaltungen"
 
-#: app/templates/event/index.html:20
+#: app/templates/event/index.html:19
 msgid "Older events"
 msgstr "Ältere Veranstaltungen"
 
@@ -1259,7 +1533,7 @@ msgstr "Setze ein Profilbild"
 
 #: app/templates/event/main.html:20
 msgid "Edit event picture"
-msgstr "Profilbild bearbeiten"
+msgstr "Veranstaltungsbild bearbeiten"
 
 #: app/templates/event/main.html:24
 msgid "Set event picture"
@@ -1511,4 +1785,10 @@ msgstr "Offene Ausgleichzahlungen"
 
 #~ msgid "To reset your password click on the following link"
 #~ msgstr "Um dein Passwort zurückzusetzen, klicke auf den folgenden Link"
+
+#~ msgid "Timezone"
+#~ msgstr "Zeitzone"
+
+#~ msgid "Cookies"
+#~ msgstr "Cookies"
 

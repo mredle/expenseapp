@@ -115,6 +115,18 @@ class Config:
     REDIS_URL: str = os.environ.get('REDIS_URL') or f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
     RATELIMIT_STORAGE_URI: str = REDIS_URL
 
+    # Backup settings
+    BACKUP_STORAGE_BACKEND: str = os.environ.get('BACKUP_STORAGE_BACKEND', '')
+    """Backend for backup storage: 'local' or 's3'. Defaults to the app's STORAGE_DEFAULT_BACKEND."""
+    BACKUP_STORAGE_PATH: str = os.environ.get('BACKUP_STORAGE_PATH', 'backups')
+    """Root path/prefix under which all backup sets are stored."""
+    BACKUP_RETENTION_COUNT: int = int(os.environ.get('BACKUP_RETENTION_COUNT') or 4)
+    """Number of scheduled backups to retain before deleting the oldest."""
+    BACKUP_SCHEDULE_DAY_OF_WEEK: str = os.environ.get('BACKUP_SCHEDULE_DAY_OF_WEEK', 'sun')
+    """Day-of-week for the automatic backup cron job (APScheduler notation)."""
+    BACKUP_SCHEDULE_HOUR: int = int(os.environ.get('BACKUP_SCHEDULE_HOUR') or 2)
+    """Hour (UTC) at which the automatic backup cron job runs."""
+
     # Scheduler settings
     SCHEDULER_API_ENABLED: bool = True
     SCHEDULER_JOBSTORES: dict = {

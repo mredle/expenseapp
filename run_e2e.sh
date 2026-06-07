@@ -34,6 +34,9 @@ echo " Flask : $FLASK_URL"
 echo " Headless: $HEADLESS"
 echo "============================================"
 
+echo "Building mobile app (Ionic/Angular)..."
+(cd "$(dirname "$0")/mobile" && npm run build)
+
 E2E_IONIC_URL="$IONIC_URL" \
 E2E_FLASK_URL="$FLASK_URL" \
 E2E_HEADLESS="$HEADLESS" \

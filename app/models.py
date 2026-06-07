@@ -231,6 +231,16 @@ class File(Entity, db.Model):
         """Return the internal Flask route to securely serve this file."""
         return url_for('media.serve_file', file_id=self.id)
 
+    def get_data_uri(self) -> str:
+        """Return the file content as a base64 data URI (for embedding in PDFs).
+
+        Reads bytes directly from the storage provider so this works without an
+        active request context (i.e. safe to call from RQ background tasks).
+        """
+        data = self.get_provider().get_file_stream(self.storage_key).read()
+        b64 = base64.b64encode(data).decode('ascii')
+        return f'data:{self.mime_type};base64,{b64}'
+
     def get_local_path(self) -> str:
         """Return the local filesystem path (useful for image processing)."""
         return self.get_provider().get_local_path(self.storage_key)
@@ -353,6 +363,19 @@ class Image(Entity, db.Model):
             return thumbnail.get_url()
         return self.get_url()
 
+    def get_thumbnail_data_uri(self, desired_size: int) -> str:
+        """Return a base64 data URI for the best-matching thumbnail.
+
+        Mirrors :meth:`get_thumbnail_url` but reads bytes directly from storage
+        so it is safe to call from RQ background tasks (no request context needed).
+        """
+        thumbnail = self.get_thumbnail(desired_size)
+        if thumbnail and thumbnail.file:
+            return thumbnail.file.get_data_uri()
+        if self.file:
+            return self.file.get_data_uri()
+        return ''
+
 
 class EventCurrency(db.Model):
     """Association between an :class:`Event` and a :class:`Currency` with a snapshot exchange rate."""
@@ -469,7 +492,7 @@ class Event(Entity, db.Model):
     admin = db.relationship('User', foreign_keys=admin_id, back_populates='events_admin')
     accountant_id = db.Column(db.Integer, db.ForeignKey('eventusers.id'))
     accountant = db.relationship('EventUser', foreign_keys=accountant_id,
-                                 back_populates='events_accountant')
+                                 back_populates='events_accountant', post_update=True)
     base_currency_id = db.Column(db.Integer, db.ForeignKey('currencies.id'))
     base_currency = db.relationship('Currency', foreign_keys=base_currency_id,
                                     back_populates='events_base_currency')
@@ -530,6 +553,15 @@ class Event(Entity, db.Model):
         """Return the URL for this event's thumbnail."""
         if self.image:
             return self.image.get_thumbnail_url(size)
+        return ''
+
+    def avatar_data_uri(self, size: int) -> str:
+        """Return the thumbnail as a base64 data URI for PDF embedding.
+
+        Safe to call from RQ background tasks — no request context required.
+        """
+        if self.image:
+            return self.image.get_thumbnail_data_uri(size)
         return ''
 
     def get_stats(self) -> dict[str, int]:
@@ -761,6 +793,15 @@ class Expense(Entity, db.Model):
             return self.image.get_thumbnail_url(size)
         return ''
 
+    def avatar_data_uri(self, size: int) -> str:
+        """Return the thumbnail as a base64 data URI for PDF embedding.
+
+        Safe to call from RQ background tasks — no request context required.
+        """
+        if self.image:
+            return self.image.get_thumbnail_data_uri(size)
+        return ''
+
     def can_edit(self, user: User, eventuser: EventUser | None) -> bool:
         """Return whether *user*/*eventuser* may edit this expense."""
         is_admin = user.is_authenticated and user == self.event.admin
@@ -865,6 +906,15 @@ class Settlement(Entity, db.Model):
         """Return the URL for this settlement's receipt thumbnail."""
         if self.image:
             return self.image.get_thumbnail_url(size)
+        return ''
+
+    def avatar_data_uri(self, size: int) -> str:
+        """Return the thumbnail as a base64 data URI for PDF embedding.
+
+        Safe to call from RQ background tasks — no request context required.
+        """
+        if self.image:
+            return self.image.get_thumbnail_data_uri(size)
         return ''
 
     def can_edit(self, user: User, eventuser: EventUser | None) -> bool:
@@ -1322,7 +1372,8 @@ class EventUser(Entity, db.Model):
     event_id = db.Column(db.Integer, db.ForeignKey('events.id'), index=True)
     event = db.relationship('Event', foreign_keys=event_id, back_populates='users')
     events_accountant = db.relationship('Event', foreign_keys='Event.accountant_id',
-                                        back_populates='accountant', lazy='dynamic')
+                                        back_populates='accountant', lazy='dynamic',
+                                        viewonly=True)
     profile_picture_id = db.Column(db.Integer, db.ForeignKey('images.id'))
     profile_picture = db.relationship('Image', foreign_keys=profile_picture_id)
     expenses = db.relationship('Expense', back_populates='user', lazy='dynamic')
@@ -1377,6 +1428,122 @@ class EventUser(Entity, db.Model):
         """Return a Gravatar URL for this participant's email."""
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
         return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
+
+
+# ---------------------------------------------------------------------------
+# Backup models
+# ---------------------------------------------------------------------------
+
+class BackupSet(Entity, db.Model):
+    """A complete backup run comprising one or more :class:`BackupSegment` files."""
+
+    __tablename__ = 'backup_sets'
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
+
+    name = db.Column(db.String(128), nullable=False)
+    status = db.Column(db.String(32), default='pending', nullable=False)
+    """One of: pending, running, completed, failed."""
+    backup_type = db.Column(db.String(32), default='full', nullable=False)
+    """'full' or 'partial'."""
+    storage_backend = db.Column(db.String(32), nullable=False)
+    storage_key = db.Column(db.String(512), nullable=False)
+    """Root path/prefix under which all segment files for this set are stored."""
+    started_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    total_segments = db.Column(db.Integer, default=0)
+    completed_segments = db.Column(db.Integer, default=0)
+    error_message = db.Column(db.String(1024))
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = db.relationship('User', foreign_keys=user_id)
+    segments = db.relationship('BackupSegment', back_populates='backup_set',
+                               cascade='all, delete-orphan', lazy='dynamic')
+
+    def __init__(self, name: str, backup_type: str, storage_backend: str,
+                 storage_key: str, user: User, db_created_by: str = 'SYSTEM') -> None:
+        Entity.__init__(self, db_created_by)
+        self.name = name
+        self.backup_type = backup_type
+        self.storage_backend = storage_backend
+        self.storage_key = storage_key
+        self.user = user
+        self.status = 'pending'
+
+    def __repr__(self) -> str:
+        return f'<BackupSet {self.name} ({self.status})>'
+
+    def can_view(self, user: User) -> bool:
+        """Return whether *user* is allowed to view this backup set."""
+        return user.is_admin if user.is_authenticated else False
+
+    def can_edit(self, user: User) -> bool:
+        """Return whether *user* is allowed to modify this backup set."""
+        return user.is_admin if user.is_authenticated else False
+
+    @classmethod
+    def get_class_stats(cls, user: User | None = None) -> list[tuple[str, int]]:
+        """Return aggregate statistics for the admin dashboard."""
+        description = _('Backup sets')
+        number = cls.query.count()
+        return [(description, number)]
+
+    def get_total_size(self) -> int:
+        """Return the sum of all segment file sizes in bytes."""
+        total = 0
+        for segment in self.segments:
+            if segment.file_size:
+                total += segment.file_size
+        return total
+
+
+class BackupSegment(Entity, db.Model):
+    """A single serialized data file within a :class:`BackupSet`."""
+
+    __tablename__ = 'backup_segments'
+    id = db.Column(db.Integer, db.Identity(), primary_key=True)
+
+    segment_type = db.Column(db.String(32), nullable=False)
+    """One of: currencies, users, event, logs, system."""
+    segment_key = db.Column(db.String(128))
+    """For event segments: the event GUID. Null for global segments."""
+    segment_label = db.Column(db.String(256))
+    """Human-readable label, e.g. the event name."""
+    storage_key = db.Column(db.String(512))
+    """Full path to the JSON segment file in the storage backend."""
+    status = db.Column(db.String(32), default='pending', nullable=False)
+    """One of: pending, running, completed, failed."""
+    record_count = db.Column(db.Integer, default=0)
+    file_size = db.Column(db.Integer, default=0)
+    checksum = db.Column(db.String(128))
+    """SHA-256 hex digest of the segment file for integrity verification."""
+    error_message = db.Column(db.String(1024))
+
+    backup_set_id = db.Column(db.Integer, db.ForeignKey('backup_sets.id'), nullable=False, index=True)
+    backup_set = db.relationship('BackupSet', back_populates='segments')
+
+    def __init__(self, backup_set: BackupSet, segment_type: str,
+                 segment_key: str | None = None, segment_label: str | None = None,
+                 db_created_by: str = 'SYSTEM') -> None:
+        Entity.__init__(self, db_created_by)
+        self.backup_set = backup_set
+        self.segment_type = segment_type
+        self.segment_key = segment_key
+        self.segment_label = segment_label
+        self.status = 'pending'
+
+    def __repr__(self) -> str:
+        return f'<BackupSegment {self.segment_type}:{self.segment_key} ({self.status})>'
+
+    def can_view(self, user: User) -> bool:
+        """Return whether *user* is allowed to view this segment."""
+        return user.is_admin if user.is_authenticated else False
+
+    @classmethod
+    def get_class_stats(cls, user: User | None = None) -> list[tuple[str, int]]:
+        """Return aggregate statistics for the admin dashboard."""
+        description = _('Backup segments')
+        number = cls.query.count()
+        return [(description, number)]
 
 
 @login.user_loader
