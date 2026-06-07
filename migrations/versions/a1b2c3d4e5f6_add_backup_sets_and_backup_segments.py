@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sqlalchemy as sa
+import sqlalchemy_utils
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -32,7 +33,7 @@ def upgrade() -> None:
         sa.Column('db_updated_at', sa.DateTime(), nullable=True),
         sa.Column('db_created_by', sa.String(length=64), nullable=True),
         sa.Column('db_updated_by', sa.String(length=64), nullable=True),
-        sa.Column('guid', sa.String(length=32), nullable=True),
+        sa.Column('guid', sqlalchemy_utils.types.uuid.UUIDType(binary=False), nullable=True),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], name='fk_backup_sets_user_id'),
         sa.PrimaryKeyConstraint('id'),
     )
@@ -55,7 +56,7 @@ def upgrade() -> None:
         sa.Column('db_updated_at', sa.DateTime(), nullable=True),
         sa.Column('db_created_by', sa.String(length=64), nullable=True),
         sa.Column('db_updated_by', sa.String(length=64), nullable=True),
-        sa.Column('guid', sa.String(length=32), nullable=True),
+        sa.Column('guid', sqlalchemy_utils.types.uuid.UUIDType(binary=False), nullable=True),
         sa.ForeignKeyConstraint(['backup_set_id'], ['backup_sets.id'], name='fk_backup_segments_backup_set_id'),
         sa.PrimaryKeyConstraint('id'),
     )
