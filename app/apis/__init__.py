@@ -8,6 +8,7 @@ from flask_restx import Api
 
 from .admin_ns import api as admin
 from .auth_ns import api as auth
+from .backups_ns import api as backups
 from .currencies_ns import api as currencies
 from .events_ns import api as events
 from .media_ns import api as media
@@ -25,6 +26,7 @@ apis = Api(
 
 apis.add_namespace(admin)
 apis.add_namespace(auth)
+apis.add_namespace(backups)
 apis.add_namespace(currencies)
 apis.add_namespace(events)
 apis.add_namespace(media)

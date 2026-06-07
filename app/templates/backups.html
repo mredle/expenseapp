@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <h1>{{ title }}</h1>
+    <p><a href="{{ url_for('main.administration') }}">{{ _('Back to administration') }}</a></p>
+
+    <h2>{{ _('Create backup') }}</h2>
+    <form method="POST" action="{{ url_for('main.create_backup_route') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+        <div class="input-group mb-2" style="max-width:400px">
+            <input type="text" class="form-control" name="name" placeholder="{{ _('Backup name (optional)') }}">
+            <button class="btn btn-primary" type="submit">{{ _('Start backup') }}</button>
+        </div>
+    </form>
+
+    <h2>{{ _('Import backup') }}</h2>
+    <form method="POST" action="{{ url_for('main.import_backup_route') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+        <div class="input-group mb-2" style="max-width:400px">
+            <input type="file" class="form-control" name="archive" accept=".tar.gz,.gz">
+            <button class="btn btn-secondary" type="submit">{{ _('Import') }}</button>
+        </div>
+    </form>
+
+    <h2>{{ _('Backup sets') }}</h2>
+    {% if backup_sets %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>{{ _('Name') }}</th>
+                <th>{{ _('Type') }}</th>
+                <th>{{ _('Status') }}</th>
+                <th>{{ _('Segments') }}</th>
+                <th>{{ _('Created') }}</th>
+                <th>{{ _('Actions') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for bs in backup_sets %}
+            <tr>
+                <td><a href="{{ url_for('main.backup_detail', guid=bs.guid) }}">{{ bs.name }}</a></td>
+                <td>{{ bs.backup_type }}</td>
+                <td>{{ bs.status }}</td>
+                <td>{{ bs.completed_segments or 0 }}/{{ bs.total_segments or 0 }}</td>
+                <td>{{ bs.db_created_at.strftime('%Y-%m-%d %H:%M') if bs.db_created_at else '' }}</td>
+                <td>
+                    <a href="{{ url_for('main.download_backup', guid=bs.guid) }}" class="btn btn-sm btn-outline-primary">{{ _('Download') }}</a>
+                    <form method="POST" action="{{ url_for('main.delete_backup_route', guid=bs.guid) }}" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('{{ _('Delete this backup?') }}')">{{ _('Delete') }}</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>{{ _('No backups found.') }}</p>
+    {% endif %}
+
+    <nav aria-label="pagination">
+        <ul class="pagination justify-content-center">
+            <li class="page-item{% if not prev_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ prev_url or '#' }}">
+                    <span aria-hidden="true">&larr;</span> {{ _('Newer') }}
+                </a>
+            </li>
+            <li class="page-item{% if not next_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ next_url or '#' }}">
+                    {{ _('Older') }} <span aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+{% endblock %}

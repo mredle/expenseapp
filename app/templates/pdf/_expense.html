@@ -2,7 +2,7 @@
         <tr>
             <td width="64px">
                 {% if expense.image %}
-                <img src="{{ expense.avatar(64) }}" alt="" width="64" style="transform:rotate({{ expense.image.rotate }}deg) scale({{ expense.image.get_html_scale() }});">
+                <img src="{{ expense.avatar_data_uri(64) }}" alt="" width="64" style="transform:rotate({{ expense.image.rotate }}deg) scale({{ expense.image.get_html_scale() }});">
                 {% endif %}
             </td>
             <td>

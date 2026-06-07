@@ -2,7 +2,7 @@
         <tr>
             <td width="64px">
                 {% if settlement.image %}
-                <img src="{{ settlement.avatar(64) }}" alt="" width="64" style="transform:rotate({{ settlement.image.rotate }}deg) scale({{ settlement.image.get_html_scale() }});">
+                <img src="{{ settlement.avatar_data_uri(64) }}" alt="" width="64" style="transform:rotate({{ settlement.image.rotate }}deg) scale({{ settlement.image.get_html_scale() }});">
                 {% endif %}
             </td>
             <td>

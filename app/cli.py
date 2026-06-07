@@ -18,6 +18,7 @@ from sqlalchemy.sql import text
 
 from app import create_app, db
 from app.models import (
+    BackupSet,
     Currency,
     Event,
     EventUser,
@@ -541,3 +542,143 @@ def register(app) -> None:  # noqa: C901 — CLI registration is inherently comp
         except Exception as e:
             db.session.rollback()
             click.echo(f'Error flushing database: {e}')
+
+    # ------------------------------------------------------------------
+    # Backup / restore CLI commands
+    # ------------------------------------------------------------------
+
+    @app.cli.group()
+    def backup():
+        """Backup and restore commands."""
+        pass
+
+    @backup.command('create')
+    @click.option('--name', default='', help='Backup name (defaults to timestamped name).')
+    @click.option(
+        '--segments',
+        default='currencies,users,events,logs,system',
+        help='Comma-separated list of segment types to include.',
+    )
+    def backup_create(name: str, segments: str) -> None:
+        """Create a full logical backup synchronously (no RQ)."""
+        from datetime import datetime, timezone
+        from app.services import backup_service
+
+        admin_user = User.query.filter_by(username='admin').first()
+        if admin_user is None:
+            click.echo('Error: admin user not found. Run flask dbinit admin first.')
+            return
+
+        backup_name = name or f'CLI backup {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")}'
+        segment_types = [s.strip() for s in segments.split(',') if s.strip()]
+
+        click.echo(f'Creating backup "{backup_name}" with segments: {segment_types}')
+        result = backup_service.create_backup(
+            name=backup_name,
+            segment_types=segment_types,
+            user=admin_user,
+        )
+        if not result.success:
+            click.echo(f'Error creating backup set: {result.error}')
+            return
+
+        bs = result.backup_set
+        click.echo(f'Backup set created: {bs.guid}')
+
+        for segment in bs.segments:
+            click.echo(f'  Processing segment: {segment.segment_type} {segment.segment_key or ""}')
+            try:
+                backup_service.execute_backup_segment(segment)
+                click.echo(f'    OK — {segment.record_count} records, {segment.file_size} bytes')
+            except Exception as exc:
+                click.echo(f'    FAILED: {exc}')
+
+        bs.completed_segments = sum(1 for s in bs.segments if s.status == 'completed')
+        failed = sum(1 for s in bs.segments if s.status == 'failed')
+        bs.status = 'failed' if failed > 0 else 'completed'
+        db.session.commit()
+        click.echo(f'Backup complete. Status: {bs.status}')
+
+    @backup.command('list')
+    def backup_list() -> None:
+        """List all backup sets."""
+        sets = BackupSet.query.order_by(BackupSet.db_created_at.desc()).all()
+        if not sets:
+            click.echo('No backup sets found.')
+            return
+        for bs in sets:
+            click.echo(
+                f'{bs.guid}  {bs.status:<12}  {bs.name:<40}  '
+                f'{bs.db_created_at.strftime("%Y-%m-%d %H:%M") if bs.db_created_at else "?"}'
+            )
+
+    @backup.command('export')
+    @click.argument('guid')
+    @click.option('--output', default='', help='Output file path (default: current directory).')
+    def backup_export(guid: str, output: str) -> None:
+        """Export a backup set as a .tar.gz archive."""
+        from app.services import backup_service
+
+        result = backup_service.export_backup(guid)
+        if not result.success:
+            click.echo(f'Export failed: {result.error}')
+            return
+
+        out_path = output or result.filename
+        with open(out_path, 'wb') as f:
+            f.write(result.archive_bytes)
+        click.echo(f'Exported to: {out_path}')
+
+    @backup.command('import')
+    @click.argument('path')
+    def backup_import(path: str) -> None:
+        """Import a .tar.gz backup archive."""
+        from app.services import backup_service
+
+        admin_user = User.query.filter_by(username='admin').first()
+        if admin_user is None:
+            click.echo('Error: admin user not found.')
+            return
+
+        with open(path, 'rb') as f:
+            result = backup_service.import_backup(f, admin_user)
+
+        if not result.success:
+            click.echo(f'Import failed: {result.error}')
+            return
+        click.echo(f'Imported backup: {result.backup_set.name} ({result.backup_set.guid})')
+
+    @backup.command('restore')
+    @click.argument('guid')
+    @click.option(
+        '--strategy',
+        default='skip',
+        type=click.Choice(['skip', 'overwrite']),
+        help='Conflict strategy.',
+    )
+    def backup_restore(guid: str, strategy: str) -> None:
+        """Restore from a backup set synchronously (no RQ)."""
+        from app.services import backup_service
+
+        bs = backup_service.get_backup(guid)
+        if bs is None:
+            click.echo(f'Backup set {guid} not found.')
+            return
+
+        click.echo(f'Restoring backup "{bs.name}" with strategy={strategy}...')
+        totals = backup_service.apply_restore(bs, strategy)
+        for key, counts in totals.items():
+            click.echo(f'  {key}: {counts}')
+        click.echo('Restore complete.')
+
+    @backup.command('delete')
+    @click.argument('guid')
+    def backup_delete(guid: str) -> None:
+        """Delete a backup set and its segment files from storage."""
+        from app.services import backup_service
+
+        result = backup_service.delete_backup(guid)
+        if result.success:
+            click.echo(f'Backup {guid} deleted.')
+        else:
+            click.echo(f'Delete failed: {result.error}')
