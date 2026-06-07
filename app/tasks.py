@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import concurrent.futures
+import functools
 import json
 import sys
 import time
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 from flask import current_app, render_template
 from flask_babel import _, force_locale
@@ -15,10 +16,13 @@ from rq import get_current_job
 from weasyprint import HTML
 from yahoofinancials import YahooFinancials
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from app import create_app, db, scheduler
 from app.db_logging import log_add
 from app.email import send_email
 from app.models import (
+    BackupSet,
     Currency,
     Event,
     EventUser,
@@ -44,24 +48,54 @@ app.app_context().push()
 # ---------------------------------------------------------------------------
 
 def _set_task_progress(progress: int) -> None:
-    """Update the progress meta-field on the current RQ job."""
+    """Update the progress meta-field on the current RQ job (best-effort)."""
     job = get_current_job()
-    if job:
-        job.meta['progress'] = progress
-        job.save_meta()
+    if not job:
+        return
+    job.meta['progress'] = progress
+    job.save_meta()
+    try:
         task = db.session.get(Task, job.id)
+        if task is None:
+            return
         task.user.add_notification(
             'task_progress', {'task_id': job.id, 'progress': progress},
         )
         if progress >= 100:
             task.complete = True
         db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.warning(
+            f'_set_task_progress: failed to persist progress for task {job.id}',
+            exc_info=True,
+        )
+
+
+def _clean_session(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Reset db.session before and after each RQ job.
+
+    The worker reuses one long-lived app context across many jobs, so the
+    SQLAlchemy identity map can hold stale state from a previous job.
+    Calling db.session.remove() before the job starts (and again in the
+    finally block) discards that stale state and returns the connection to
+    the pool cleanly.
+    """
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        db.session.remove()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            db.session.remove()
+    return wrapper
 
 
 # ---------------------------------------------------------------------------
 # RQ tasks
 # ---------------------------------------------------------------------------
 
+@_clean_session
 def consume_time(guid: str, amount: int) -> None:
     """Burn *amount* seconds of wall-clock time (for testing the task queue)."""
     try:
@@ -91,6 +125,7 @@ def consume_time(guid: str, amount: int) -> None:
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
 
+@_clean_session
 def type_error(guid: str) -> None:
     """Intentionally trigger a ``TypeError`` (for testing error handling)."""
     try:
@@ -124,6 +159,7 @@ def create_thumbnails(image: Image, update_progress: bool = False) -> None:
     db.session.commit()
 
 
+@_clean_session
 def import_image(guid: str, path: str, add_to_class: str, add_to_id: int) -> None:
     """Import an image from *path* and attach it to the specified model instance."""
     try:
@@ -151,6 +187,7 @@ def import_image(guid: str, path: str, add_to_class: str, add_to_id: int) -> Non
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
 
+@_clean_session
 def export_posts(guid: str) -> None:
     """Export all posts for the user identified by *guid* and email as JSON."""
     try:
@@ -223,6 +260,7 @@ def get_balance_pdf(
     return pdf
 
 
+@_clean_session
 def request_balance(guid: str, event_guid: str, eventuser_guid: str) -> None:
     """Generate the balance PDF for an event and email it to the requesting user."""
     try:
@@ -255,6 +293,7 @@ def request_balance(guid: str, event_guid: str, eventuser_guid: str) -> None:
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
 
+@_clean_session
 def send_reminders(guid: str, event_guid: str) -> None:
     """Send payment-reminder emails to all debtors of *event*."""
     try:
@@ -307,6 +346,7 @@ def clean_log(error: bool, keepdays: int) -> None:
     db.session.commit()
 
 
+@_clean_session
 def update_rates_yahoo(guid: str) -> None:
     """Fetch latest exchange rates from Yahoo Finance and update the database."""
     user = User.get_by_guid_or_404(guid)
@@ -403,6 +443,7 @@ def update_rates_yahoo(guid: str) -> None:
     _set_task_progress(100)
 
 
+@_clean_session
 def check_rates_yahoo(guid: str) -> None:
     """Verify which currencies are available on Yahoo Finance and tag them."""
     user = User.get_by_guid_or_404(guid)
@@ -464,6 +505,70 @@ def check_rates_yahoo(guid: str) -> None:
     _set_task_progress(100)
 
 
+@_clean_session
+def run_backup(guid: str, backup_set_guid: str) -> None:
+    """Execute all pending segments of a BackupSet, then enforce retention."""
+    try:
+        from app.services import backup_service
+        backup_set = BackupSet.query.filter(BackupSet.guid == backup_set_guid).first()
+        if backup_set is None:
+            app.logger.error(f'run_backup: BackupSet {backup_set_guid} not found')
+            _set_task_progress(100)
+            return
+
+        _set_task_progress(0)
+        backup_set.status = 'running'
+        db.session.commit()
+
+        segments = [s for s in backup_set.segments if s.status in ('pending', 'failed')]
+        total = len(segments)
+
+        for i, segment in enumerate(segments):
+            try:
+                backup_service.execute_backup_segment(segment)
+            except Exception as exc:
+                app.logger.error(f'run_backup: segment {segment} failed: {exc}', exc_info=True)
+            _set_task_progress(100 * (i + 1) // max(total, 1))
+
+        # Refresh counts
+        backup_set.completed_segments = sum(
+            1 for s in backup_set.segments if s.status == 'completed'
+        )
+        failed = sum(1 for s in backup_set.segments if s.status == 'failed')
+        backup_set.status = 'failed' if failed > 0 else 'completed'
+        db.session.commit()
+
+        # Enforce retention
+        max_count = app.config.get('BACKUP_RETENTION_COUNT', 4)
+        backup_service.enforce_retention(max_count)
+
+        _set_task_progress(100)
+    except Exception:
+        _set_task_progress(100)
+        app.logger.error('run_backup: unhandled exception', exc_info=sys.exc_info())
+
+
+@_clean_session
+def run_restore(guid: str, backup_set_guid: str, strategy: str = 'skip') -> None:
+    """Apply a restore from all segments of the given BackupSet."""
+    try:
+        from app.services import backup_service
+        backup_set = BackupSet.query.filter(BackupSet.guid == backup_set_guid).first()
+        if backup_set is None:
+            app.logger.error(f'run_restore: BackupSet {backup_set_guid} not found')
+            _set_task_progress(100)
+            return
+
+        _set_task_progress(0)
+        totals = backup_service.apply_restore(backup_set, strategy)
+        app.logger.info(f'run_restore: completed with counts {totals}')
+        _set_task_progress(100)
+    except Exception:
+        _set_task_progress(100)
+        app.logger.error('run_restore: unhandled exception', exc_info=sys.exc_info())
+
+
+@_clean_session
 def housekeeping(guid: str) -> None:
     """Perform periodic maintenance (log cleanup)."""
     try:
@@ -506,4 +611,32 @@ def j_update_currencies() -> None:
     with scheduler.app.app_context():
         admin = User.query.filter(User.username == 'admin').first()
         admin.launch_task('update_rates_yahoo', _('Updating currencies...'))
+        db.session.commit()
+
+
+@scheduler.task(
+    'cron',
+    id='j_backup',
+    day_of_week=app.config.get('BACKUP_SCHEDULE_DAY_OF_WEEK', 'sun'),
+    hour=app.config.get('BACKUP_SCHEDULE_HOUR', 2),
+)
+def j_backup() -> None:
+    """Run a full scheduled backup weekly (default Sunday at 02:00)."""
+    with scheduler.app.app_context():
+        from app.services import backup_service
+        admin = User.query.filter(User.username == 'admin').first()
+        if admin is None:
+            return
+        segment_types = ['currencies', 'users', 'events', 'logs', 'system']
+        result = backup_service.create_backup(
+            name='Scheduled backup',
+            segment_types=segment_types,
+            user=admin,
+        )
+        if result.success and result.backup_set:
+            admin.launch_task(
+                'run_backup',
+                _('Running scheduled backup...'),
+                backup_set_guid=str(result.backup_set.guid),
+            )
         db.session.commit()

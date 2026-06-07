@@ -16,6 +16,9 @@ export S3_BUCKET_NAME="expenseapp-bucket"
 export S3_REGION="eu-central-1"
 export AWS_ACCESS_KEY_ID="minioadmin"
 export AWS_SECRET_ACCESS_KEY="minioadminpw"
+export ADMIN_USERNAME="admin"
+export ADMIN_EMAIL="admin@expenseapp"
+export ADMIN_PASSWORD="pw"
 export S3_ENDPOINT_URL="http://localhost:9000"
 
 while true; do
@@ -27,7 +30,7 @@ while true; do
     echo "Upgrade command failed, retrying in 10 secs..."
 done
 
-#echo "Performing development factory reset..."
+echo "Performing development factory reset..."
 flask flush-s3
 flask flush-db-force
 flask flush-media-cache
@@ -41,7 +44,11 @@ flask dbinit dummyusers --count 3
 flask dbmaint add-missing-guid
 flask translate compile
 
+# Seed the database
+#python scripts/loadtesting/seed_db.py
+
 echo "Starting Flask development server..."
 flask run --host=0.0.0.0
+
 #export FLASK_DEBUG=0
 #exec gunicorn -b :5000 --access-logfile - --error-logfile - expenseapp:app
