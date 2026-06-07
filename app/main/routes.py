@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from flask import current_app, flash, jsonify, redirect, render_template, request, url_for
+from flask import current_app, flash, jsonify, redirect, render_template, request, send_file, url_for
 from flask_babel import _, get_locale
 from flask_login import current_user, login_required
 
@@ -14,6 +14,7 @@ from app.db_logging import log_page_access, log_page_access_denied
 from app.main import bp
 from app.main.forms import CurrencyForm, EditProfileForm, EditUserForm, ImageForm, MessageForm, NewUserForm
 from app.models import Currency, Image, Log, User
+from app.services import backup_service
 from app.services.main_service import (
     create_currency,
     create_user,
@@ -579,3 +580,155 @@ def consume_time(amount: str):
         )
         db.session.commit()
     return redirect(url_for('main.user', guid=current_user.guid))
+
+
+# ---------------------------------------------------------------------------
+# Backup management routes (admin only)
+# ---------------------------------------------------------------------------
+
+@bp.route('/backups')
+@login_required
+def backups() -> str:
+    """List all backup sets (admin only)."""
+    if not current_user.is_admin:
+        flash(_('Only an admin can access backups.'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('main.administration'))
+    log_page_access(request, current_user)
+    page = request.args.get('page', 1, type=int)
+    result = backup_service.list_backups(page)
+    next_url = url_for('main.backups', page=result.next_num) if result.has_next else None
+    prev_url = url_for('main.backups', page=result.prev_num) if result.has_prev else None
+    return render_template(
+        'backups.html',
+        title=_('Backups'),
+        backup_sets=result.items,
+        next_url=next_url,
+        prev_url=prev_url,
+    )
+
+
+@bp.route('/backups/create', methods=['POST'])
+@login_required
+def create_backup_route():
+    """Trigger a new full backup (admin only)."""
+    if not current_user.is_admin:
+        flash(_('Only an admin can create backups.'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('main.backups'))
+    log_page_access(request, current_user)
+    name = request.form.get('name', '') or f'Manual backup {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")}'
+    segment_types = ['currencies', 'users', 'events', 'logs', 'system']
+    result = backup_service.create_backup(name=name, segment_types=segment_types, user=current_user)
+    if result.success and result.backup_set:
+        current_user.launch_task(
+            'run_backup',
+            _('Running backup %(name)s...', name=name),
+            backup_set_guid=str(result.backup_set.guid),
+        )
+        db.session.commit()
+        flash(_('Backup started: %(name)s', name=name))
+    else:
+        flash(_('Failed to create backup: %(error)s', error=result.error))
+    return redirect(url_for('main.backups'))
+
+
+@bp.route('/backups/<guid>')
+@login_required
+def backup_detail(guid: str) -> str:
+    """Show detail for one backup set (admin only)."""
+    if not current_user.is_admin:
+        flash(_('Only an admin can access backups.'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('main.administration'))
+    log_page_access(request, current_user)
+    backup_set = backup_service.get_backup(guid)
+    if backup_set is None:
+        flash(_('Backup not found.'))
+        return redirect(url_for('main.backups'))
+    return render_template('backup_detail.html', title=_('Backup Detail'), backup_set=backup_set)
+
+
+@bp.route('/backups/<guid>/delete', methods=['POST'])
+@login_required
+def delete_backup_route(guid: str):
+    """Delete a backup set and its storage files (admin only)."""
+    if not current_user.is_admin:
+        flash(_('Only an admin can delete backups.'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('main.backups'))
+    log_page_access(request, current_user)
+    result = backup_service.delete_backup(guid)
+    if result.success:
+        flash(_('Backup deleted.'))
+    else:
+        flash(_('Failed to delete backup: %(error)s', error=result.error))
+    return redirect(url_for('main.backups'))
+
+
+@bp.route('/backups/<guid>/download')
+@login_required
+def download_backup(guid: str):
+    """Download a backup set as a .tar.gz archive (admin only)."""
+    if not current_user.is_admin:
+        flash(_('Only an admin can download backups.'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('main.backups'))
+    log_page_access(request, current_user)
+    result = backup_service.export_backup(guid)
+    if not result.success:
+        flash(_('Failed to export backup: %(error)s', error=result.error))
+        return redirect(url_for('main.backups'))
+    import io
+    return send_file(
+        io.BytesIO(result.archive_bytes),
+        mimetype='application/gzip',
+        as_attachment=True,
+        download_name=result.filename,
+    )
+
+
+@bp.route('/backups/restore/<guid>', methods=['POST'])
+@login_required
+def restore_backup_route(guid: str):
+    """Launch an async restore of a backup set (admin only)."""
+    if not current_user.is_admin:
+        flash(_('Only an admin can restore backups.'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('main.backups'))
+    log_page_access(request, current_user)
+    strategy = request.form.get('strategy', 'skip')
+    backup_set = backup_service.get_backup(guid)
+    if backup_set is None:
+        flash(_('Backup not found.'))
+        return redirect(url_for('main.backups'))
+    current_user.launch_task(
+        'run_restore',
+        _('Restoring backup %(name)s...', name=backup_set.name),
+        backup_set_guid=guid,
+        strategy=strategy,
+    )
+    db.session.commit()
+    flash(_('Restore started for backup: %(name)s', name=backup_set.name))
+    return redirect(url_for('main.backup_detail', guid=guid))
+
+
+@bp.route('/backups/import', methods=['POST'])
+@login_required
+def import_backup_route():
+    """Upload and import a .tar.gz backup archive (admin only)."""
+    if not current_user.is_admin:
+        flash(_('Only an admin can import backups.'))
+        log_page_access_denied(request, current_user)
+        return redirect(url_for('main.backups'))
+    log_page_access(request, current_user)
+    if 'archive' not in request.files or request.files['archive'].filename == '':
+        flash(_('No archive file provided.'))
+        return redirect(url_for('main.backups'))
+    archive_file = request.files['archive']
+    result = backup_service.import_backup(archive_file.stream, current_user)
+    if result.success and result.backup_set:
+        flash(_('Backup imported: %(name)s', name=result.backup_set.name))
+    else:
+        flash(_('Failed to import backup: %(error)s', error=result.error))
+    return redirect(url_for('main.backups'))

@@ -8,7 +8,7 @@
             <p>{{ event.description }}</p>
             {% endif %}
             {% if event.image %}
-            <img src="{{ event.avatar(512) }}" alt="" width="100%" style="transform:rotate({{ event.image.rotate }}deg) scale({{ event.image.get_html_scale() }});">
+            <img src="{{ event.avatar_data_uri(512) }}" alt="" width="100%" style="transform:rotate({{ event.image.rotate }}deg) scale({{ event.image.get_html_scale() }});">
             {% endif %}
 
             <p>{{ _('Admin') }}: {{ event.admin.username }}</p>

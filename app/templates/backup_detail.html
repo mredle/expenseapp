@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <h1>{{ title }}</h1>
+    <p><a href="{{ url_for('main.backups') }}">{{ _('Back to backups') }}</a></p>
+
+    <h2>{{ backup_set.name }}</h2>
+    <table class="table table-bordered" style="max-width:500px">
+        <tr><th>{{ _('GUID') }}</th><td>{{ backup_set.guid }}</td></tr>
+        <tr><th>{{ _('Type') }}</th><td>{{ backup_set.backup_type }}</td></tr>
+        <tr><th>{{ _('Status') }}</th><td>{{ backup_set.status }}</td></tr>
+        <tr><th>{{ _('Segments') }}</th><td>{{ backup_set.completed_segments or 0 }}/{{ backup_set.total_segments or 0 }}</td></tr>
+        <tr><th>{{ _('Created') }}</th><td>{{ backup_set.db_created_at }}</td></tr>
+        <tr><th>{{ _('Created by') }}</th><td>{{ backup_set.db_created_by }}</td></tr>
+    </table>
+
+    <div class="mb-3">
+        <a href="{{ url_for('main.download_backup', guid=backup_set.guid) }}" class="btn btn-primary">{{ _('Download .tar.gz') }}</a>
+        <form method="POST" action="{{ url_for('main.delete_backup_route', guid=backup_set.guid) }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('{{ _('Delete this backup?') }}')">{{ _('Delete') }}</button>
+        </form>
+    </div>
+
+    <h2>{{ _('Restore') }}</h2>
+    <form method="POST" action="{{ url_for('main.restore_backup_route', guid=backup_set.guid) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+        <div class="mb-2">
+            <label class="form-label">{{ _('Conflict strategy') }}</label>
+            <select name="strategy" class="form-select" style="max-width:200px">
+                <option value="skip">{{ _('Skip existing (default)') }}</option>
+                <option value="overwrite">{{ _('Overwrite existing') }}</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-warning" onclick="return confirm('{{ _('Restore from this backup? Existing data may be affected.') }}')">{{ _('Restore') }}</button>
+    </form>
+
+    <h2>{{ _('Segments') }}</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>{{ _('Type') }}</th>
+                <th>{{ _('Label') }}</th>
+                <th>{{ _('Status') }}</th>
+                <th>{{ _('Records') }}</th>
+                <th>{{ _('Size (bytes)') }}</th>
+                <th>{{ _('Error') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for seg in backup_set.segments %}
+            <tr>
+                <td>{{ seg.segment_type }}</td>
+                <td>{{ seg.segment_label or seg.segment_key or '' }}</td>
+                <td>{{ seg.status }}</td>
+                <td>{{ seg.record_count or '' }}</td>
+                <td>{{ seg.file_size or '' }}</td>
+                <td>{{ seg.error_message or '' }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
