@@ -131,16 +131,15 @@ On Oracle Linux 10:
 sudo sh scripts/prod/install_deps_oracle_linux_10.sh
 ```
 
+Both scripts install system libraries (WeasyPrint, Pillow, etc.), pyenv CPython build dependencies, Node.js 22.x, and npm.
+
 ### 2. deploy the code
 
 ```bash
 sudo git clone git@github.com:mredle/expenseapp.git /opt/expenseapp
-cd /opt/expenseapp
-sudo python3 -m venv venv
-sudo venv/bin/pip install -r requirements.txt
 ```
 
-### 3. create the service user and set ownership
+### 3. create the service user and set directory ownership
 
 Run once after the code is in place. The script is idempotent — safe to re-run:
 
@@ -148,16 +147,40 @@ Run once after the code is in place. The script is idempotent — safe to re-run
 sudo sh scripts/prod/setup_service_user.sh
 ```
 
-This creates the `expenseapp` system user/group and runs `chown -R expenseapp:expenseapp /opt/expenseapp` so the service can write `mobile/node_modules/`, `mobile/www/`, `mobile/.angular/cache/`, `.npm/`, and compiled translations.
+This creates the `expenseapp` system user/group (home = `/opt/expenseapp`), runs `chown -R expenseapp:expenseapp /opt/expenseapp`, relabels the tree with `restorecon` on SELinux hosts (Oracle Linux / RHEL), and validates the venv interpreter if the venv is already present.
 
-### 4. configure the environment
+### 4. install pyenv and compile Python 3.14
+
+The production interpreter must live inside `/opt/expenseapp` so the service user can reach it. **Do not use the shell's active `python3`** if it is a pyenv shim pointing to another user's home — the `expenseapp` user cannot traverse `/home/<you>` and the service will fail with "bad interpreter: Permission denied".
 
 ```bash
-sudo cp .env.sample /opt/expenseapp/.env
-# edit /opt/expenseapp/.env — set SECRET_KEY, DATABASE_URL, MAIL_*, etc.
+sudo sh scripts/prod/setup_pyenv.sh
 ```
 
-### 5. install and start the systemd units
+Clones pyenv into `/opt/expenseapp/.pyenv` and compiles Python 3.14.x (version read from `.python-version`). Requires outbound internet access. Takes several minutes on the first run.
+
+### 5. create the virtual environment
+
+```bash
+sudo sh scripts/prod/create_venv.sh
+```
+
+Creates `/opt/expenseapp/venv` using the pyenv interpreter built in step 4, installs `requirements.txt`, and verifies the interpreter resolves inside the deploy tree.
+
+After running `create_venv.sh`, re-run `setup_service_user.sh` to fix ownership of the newly created venv and relabel it for SELinux:
+
+```bash
+sudo sh scripts/prod/setup_service_user.sh
+```
+
+### 6. configure the environment
+
+```bash
+sudo cp /opt/expenseapp/.env.sample /opt/expenseapp/.env
+sudo -u expenseapp vi /opt/expenseapp/.env   # set SECRET_KEY, DATABASE_URL, MAIL_*, etc.
+```
+
+### 7. install and start the systemd units
 
 ```bash
 sudo cp scripts/prod/expenseapp.service        /etc/systemd/system/
@@ -175,4 +198,13 @@ sudo systemctl status expenseapp
 sudo systemctl status expenseapp-worker
 sudo journalctl -u expenseapp -f
 sudo journalctl -u expenseapp-worker -f
+```
+
+### SELinux note (Oracle Linux / RHEL)
+
+`setup_service_user.sh` runs `restorecon -RFv /opt/expenseapp` automatically. If you ever see "Permission denied" on `venv/bin/python3` or `venv/bin/rq` after a re-deploy, re-run the script or relabel manually:
+
+```bash
+sudo restorecon -RFv /opt/expenseapp
+sudo systemctl restart expenseapp expenseapp-worker
 ```

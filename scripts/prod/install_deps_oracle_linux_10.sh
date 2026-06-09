@@ -21,7 +21,24 @@ dnf install -y \
     tk-devel \
     zlib-devel \
     curl \
-    ca-certificates
+    ca-certificates \
+    git \
+    wget
+
+# pyenv build dependencies — required to compile CPython 3.14.x from source.
+# See: https://github.com/pyenv/pyenv/wiki#suggested-build-environment
+dnf install -y \
+    make \
+    patch \
+    bzip2 \
+    bzip2-devel \
+    readline-devel \
+    sqlite \
+    sqlite-devel \
+    openssl-devel \
+    xz-devel \
+    libuuid-devel \
+    findutils
 
 # Node.js 22.x + npm for the Ionic/Angular mobile build.
 # The AppStream nodejs module may lag behind; use NodeSource for a guaranteed 22.x
