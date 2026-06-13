@@ -1,0 +1,11 @@
+meta {
+  name: Get Log Detail
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/admin/logs/{{log_id}}
+  body: none
+  auth: bearer
+}

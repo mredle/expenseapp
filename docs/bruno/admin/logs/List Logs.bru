@@ -1,0 +1,11 @@
+meta {
+  name: List Logs
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/admin/logs?page=1&per_page=25
+  body: none
+  auth: bearer
+}

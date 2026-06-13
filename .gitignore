@@ -1,5 +1,5 @@
 # expenseapp temp files
-logs/
+/logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -76,7 +76,7 @@ target/
 .ipynb_checkpoints
 
 # pyenv
-.python-version
+#.python-version
 
 # celery beat schedule file
 celerybeat-schedule
