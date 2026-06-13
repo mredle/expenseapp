@@ -45,4 +45,4 @@ echo "Building mobile app (Ionic/Angular)..."
 (cd "$(dirname "$0")/mobile" && npm run build) \
     || { echo "Mobile build failed" >&2; exit 1; }
 
-exec gunicorn -b :5000 --access-logfile - --error-logfile - expenseapp:app
+exec gunicorn -b :5000 -w 1 --access-logfile - --error-logfile - expenseapp:app

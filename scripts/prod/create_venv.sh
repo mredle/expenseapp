@@ -2,7 +2,9 @@
 # Build the production virtual environment under /opt/expenseapp/venv using
 # the pyenv-managed Python installed by setup_pyenv.sh.
 #
-# Must be run as root AFTER setup_pyenv.sh.
+# Must be run as root AFTER setup_pyenv.sh. Can be run before or after
+# setup_service_user.sh — it self-heals /opt/expenseapp ownership so the
+# pipeline is order-independent.
 #
 # Usage:
 #   sudo sh scripts/prod/create_venv.sh
@@ -28,6 +30,7 @@ set -e
 
 DEPLOY_DIR=/opt/expenseapp
 SVC_USER=expenseapp
+SVC_GROUP=expenseapp
 PYENV_ROOT="${DEPLOY_DIR}/.pyenv"
 PYTHON_VERSION_FILE="${DEPLOY_DIR}/.python-version"
 VENV_DIR="${DEPLOY_DIR}/venv"
@@ -57,6 +60,11 @@ if [ -d "${VENV_DIR}" ]; then
     echo "Removing existing venv at ${VENV_DIR}..."
     rm -rf "${VENV_DIR}"
 fi
+
+# Ensure the deploy directory is owned by the service user so runuser can
+# write into it.  Idempotent; makes this script order-independent w.r.t.
+# setup_service_user.sh.
+chown -R "${SVC_USER}:${SVC_GROUP}" "${DEPLOY_DIR}"
 
 echo "Creating venv with Python ${PY_VERSION}..."
 runuser -u "${SVC_USER}" -- env \

@@ -2,7 +2,8 @@
 # Install pyenv and compile the project's target Python version under the
 # expenseapp service user's home (/opt/expenseapp/.pyenv).
 #
-# Must be run as root AFTER setup_service_user.sh.
+# Must be run as root. Can be run before or after setup_service_user.sh —
+# it self-heals /opt/expenseapp ownership so the pipeline is order-independent.
 # Requires outbound internet access to clone pyenv from GitHub and download
 # the CPython source tarball.
 #
@@ -27,6 +28,7 @@ set -e
 
 DEPLOY_DIR=/opt/expenseapp
 SVC_USER=expenseapp
+SVC_GROUP=expenseapp
 PYENV_ROOT="${DEPLOY_DIR}/.pyenv"
 PYTHON_VERSION_FILE="${DEPLOY_DIR}/.python-version"
 
@@ -39,6 +41,13 @@ fi
 PY_VERSION="$(cat "${PYTHON_VERSION_FILE}" | tr -d '[:space:]')"
 echo "Target Python version: ${PY_VERSION}"
 
+# Ensure the deploy directory is owned by the service user so all subsequent
+# operations (pyenv clone, Python build, venv creation) can run as that user.
+# This is idempotent and makes the script order-independent w.r.t.
+# setup_service_user.sh.
+mkdir -p "${DEPLOY_DIR}"
+chown -R "${SVC_USER}:${SVC_GROUP}" "${DEPLOY_DIR}"
+
 # 1. Clone pyenv if not already present.
 if [ -d "${PYENV_ROOT}/.git" ]; then
     echo "pyenv already cloned at ${PYENV_ROOT} — pulling latest..."
@@ -46,7 +55,7 @@ if [ -d "${PYENV_ROOT}/.git" ]; then
 else
     echo "Cloning pyenv into ${PYENV_ROOT}..."
     git clone https://github.com/pyenv/pyenv.git "${PYENV_ROOT}"
-    chown -R "${SVC_USER}:${SVC_USER}" "${PYENV_ROOT}"
+    chown -R "${SVC_USER}:${SVC_GROUP}" "${PYENV_ROOT}"
 fi
 
 # 2. Compile the target Python version as the service user.

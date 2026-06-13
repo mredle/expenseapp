@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from logging.handlers import RotatingFileHandler, SMTPHandler
 
 from flask import Flask, current_app, request
@@ -25,6 +26,39 @@ from redis import Redis
 import rq
 
 from config import Config
+
+
+def _is_server_process() -> bool:
+    """Return True only for long-lived WSGI server processes.
+
+    Prevents APScheduler from being started inside short-lived ``flask`` CLI
+    commands (``db upgrade``, ``dbinit``, ``translate``, …).  Those commands
+    load ``expenseapp:app`` via ``FLASK_APP`` just like gunicorn does, but they
+    must exit cleanly after finishing their task — a running APScheduler thread
+    (plus its RedisJobStore connection) would keep the process alive
+    indefinitely (0 % CPU, blocking the startup loop in ``run_as_service.sh``).
+
+    Recognised server processes:
+
+    * **gunicorn / uwsgi** — ``sys.argv[0]`` basename contains ``gunicorn``
+      or ``uwsgi``.
+    * **``flask run``** — Flask sets ``FLASK_RUN_FROM_CLI=true`` for every
+      ``flask`` subcommand, so we additionally require ``'run'`` to appear in
+      ``sys.argv``.  When Werkzeug's reloader is active the parent process
+      spawns a child with ``WERKZEUG_RUN_MAIN=true``; only that child (or the
+      single process when no reloader is used) owns the scheduler to prevent
+      duplicate instances.
+    """
+    prog = os.path.basename(sys.argv[0] if sys.argv else '')
+    # gunicorn / uwsgi style servers
+    if 'gunicorn' in prog or 'uwsgi' in prog:
+        return True
+    # `flask run` dev server
+    if os.environ.get('FLASK_RUN_FROM_CLI') == 'true' and 'run' in sys.argv:
+        werkzeug_main = os.environ.get('WERKZEUG_RUN_MAIN')
+        # reloader child → True; reloader parent → False; no reloader → True
+        return werkzeug_main in ('true', None)
+    return False
 
 
 class Anonymous(AnonymousUserMixin):
@@ -74,7 +108,7 @@ def create_app(config_class: type = Config) -> Flask:
     moment.init_app(app)
     babel.init_app(app, locale_selector=get_locale)
     limiter.init_app(app)
-    if not scheduler.running:
+    if app.config['SCHEDULER_ENABLED'] and _is_server_process() and not scheduler.running:
         scheduler.init_app(app)
         scheduler.start()
 

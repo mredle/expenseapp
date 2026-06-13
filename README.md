@@ -149,6 +149,8 @@ sudo sh scripts/prod/setup_service_user.sh
 
 This creates the `expenseapp` system user/group (home = `/opt/expenseapp`), runs `chown -R expenseapp:expenseapp /opt/expenseapp`, relabels the tree with `restorecon` on SELinux hosts (Oracle Linux / RHEL), and validates the venv interpreter if the venv is already present.
 
+`setup_pyenv.sh` and `create_venv.sh` also self-heal `/opt/expenseapp` ownership when run as root, so the pipeline is order-independent — there is no strict requirement to run `setup_service_user.sh` first.
+
 ### 4. install pyenv and compile Python 3.14
 
 The production interpreter must live inside `/opt/expenseapp` so the service user can reach it. **Do not use the shell's active `python3`** if it is a pyenv shim pointing to another user's home — the `expenseapp` user cannot traverse `/home/<you>` and the service will fail with "bad interpreter: Permission denied".
