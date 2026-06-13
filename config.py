@@ -128,6 +128,8 @@ class Config:
     """Hour (UTC) at which the automatic backup cron job runs."""
 
     # Scheduler settings
+    SCHEDULER_ENABLED: bool = os.environ.get('SCHEDULER_ENABLED', 'true').lower() == 'true'
+    """Set to 'false' on web replicas; run a separate single-replica scheduler Deployment."""
     SCHEDULER_API_ENABLED: bool = True
     SCHEDULER_JOBSTORES: dict = {
         'default': RedisJobStore(
