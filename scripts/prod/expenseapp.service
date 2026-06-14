@@ -1,6 +1,11 @@
 [Unit]
 Description=ExpenseApp
 After=network.target
+# If the unit fails 5 times within 1 hour, stop auto-retrying (avoids endless
+# 3-minute mobile-rebuild restart loops on persistent failures).
+# To reset after hitting this limit: sudo systemctl reset-failed expenseapp
+StartLimitIntervalSec=3600
+StartLimitBurst=5
 
 [Service]
 Type=simple
@@ -16,8 +21,11 @@ Environment=HOME=/opt/expenseapp
 Environment=npm_config_cache=/opt/expenseapp/.npm
 ExecStart=/opt/expenseapp/run_as_service.sh
 
-# Poll the app every 2 seconds until it answers
-ExecStartPost=/bin/bash -c 'until curl --silent --output /dev/null http://localhost:5000; do sleep 2; done'
+# Poll the app on IPv4 (gunicorn binds 0.0.0.0, and localhost resolves to
+# ::1 first on this host — which is not what gunicorn listens on). /metrics
+# returns 200 without auth; each attempt is time-bounded so a busy worker
+# cannot wedge the probe indefinitely.
+ExecStartPost=/bin/bash -c 'until curl --silent --fail --max-time 5 --output /dev/null http://127.0.0.1:5000/metrics; do sleep 2; done'
 
 # If it doesn't answer within 900 seconds, kill it and fail.
 # The first start builds the mobile PWA (npm ci + Angular production build),
