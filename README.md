@@ -184,11 +184,29 @@ sudo -u expenseapp vi /opt/expenseapp/.env   # set SECRET_KEY, DATABASE_URL, MAI
 
 ### 7. install and start the systemd units
 
+The deployment runs three systemd services that mirror the Helm web/worker/scheduler architecture:
+
+| Unit | Role | Scheduler? | Port |
+|---|---|---|---|
+| `expenseapp.service` | Web (gunicorn + mobile build) | `SCHEDULER_ENABLED=false` | 5000 |
+| `expenseapp-worker.service` | RQ background worker | `SCHEDULER_ENABLED=false` | — |
+| `expenseapp-scheduler.service` | APScheduler cron jobs | `SCHEDULER_ENABLED=true` | 5001 (loopback only) |
+
+**Before starting the units for the first time** (or after changing `@scheduler.task` IDs), clear the APScheduler Redis jobstore to avoid stale job references:
+
 ```bash
-sudo cp scripts/prod/expenseapp.service        /etc/systemd/system/
-sudo cp scripts/prod/expenseapp-worker.service /etc/systemd/system/
+cd /opt/expenseapp
+sudo -u expenseapp HOME=/opt/expenseapp ./venv/bin/flask flush-jobs
+```
+
+Then copy and enable all three units:
+
+```bash
+sudo cp scripts/prod/expenseapp.service           /etc/systemd/system/
+sudo cp scripts/prod/expenseapp-worker.service    /etc/systemd/system/
+sudo cp scripts/prod/expenseapp-scheduler.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now expenseapp expenseapp-worker
+sudo systemctl enable --now expenseapp expenseapp-worker expenseapp-scheduler
 ```
 
 The first start builds the mobile PWA (`npm ci` + Angular production build) before gunicorn accepts connections. On low-power hosts (e.g. Raspberry Pi) this can take several minutes — `TimeoutStartSec=900` is set accordingly.
@@ -198,9 +216,13 @@ The first start builds the mobile PWA (`npm ci` + Angular production build) befo
 ```bash
 sudo systemctl status expenseapp
 sudo systemctl status expenseapp-worker
+sudo systemctl status expenseapp-scheduler
 sudo journalctl -u expenseapp -f
 sudo journalctl -u expenseapp-worker -f
+sudo journalctl -u expenseapp-scheduler -f
 ```
+
+The scheduler process serves `/metrics` at `http://127.0.0.1:5001/metrics` (loopback only) for health checks.
 
 ### SELinux note (Oracle Linux / RHEL)
 

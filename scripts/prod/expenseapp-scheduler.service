@@ -1,0 +1,33 @@
+[Unit]
+Description=ExpenseAppScheduler
+After=network.target
+
+[Service]
+Type=simple
+User=expenseapp
+Group=expenseapp
+WorkingDirectory=/opt/expenseapp/
+# The scheduler is the ONLY process that sets SCHEDULER_ENABLED=true.
+# Web and worker processes set it to false (see expenseapp.service and
+# expenseapp-worker.service) to match the Helm web/worker/scheduler split.
+# CRITICAL: exactly one replica of this unit must run. APScheduler runs
+# in-process; running two instances produces duplicate cron jobs.
+Environment=HOME=/opt/expenseapp
+Environment=SCHEDULER_ENABLED=true
+# Run gunicorn directly (not run_as_service.sh) — migrations, dbinit, and
+# the mobile build are handled by expenseapp.service at boot. The scheduler
+# service only needs the Flask app + APScheduler to be alive.
+# Loopback bind on :5001 (not user-facing; expenseapp.service owns :5000).
+# /metrics is accessible at http://127.0.0.1:5001/metrics for health checks.
+ExecStart=/opt/expenseapp/venv/bin/gunicorn \
+    -b 127.0.0.1:5001 \
+    -w 1 \
+    --access-logfile - \
+    --error-logfile - \
+    expenseapp:app
+
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

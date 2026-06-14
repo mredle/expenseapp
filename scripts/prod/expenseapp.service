@@ -19,6 +19,10 @@ WorkingDirectory=/opt/expenseapp/
 # /opt/expenseapp is owned by expenseapp:expenseapp.
 Environment=HOME=/opt/expenseapp
 Environment=npm_config_cache=/opt/expenseapp/.npm
+# Scheduler runs in a dedicated expenseapp-scheduler.service process (mirrors
+# the Helm web/scheduler split). Running it here alongside the sync worker
+# would deadlock the single worker thread.
+Environment=SCHEDULER_ENABLED=false
 ExecStart=/opt/expenseapp/run_as_service.sh
 
 # Poll the app on IPv4 (gunicorn binds 0.0.0.0, and localhost resolves to
