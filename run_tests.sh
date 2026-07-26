@@ -2,6 +2,9 @@
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
     echo "☁️  GitHub Actions detected: Bypassing pyenv and using system Python!"
+    # Use plain (non-animated) Compose renderer in CI to keep logs readable.
+    # Combined with --quiet-pull below this eliminates the per-layer pull spam.
+    export COMPOSE_PROGRESS=plain
 else
     echo "💻 Local environment detected: Setting up pyenv..."
     source create_venv_pyenv_dev.sh
@@ -15,8 +18,8 @@ echo "========================================"
 echo " STARTING TEST SUITE FOR: $DB_CHOICE"
 echo "========================================"
 
-docker compose -f scripts/dev/docker-compose.yml up -d adminer mailhog redis minio minio-init
-docker compose -f scripts/dev/docker-compose.yml up -d $DB_CHOICE
+docker compose -f scripts/dev/docker-compose.yml up -d --quiet-pull adminer mailhog redis minio minio-init
+docker compose -f scripts/dev/docker-compose.yml up -d --quiet-pull $DB_CHOICE
 
 if [ "$DB_CHOICE" == "sqlite" ]; then
     # SQLite uses a fast, in-memory database for testing

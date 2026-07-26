@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import base64
 import uuid
 
 from flask import Flask
@@ -303,3 +304,71 @@ def test_webauthn_authenticate_verify_invalid(
     })
 
     assert resp.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# WebAuthn userHandle encoding regression tests
+# ---------------------------------------------------------------------------
+
+def test_resolve_user_from_handle_plain_hex(app: Flask, client: FlaskClient) -> None:
+    """_resolve_user_from_handle resolves a user from a plain GUID-hex handle.
+
+    This is the encoding produced by @simplewebauthn/browser v4.x (the Flask
+    static bundle), which passes the raw user_id bytes through TextDecoder
+    without an extra base64 layer.
+    """
+    from app.services.auth_service import _resolve_user_from_handle
+
+    suffix = uuid.uuid4().hex[:8]
+    with app.app_context():
+        user = User(username=f'whtest_{suffix}', email=f'wh_{suffix}@example.com', locale='en')
+        user.set_password('pw')
+        db.session.add(user)
+        db.session.commit()
+
+        # Plain path: raw bytes are the ASCII GUID hex string (server's registration
+        # stores user_id=user.guid.hex.encode('utf-8')).
+        raw = user.guid.hex.encode('utf-8')
+        resolved = _resolve_user_from_handle(raw)
+
+        assert resolved is not None
+        assert resolved.id == user.id
+
+
+def test_resolve_user_from_handle_double_base64(app: Flask, client: FlaskClient) -> None:
+    """_resolve_user_from_handle resolves a user from a double-base64url handle.
+
+    This is the encoding produced by @simplewebauthn/browser v13.x (the
+    Angular/mobile client), which base64url-encodes the raw user_id bytes a
+    second time before sending, so the server receives an extra layer that must
+    be stripped to recover the GUID hex.
+
+    Regression test for: mobile passkey login returning 401 despite a valid
+    assertion, because uuid.UUID("MzgyZWYz...") raised ValueError.
+    """
+    from app.services.auth_service import _resolve_user_from_handle
+
+    suffix = uuid.uuid4().hex[:8]
+    with app.app_context():
+        user = User(username=f'whtest2_{suffix}', email=f'wh2_{suffix}@example.com', locale='en')
+        user.set_password('pw')
+        db.session.add(user)
+        db.session.commit()
+
+        # Mobile path: raw bytes are base64url(GUID hex bytes) — the extra layer
+        # added by simplewebauthn-browser v13 before the server's base64url-decode.
+        guid_hex_bytes = user.guid.hex.encode('utf-8')
+        raw = base64.urlsafe_b64encode(guid_hex_bytes).rstrip(b'=')
+        resolved = _resolve_user_from_handle(raw)
+
+        assert resolved is not None
+        assert resolved.id == user.id
+
+
+def test_resolve_user_from_handle_garbage(app: Flask, client: FlaskClient) -> None:
+    """_resolve_user_from_handle returns None for an unresolvable handle."""
+    from app.services.auth_service import _resolve_user_from_handle
+
+    with app.app_context():
+        assert _resolve_user_from_handle(b'not-a-valid-handle') is None
+        assert _resolve_user_from_handle(b'') is None

@@ -1,8 +1,49 @@
 # coding=utf-8
 """Auth service — business logic for authentication, registration, and WebAuthn."""
 
-from __future__ import annotations
 
+def _resolve_user_from_handle(raw: bytes) -> User | None:
+    """Resolve a User from a WebAuthn ``userHandle`` byte sequence.
+
+    The server stores ``user_id`` as the GUID hex string encoded to UTF-8
+    bytes (e.g. ``b"382ef3577ec44194b4ed8c09d2c52427"``).  At authentication
+    the handle is returned by the browser/authenticator unchanged.  However,
+    different versions of the ``@simplewebauthn/browser`` client library
+    encode the handle on the wire differently before sending to the server:
+
+    * **v4.x (Flask static bundle):** passes the handle through
+      ``TextDecoder.decode()``, so the py-lib base64url-decodes the wire
+      value and yields the raw 32-byte ASCII hex string directly.
+    * **v13.x (Angular/mobile):** base64url-encodes the raw bytes a second
+      time before sending, so the py-lib base64url-decodes the wire value
+      and yields the base64-encoded hex string — one extra layer.
+
+    This helper accepts either encoding so passkeys registered via one client
+    are usable from the other without re-registration.
+
+    TODO: unify the two frontends on a single simplewebauthn version
+    (Flask HTML bundle is still @4.1.0; mobile uses @13.3.0) so the dual
+    decode can be simplified.
+    """
+    # Attempt 1 — plain hex path (Flask / simplewebauthn v4.x).
+    try:
+        return User.query.filter_by(guid=uuid.UUID(raw.decode('utf-8'))).first()
+    except (ValueError, UnicodeDecodeError):
+        pass
+
+    # Attempt 2 — extra base64url layer (mobile / simplewebauthn v13.x).
+    try:
+        padding = 4 - len(raw) % 4
+        inner = base64.urlsafe_b64decode(raw + b'=' * (padding % 4))
+        return User.query.filter_by(guid=uuid.UUID(inner.decode('utf-8'))).first()
+    except Exception:
+        pass
+
+    return None
+
+
+
+import base64
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -281,8 +322,7 @@ def verify_webauthn_authentication(
         if not credential.response.user_handle:
             raise Exception('No user handle returned. Resident key required.')
 
-        user_guid_hex = credential.response.user_handle.decode('utf-8')
-        user = User.query.filter_by(guid=uuid.UUID(user_guid_hex)).first()
+        user = _resolve_user_from_handle(credential.response.user_handle)
 
         if not user:
             raise Exception('User associated with this credential not found.')
