@@ -13,8 +13,15 @@ export class ErrorInterceptor implements HttpInterceptor {
     return next.handle(req).pipe(
       catchError((err: HttpErrorResponse) => {
         if (err.status === 401) {
+          // Capture where the user was before the session died so they can be
+          // returned there after signing in again.
+          const returnUrl = this.router.url;
           this.auth.logout();
-          this.router.navigate(['/auth/login']);
+          if (!returnUrl.startsWith('/auth/')) {
+            this.router.navigate(['/auth/login'], { queryParams: { returnUrl } });
+          } else {
+            this.router.navigate(['/auth/login']);
+          }
         }
         return throwError(() => err);
       })

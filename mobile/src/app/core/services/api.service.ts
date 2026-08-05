@@ -65,6 +65,10 @@ export class ApiService {
     return this.http.delete<void>(this.url('/tokens/'));
   }
 
+  refreshToken(): Observable<{ token: string; expires_at?: string | null }> {
+    return this.http.post<{ token: string; expires_at?: string | null }>(this.url('/tokens/refresh'), {});
+  }
+
   // ── Users ─────────────────────────────────────────────────────────────────
 
   getUsers(page = 1, per_page = 25): Observable<UserCollection> {

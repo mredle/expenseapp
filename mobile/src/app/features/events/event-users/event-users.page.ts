@@ -24,7 +24,12 @@ export class EventUsersPage implements OnInit {
 
   get guid(): string { return this.route.snapshot.paramMap.get('guid')!; }
 
-  ngOnInit(): void { this.api.getEventUsers(this.guid, 1, 100).subscribe(r => this.users = r.items); }
+  ngOnInit(): void {
+    this.api.getEventUsers(this.guid, 1, 100).subscribe({
+      next: r => this.users = r.items,
+      error: () => { this.users = []; },
+    });
+  }
 
   async addUser(): Promise<void> {
     if (this.form.invalid) return;

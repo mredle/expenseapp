@@ -17,14 +17,26 @@ export class ExpenseDetailPage implements OnInit {
   get expenseGuid(): string { return this.route.snapshot.paramMap.get('expenseGuid')!; }
 
   ngOnInit(): void {
-    this.api.getExpense(this.eventGuid, this.expenseGuid).subscribe(e => { this.expense = e; this.loading = false; });
-    this.api.getExpenseUsers(this.eventGuid, this.expenseGuid).subscribe(r => this.affectedUsers = r.items);
-    this.api.getEventUsers(this.eventGuid, 1, 100).subscribe(r => this.allUsers = r.items);
+    this.api.getExpense(this.eventGuid, this.expenseGuid).subscribe({
+      next: e => { this.expense = e; this.loading = false; },
+      error: () => { this.loading = false; },
+    });
+    this.api.getExpenseUsers(this.eventGuid, this.expenseGuid).subscribe({
+      next: r => this.affectedUsers = r.items,
+      error: () => { this.affectedUsers = []; },
+    });
+    this.api.getEventUsers(this.eventGuid, 1, 100).subscribe({
+      next: r => this.allUsers = r.items,
+      error: () => { this.allUsers = []; },
+    });
   }
 
   async addUser(userGuid: string): Promise<void> {
     this.api.addExpenseUser(this.eventGuid, this.expenseGuid, userGuid).subscribe({
-      next: () => this.api.getExpenseUsers(this.eventGuid, this.expenseGuid).subscribe(r => this.affectedUsers = r.items),
+      next: () => this.api.getExpenseUsers(this.eventGuid, this.expenseGuid).subscribe({
+        next: r => this.affectedUsers = r.items,
+        error: () => {},
+      }),
       error: async (e) => { const t = await this.toastCtrl.create({ message: e.error?.message || 'Error', duration: 2000, color: 'danger' }); await t.present(); },
     });
   }
