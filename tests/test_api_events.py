@@ -452,6 +452,41 @@ def test_list_event_currencies_success(
     assert 'CHF' in codes
 
 
+def test_list_event_currencies_exposes_currency_identity(
+    app: Flask,
+    api_client: tuple[FlaskClient, str],
+    api_event: Event,
+) -> None:
+    """Event currencies expose currency_id/currency_guid.
+
+    The mobile expense and settlement forms populate their dropdowns from this
+    endpoint and submit ``currency_id``, so the identity fields must be present
+    (regression: the dropdown previously had to fall back to the global
+    currency list because this payload lacked an id).
+    """
+    client, token = api_client
+    ctx = _event_ctx(app, api_event)
+
+    resp = client.get(
+        f'/apis/events/{ctx["event_guid"]}/currencies',
+        headers=_api_headers(token),
+    )
+
+    assert resp.status_code == 200
+    items = resp.get_json()['items']
+    assert items
+
+    for item in items:
+        assert item['currency_id'] is not None
+        assert isinstance(item['currency_id'], int)
+        assert item['currency_guid']
+
+    with app.app_context():
+        chf = Currency.query.filter_by(code='CHF').first()
+        returned = {item['currency_code']: item['currency_id'] for item in items}
+        assert returned['CHF'] == chf.id
+
+
 def test_set_currency_rate_success(
     app: Flask,
     api_client: tuple[FlaskClient, str],

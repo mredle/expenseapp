@@ -73,6 +73,8 @@ export interface EventUser {
 }
 
 export interface EventCurrency {
+  currency_id: number;
+  currency_guid: string;
   currency_code: string;
   currency_name: string;
   inCHF: number;

@@ -109,6 +109,8 @@ paginated_eventuser_model = api.model('EventUserList', {
 })
 
 eventcurrency_model = api.model('EventCurrency', {
+    'currency_id': fields.Integer(description='Currency ID (use for expense/settlement input)'),
+    'currency_guid': fields.String(description='Currency GUID'),
     'currency_code': fields.String(description='Currency code'),
     'currency_name': fields.String(description='Currency name'),
     'inCHF': fields.Float(description='Exchange rate to CHF within this event'),
@@ -296,6 +298,8 @@ def _post_to_dict(post: object) -> dict:
 def _eventcurrency_to_dict(ec: object) -> dict:
     """Serialise an EventCurrency to a dict."""
     return {
+        'currency_id': ec.currency.id if ec.currency else None,
+        'currency_guid': str(ec.currency.guid) if ec.currency else None,
         'currency_code': ec.currency.code if ec.currency else None,
         'currency_name': ec.currency.name if ec.currency else None,
         'inCHF': ec.inCHF,
