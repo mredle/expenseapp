@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { LoadingController, ToastController } from '@ionic/angular';
 import { AuthService } from '../../../core/services/auth.service';
 import { ApiService } from '../../../core/services/api.service';
@@ -26,10 +26,22 @@ export class LoginPage {
     private fb: FormBuilder,
     private auth: AuthService,
     private api: ApiService,
+    private route: ActivatedRoute,
     private router: Router,
     private loadingCtrl: LoadingController,
     private toastCtrl: ToastController,
   ) {}
+
+  /**
+   * Where to send the user after a successful sign-in.
+   *
+   * Falls back to the events tab when there is no pending destination (e.g. a
+   * direct visit to the login page).
+   */
+  private redirectAfterLogin(): void {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    this.router.navigateByUrl(returnUrl || '/tabs/events');
+  }
 
   async loginPassword(): Promise<void> {
     if (this.form.invalid) return;
@@ -37,7 +49,7 @@ export class LoginPage {
     await loading.present();
     const { username, password } = this.form.value;
     this.auth.loginPassword(username!, password!).subscribe({
-      next: () => { loading.dismiss(); this.router.navigate(['/tabs/events']); },
+      next: () => { loading.dismiss(); this.redirectAfterLogin(); },
       error: async (e) => {
         loading.dismiss();
         await this.showToast(e.error?.message || 'Login failed');
@@ -57,7 +69,7 @@ export class LoginPage {
           const loading2 = await this.loadingCtrl.create({ message: 'Verifying…' });
           await loading2.present();
           this.auth.loginWebAuthn(res.session_id, credential).subscribe({
-            next: () => { loading2.dismiss(); this.router.navigate(['/tabs/events']); },
+            next: () => { loading2.dismiss(); this.redirectAfterLogin(); },
             error: async (e) => { loading2.dismiss(); await this.showToast(e.error?.message || 'Passkey verification failed'); },
           });
         } catch (err: any) {

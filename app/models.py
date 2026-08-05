@@ -1392,21 +1392,40 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         """Return the first incomplete task with *name*, or ``None``."""
         return Task.query.filter_by(name=name, user=self, complete=False).first()
 
-    def get_token(self, expires_in: int = 3600) -> str:
-        """Return the current API token, refreshing it if expired."""
+    def get_token(self, expires_in: int = 3600, force: bool = False) -> str:
+        """Return the current API token, refreshing it if expired.
+
+        A still-valid token is returned unchanged so repeated logins do not
+        invalidate existing sessions. Pass ``force=True`` to always issue a
+        fresh token with a new expiry — this is what the refresh endpoint uses,
+        since otherwise the expiry would never be extended.
+        """
         now = datetime.now(timezone.utc)
 
         # Attach UTC timezone if the database loaded a naive datetime.
         if self.token_expiration and self.token_expiration.tzinfo is None:
             self.token_expiration = self.token_expiration.replace(tzinfo=timezone.utc)
 
-        if self.token and self.token_expiration and self.token_expiration > now + timedelta(seconds=60):
+        if (
+            not force
+            and self.token
+            and self.token_expiration
+            and self.token_expiration > now + timedelta(seconds=60)
+        ):
             return self.token
 
         self.token = uuid.uuid4().hex
         self.token_expiration = now + timedelta(seconds=expires_in)
         db.session.add(self)
         return self.token
+
+    def get_token_expiration(self) -> datetime | None:
+        """Return the token expiry as a timezone-aware UTC datetime."""
+        if not self.token_expiration:
+            return None
+        if self.token_expiration.tzinfo is None:
+            return self.token_expiration.replace(tzinfo=timezone.utc)
+        return self.token_expiration
 
     def revoke_token(self) -> None:
         """Immediately expire the current API token."""

@@ -33,16 +33,25 @@ export class SettlementsPage implements OnInit {
 
   ngOnInit(): void {
     // Only the currencies allowed for this event, not the global list.
-    this.api.getEventCurrencies(this.guid).subscribe(r => this.currencies = r.items);
-    this.api.getEventUsers(this.guid, 1, 100).subscribe(r => this.eventUsers = r.items);
+    this.api.getEventCurrencies(this.guid).subscribe({
+      next: r => this.currencies = r.items,
+      error: () => { this.currencies = []; },
+    });
+    this.api.getEventUsers(this.guid, 1, 100).subscribe({
+      next: r => this.eventUsers = r.items,
+      error: () => { this.eventUsers = []; },
+    });
     this.load(true);
   }
 
   load(reset = false): void {
     if (reset) { this.page = 1; this.settlements = []; }
-    this.api.getSettlements(this.guid, this.page, 25, undefined, this.euGuid).subscribe(res => {
-      this.settlements = reset ? res.items : [...this.settlements, ...res.items];
-      this.hasNext = res.has_next;
+    this.api.getSettlements(this.guid, this.page, 25, undefined, this.euGuid).subscribe({
+      next: res => {
+        this.settlements = reset ? res.items : [...this.settlements, ...res.items];
+        this.hasNext = res.has_next;
+      },
+      error: () => { this.hasNext = false; },
     });
   }
 

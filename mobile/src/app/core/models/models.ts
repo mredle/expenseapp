@@ -20,6 +20,7 @@ export interface TokenResponse {
 
 export interface AuthResult {
   token: string;
+  expires_at?: string | null;
   user_guid: string;
   username: string;
 }
