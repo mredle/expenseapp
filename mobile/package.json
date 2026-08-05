@@ -12,6 +12,10 @@
     "lint": "ng lint"
   },
   "private": true,
+  "engines": {
+    "node": ">=22.12.0 <23",
+    "npm": ">=10.0.0 <11"
+  },
   "dependencies": {
     "@angular/animations": "20.3.25",
     "@angular/common": "20.3.25",
@@ -20,7 +24,7 @@
     "@angular/forms": "20.3.25",
     "@angular/platform-browser": "20.3.25",
     "@angular/platform-browser-dynamic": "20.3.25",
-    "@angular/pwa": "21.0.6",
+    "@angular/pwa": "20.3.33",
     "@angular/router": "20.3.25",
     "@angular/service-worker": "20.3.25",
     "@capacitor/app": "8.1.0",
@@ -36,13 +40,13 @@
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "20.3.32",
+    "@angular-devkit/build-angular": "20.3.33",
     "@angular-eslint/builder": "^20.0.0",
     "@angular-eslint/eslint-plugin": "^20.0.0",
     "@angular-eslint/eslint-plugin-template": "^20.0.0",
     "@angular-eslint/schematics": "^20.0.0",
     "@angular-eslint/template-parser": "^20.0.0",
-    "@angular/cli": "21.2.19",
+    "@angular/cli": "20.3.33",
     "@angular/compiler-cli": "20.3.25",
     "@angular/language-service": "20.3.25",
     "@capacitor/cli": "8.3.1",
