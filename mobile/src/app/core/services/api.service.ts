@@ -193,8 +193,8 @@ export class ApiService {
 
   // ── Event Currencies ─────────────────────────────────────────────────────────────
 
-  getEventCurrencies(eventGuid: string): Observable<{ items: EventCurrency[]; total: number }> {
-    return this.http.get<any>(this.url(`/events/${eventGuid}/currencies`));
+  getEventCurrencies(eventGuid: string, page = 1, per_page = 100): Observable<{ items: EventCurrency[]; total: number }> {
+    return this.http.get<any>(this.url(`/events/${eventGuid}/currencies`), { params: this.params({ page, per_page }) });
   }
 
   setEventCurrencyRate(eventGuid: string, currencyGuid: string, rate: number): Observable<{ message: string }> {

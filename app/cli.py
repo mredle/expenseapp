@@ -32,7 +32,6 @@ from app.models import (
     Thumbnail,
     User,
 )
-from app.tasks import create_thumbnails
 from config import Config
 
 
@@ -177,9 +176,9 @@ def register(app) -> None:  # noqa: C901 — CLI registration is inherently comp
                         storage.save(currency.image.file.storage_key, filepath, mime_type='image/svg+xml')
                         currency.image.file.file_size = os.path.getsize(filepath)
                         currency.image.description = 'Static image'
-
-                        if not currency.image.is_vector:
-                            create_thumbnails(currency.image)
+                        # The stored content is now an SVG, so the image is
+                        # vector regardless of what the legacy row claimed.
+                        currency.image.is_vector = True
                         db.session.commit()
                     except Exception as e:
                         print(f'Updating flag for {country_code} failed: {e}')
@@ -202,9 +201,6 @@ def register(app) -> None:  # noqa: C901 — CLI registration is inherently comp
                     db.session.add(new_file)
                     db.session.add(image)
                     db.session.commit()
-
-                    if not image.is_vector:
-                        create_thumbnails(image)
                 except Exception as e:
                     print(f'Adding flag for {country_code} failed: {e}')
                     db.session.rollback()
@@ -238,9 +234,9 @@ def register(app) -> None:  # noqa: C901 — CLI registration is inherently comp
                         storage.save(existing_image.file.storage_key, filepath, mime_type='image/svg+xml')
                         existing_image.file.file_size = os.path.getsize(filepath)
                         existing_image.description = 'Static image'
-
-                        if not existing_image.is_vector:
-                            create_thumbnails(existing_image)
+                        # The stored content is now an SVG, so the image is
+                        # vector regardless of what the legacy row claimed.
+                        existing_image.is_vector = True
                         db.session.commit()
                     except Exception as e:
                         print(f'Updating icon {file} failed: {e}')
@@ -262,9 +258,6 @@ def register(app) -> None:  # noqa: C901 — CLI registration is inherently comp
                     db.session.add(new_file)
                     db.session.add(image)
                     db.session.commit()
-
-                    if not image.is_vector:
-                        create_thumbnails(image)
                 except Exception as e:
                     print(f'Adding icon {file} failed: {e}')
                     db.session.rollback()
@@ -431,6 +424,39 @@ def register(app) -> None:  # noqa: C901 — CLI registration is inherently comp
             f'Backfill complete: {linked} EventUser(s) linked, '
             f'{skipped} skipped (no matching User or no email).'
         )
+
+    @dbmaint.command()
+    @click.option('--delete/--dry-run', 'delete', default=False,
+                  help='Actually delete the flagged rows (default: dry-run).')
+    def purge_read_error_files(delete: bool) -> None:
+        """List (or delete) File rows flagged as unreadable.
+
+        Files are flagged with ``read_error`` when their backing object cannot
+        be read from the storage provider. This command reports those orphaned
+        metadata rows and can remove them.
+
+        Runs as a dry-run by default; pass ``--delete`` to remove the rows.
+        """
+        from app.models import File
+
+        broken = File.query.filter(File.read_error.is_(True)).all()
+
+        if not broken:
+            click.echo('No files flagged with read errors.')
+            return
+
+        click.echo(f'Found {len(broken)} file(s) flagged with read errors:')
+        for f in broken:
+            click.echo(f'  id={f.id} backend={f.storage_backend} key={f.storage_key}')
+
+        if not delete:
+            click.echo('\nDry-run: nothing deleted. Re-run with --delete to remove them.')
+            return
+
+        for f in broken:
+            db.session.delete(f)
+        db.session.commit()
+        click.echo(f'Deleted {len(broken)} file record(s).')
 
     # ------------------------------------------------------------------
     # Cache / storage flush commands

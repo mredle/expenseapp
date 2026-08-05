@@ -187,9 +187,25 @@ class Log(db.Model):
         return [(description, number)]
 
 
+_MISSING_IMAGE_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180">'
+    '<rect width="240" height="180" fill="#f0f0f0" stroke="#b0b0b0" stroke-width="2"/>'
+    '<line x1="0" y1="0" x2="240" y2="180" stroke="#d8d8d8" stroke-width="2"/>'
+    '<line x1="240" y1="0" x2="0" y2="180" stroke="#d8d8d8" stroke-width="2"/>'
+    '<text x="120" y="96" font-family="sans-serif" font-size="15" fill="#707070" '
+    'text-anchor="middle">Image unavailable</text>'
+    '</svg>'
+)
+
+MISSING_IMAGE_DATA_URI = (
+    'data:image/svg+xml;base64,'
+    + base64.b64encode(_MISSING_IMAGE_SVG.encode('utf-8')).decode('ascii')
+)
+"""Visible placeholder used when a file's backing object cannot be read."""
+
+
 class File(Entity, db.Model):
     """Metadata record for a file stored via :class:`~app.storage.StorageProvider`."""
-
     __tablename__ = 'files'
     id = db.Column(db.Integer, db.Identity(), primary_key=True)
 
@@ -200,6 +216,13 @@ class File(Entity, db.Model):
     file_size = db.Column(db.Integer)
     file_hash = db.Column(db.String(128), index=True)
     hash_algorithm = db.Column(db.String(32), default='sha256')
+    read_error = db.Column(db.Boolean, default=False)
+    """Set when the backing object could not be read from storage.
+
+    Reads are still retried on every access; the flag only suppresses repeated
+    ERROR-level logging (and the resulting alert emails) and is cleared
+    automatically as soon as the file becomes readable again.
+    """
 
     def __init__(self, original_filename: str, storage_backend: str, storage_key: str,
                  mime_type: str, file_size: int = 0, file_hash: str | None = None,
@@ -219,9 +242,11 @@ class File(Entity, db.Model):
     @classmethod
     def get_class_stats(cls, user: User | None = None) -> list[tuple[str, int]]:
         """Return aggregate statistics for the admin dashboard."""
-        description = _('Files')
-        number = cls.query.count()
-        return [(description, number)]
+        stats = [(_('Files'), cls.query.count())]
+        broken = cls.query.filter(cls.read_error.is_(True)).count()
+        if broken:
+            stats.append((_('Files with read errors'), broken))
+        return stats
 
     def get_provider(self) -> Any:
         """Return the appropriate :class:`~app.storage.StorageProvider` for this file."""
@@ -231,13 +256,66 @@ class File(Entity, db.Model):
         """Return the internal Flask route to securely serve this file."""
         return url_for('media.serve_file', file_id=self.id)
 
+    def mark_read_error(self, error: Exception) -> None:
+        """Flag this file as unreadable and log the failure.
+
+        The first failure is logged at ERROR level so it triggers exactly one
+        alert email; subsequent failures are logged at WARNING level to avoid
+        flooding the inbox on every request. Reads are always retried by the
+        caller, so a file that becomes readable again recovers automatically
+        via :meth:`clear_read_error`.
+        """
+        if self.read_error:
+            current_app.logger.warning(
+                f'Could not read file {self.id} (already flagged): {error}'
+            )
+            return
+
+        current_app.logger.error(f'Could not read file {self.id}: {error}')
+        try:
+            self.read_error = True
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            current_app.logger.warning(
+                f'Could not persist read_error flag for file {self.id}'
+            )
+
+    def clear_read_error(self) -> None:
+        """Clear the read-error flag after a successful read."""
+        if not self.read_error:
+            return
+
+        current_app.logger.info(
+            f'File {self.id} is readable again, clearing read_error'
+        )
+        try:
+            self.read_error = False
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            current_app.logger.warning(
+                f'Could not clear read_error flag for file {self.id}'
+            )
+
     def get_data_uri(self) -> str:
         """Return the file content as a base64 data URI (for embedding in PDFs).
 
         Reads bytes directly from the storage provider so this works without an
         active request context (i.e. safe to call from RQ background tasks).
+
+        When the backing object cannot be read the file is flagged via
+        :meth:`mark_read_error` and a visible placeholder image is returned
+        instead of raising, so a single missing file does not abort the whole
+        PDF and does not send an alert email on every attempt.
         """
-        data = self.get_provider().get_file_stream(self.storage_key).read()
+        try:
+            data = self.get_provider().get_file_stream(self.storage_key).read()
+        except Exception as e:
+            self.mark_read_error(e)
+            return MISSING_IMAGE_DATA_URI
+
+        self.clear_read_error()
         b64 = base64.b64encode(data).decode('ascii')
         return f'data:{self.mime_type};base64,{b64}'
 
@@ -1276,8 +1354,13 @@ class User(PaginatedAPIMixin, UserMixin, Entity, db.Model):
         return self.gravatar(size)
 
     def gravatar(self, size: int) -> str:
-        """Return a Gravatar URL for this user's email."""
-        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+        """Return a Gravatar URL for this user's email.
+
+        Falls back to the GUID when no email is set, so the identicon stays
+        stable and unique per user instead of raising on ``None``.
+        """
+        seed = self.email.lower() if self.email else self.guid.hex
+        digest = md5(seed.encode('utf-8')).hexdigest()
         return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
 
     def new_messages(self) -> int:
@@ -1425,8 +1508,14 @@ class EventUser(Entity, db.Model):
         return self.gravatar(size)
 
     def gravatar(self, size: int) -> str:
-        """Return a Gravatar URL for this participant's email."""
-        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+        """Return a Gravatar URL for this participant's email.
+
+        ``email`` is optional for event participants (see ``EventUserForm``),
+        so fall back to the GUID to keep the identicon stable and unique
+        instead of raising on ``None``.
+        """
+        seed = self.email.lower() if self.email else self.guid.hex
+        digest = md5(seed.encode('utf-8')).hexdigest()
         return f'https://www.gravatar.com/avatar/{digest}?d=identicon&s={size}'
 
 

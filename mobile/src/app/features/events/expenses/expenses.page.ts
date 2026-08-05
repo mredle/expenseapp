@@ -4,12 +4,12 @@ import { ActionSheetController, AlertController, ToastController, InfiniteScroll
 import { FormBuilder, Validators } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Expense, Currency, EventUser } from '../../../core/models/models';
+import { Expense, EventCurrency, EventUser } from '../../../core/models/models';
 
 @Component({ standalone: false, selector: 'app-expenses', templateUrl: 'expenses.page.html' })
 export class ExpensesPage implements OnInit {
   expenses: Expense[] = [];
-  currencies: Currency[] = [];
+  currencies: EventCurrency[] = [];
   eventUsers: EventUser[] = [];
   page = 1;
   hasNext = false;
@@ -39,7 +39,8 @@ export class ExpensesPage implements OnInit {
   get euGuid(): string | undefined { return this.auth.getEventUserGuid(this.guid) || undefined; }
 
   ngOnInit(): void {
-    this.api.getCurrencies(1, 100).subscribe(r => this.currencies = r.items);
+    // Only the currencies allowed for this event, not the global list.
+    this.api.getEventCurrencies(this.guid).subscribe(r => this.currencies = r.items);
     this.api.getEventUsers(this.guid, 1, 100).subscribe(r => this.eventUsers = r.items);
     this.load(true);
   }

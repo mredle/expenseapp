@@ -80,8 +80,10 @@ def get_file_bytes(file_id: int) -> FileResult | None:
         file_stream = provider.get_file_stream(file_obj.storage_key)
         file_bytes = file_stream.read()
     except Exception as e:
-        current_app.logger.error(f"Could not read file {file_obj.id}: {e}")
+        file_obj.mark_read_error(e)
         return None
+
+    file_obj.clear_read_error()
 
     # Store in Redis for subsequent requests (files < 5 MB only)
     try:
