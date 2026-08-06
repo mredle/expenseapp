@@ -23,7 +23,7 @@
         <ion-item>
           <ion-label position="stacked">Currency *</ion-label>
           <ion-select formControlName="currency_id" placeholder="Select">
-            <ion-select-option *ngFor="let c of currencies" [value]="c.id">{{ c.code }}</ion-select-option>
+            <ion-select-option *ngFor="let c of currencies" [value]="c.currency_id">{{ c.currency_code }}</ion-select-option>
           </ion-select>
         </ion-item>
         <ion-item>

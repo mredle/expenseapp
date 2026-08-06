@@ -35,25 +35,31 @@ export class EventSettingsPage implements OnInit {
 
   ngOnInit(): void {
     this.isNew = this.guid === 'new';
-    this.api.getCurrencies(1, 100).subscribe(res => {
-      this.currencies = res.items;
-      if (!this.isNew) this.loadEvent();
+    this.api.getCurrencies(1, 100).subscribe({
+      next: res => {
+        this.currencies = res.items;
+        if (!this.isNew) this.loadEvent();
+      },
+      error: () => { this.currencies = []; },
     });
   }
 
   loadEvent(): void {
-    this.api.getEvent(this.guid).subscribe(ev => {
-      this.event = ev;
-      // Find base currency ID by code
-      const base = this.currencies.find(c => c.code === ev.base_currency_code);
-      this.form.patchValue({
-        name: ev.name,
-        date: ev.date,
-        base_currency_id: base ? base.id : null,
-        exchange_fee: ev.exchange_fee,
-        fileshare_link: ev.fileshare_link || '',
-        description: ev.description || '',
-      });
+    this.api.getEvent(this.guid).subscribe({
+      next: ev => {
+        this.event = ev;
+        // Find base currency ID by code
+        const base = this.currencies.find(c => c.code === ev.base_currency_code);
+        this.form.patchValue({
+          name: ev.name,
+          date: ev.date,
+          base_currency_id: base ? base.id : null,
+          exchange_fee: ev.exchange_fee,
+          fileshare_link: ev.fileshare_link || '',
+          description: ev.description || '',
+        });
+      },
+      error: () => { /* interceptor handles auth errors; nothing to patch */ },
     });
   }
 

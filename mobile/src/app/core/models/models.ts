@@ -20,6 +20,7 @@ export interface TokenResponse {
 
 export interface AuthResult {
   token: string;
+  expires_at?: string | null;
   user_guid: string;
   username: string;
 }
@@ -73,6 +74,8 @@ export interface EventUser {
 }
 
 export interface EventCurrency {
+  currency_id: number;
+  currency_guid: string;
   currency_code: string;
   currency_name: string;
   inCHF: number;

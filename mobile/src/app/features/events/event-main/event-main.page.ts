@@ -31,9 +31,9 @@ export class EventMainPage implements OnInit {
 
   loadAll(): void {
     this.loading = true;
-    this.api.getEvent(this.guid).subscribe(ev => {
-      this.event = ev;
-      this.loading = false;
+    this.api.getEvent(this.guid).subscribe({
+      next: ev => { this.event = ev; this.loading = false; },
+      error: () => { this.loading = false; },
     });
     this.loadPosts(true);
     // resolve own event user
@@ -45,9 +45,12 @@ export class EventMainPage implements OnInit {
 
   loadPosts(reset = false): void {
     if (reset) { this.postsPage = 1; this.posts = []; }
-    this.api.getPosts(this.guid, this.postsPage).subscribe(res => {
-      this.posts = reset ? res.items : [...this.posts, ...res.items];
-      this.hasNextPosts = res.has_next;
+    this.api.getPosts(this.guid, this.postsPage).subscribe({
+      next: res => {
+        this.posts = reset ? res.items : [...this.posts, ...res.items];
+        this.hasNextPosts = res.has_next;
+      },
+      error: () => { this.hasNextPosts = false; },
     });
   }
 

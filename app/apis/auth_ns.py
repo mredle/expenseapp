@@ -34,6 +34,7 @@ register_response = api.model('RegisterResponse', {
     'username': fields.String(description='Username'),
     'email': fields.String(description='Email'),
     'token': fields.String(description='API bearer token (only present when password is supplied)'),
+    'expires_at': fields.String(description='Token expiry as an ISO-8601 UTC timestamp'),
 })
 
 reset_request_model = api.model('ResetPasswordRequest', {
@@ -66,6 +67,7 @@ webauthn_auth_verify_model = api.model('WebAuthnAuthVerify', {
 
 auth_result = api.model('AuthResult', {
     'token': fields.String(description='API bearer token'),
+    'expires_at': fields.String(description='Token expiry as an ISO-8601 UTC timestamp'),
     'user_guid': fields.String(description='Authenticated user GUID'),
     'username': fields.String(description='Username'),
 })
@@ -100,9 +102,11 @@ class Login(Resource):
             return {'error': 'Invalid credentials'}, 401
 
         token = result.user.get_token()
+        expires_at = result.user.get_token_expiration()
         db.session.commit()
         return {
             'token': token,
+            'expires_at': expires_at.isoformat() if expires_at else None,
             'user_guid': str(result.user.guid),
             'username': result.user.username,
         }
@@ -141,6 +145,8 @@ class Register(Resource):
         }
         if password:
             body['token'] = result.user.get_token()
+            expires_at = result.user.get_token_expiration()
+            body['expires_at'] = expires_at.isoformat() if expires_at else None
             db.session.commit()
         return body, 201
 
@@ -267,9 +273,11 @@ class WebAuthnAuthenticateVerify(Resource):
             return {'error': 'Authentication failed'}, 401
 
         token = result.user.get_token()
+        expires_at = result.user.get_token_expiration()
         db.session.commit()
         return {
             'token': token,
+            'expires_at': expires_at.isoformat() if expires_at else None,
             'user_guid': str(result.user.guid),
             'username': result.user.username,
         }
