@@ -65,6 +65,10 @@ export class ApiService {
     return this.http.delete<void>(this.url('/tokens/'));
   }
 
+  refreshToken(): Observable<{ token: string; expires_at?: string | null }> {
+    return this.http.post<{ token: string; expires_at?: string | null }>(this.url('/tokens/refresh'), {});
+  }
+
   // ── Users ─────────────────────────────────────────────────────────────────
 
   getUsers(page = 1, per_page = 25): Observable<UserCollection> {
@@ -193,8 +197,8 @@ export class ApiService {
 
   // ── Event Currencies ─────────────────────────────────────────────────────────────
 
-  getEventCurrencies(eventGuid: string): Observable<{ items: EventCurrency[]; total: number }> {
-    return this.http.get<any>(this.url(`/events/${eventGuid}/currencies`));
+  getEventCurrencies(eventGuid: string, page = 1, per_page = 100): Observable<{ items: EventCurrency[]; total: number }> {
+    return this.http.get<any>(this.url(`/events/${eventGuid}/currencies`), { params: this.params({ page, per_page }) });
   }
 
   setEventCurrencyRate(eventGuid: string, currencyGuid: string, rate: number): Observable<{ message: string }> {

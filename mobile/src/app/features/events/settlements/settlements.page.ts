@@ -4,12 +4,12 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { ToastController, InfiniteScrollCustomEvent, AlertController } from '@ionic/angular';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Settlement, Currency, EventUser } from '../../../core/models/models';
+import { Settlement, EventCurrency, EventUser } from '../../../core/models/models';
 
 @Component({ standalone: false, selector: 'app-settlements', templateUrl: 'settlements.page.html' })
 export class SettlementsPage implements OnInit {
   settlements: Settlement[] = [];
-  currencies: Currency[] = [];
+  currencies: EventCurrency[] = [];
   eventUsers: EventUser[] = [];
   page = 1;
   hasNext = false;
@@ -32,16 +32,26 @@ export class SettlementsPage implements OnInit {
   get euGuid(): string | undefined { return this.auth.getEventUserGuid(this.guid) || undefined; }
 
   ngOnInit(): void {
-    this.api.getCurrencies(1, 100).subscribe(r => this.currencies = r.items);
-    this.api.getEventUsers(this.guid, 1, 100).subscribe(r => this.eventUsers = r.items);
+    // Only the currencies allowed for this event, not the global list.
+    this.api.getEventCurrencies(this.guid).subscribe({
+      next: r => this.currencies = r.items,
+      error: () => { this.currencies = []; },
+    });
+    this.api.getEventUsers(this.guid, 1, 100).subscribe({
+      next: r => this.eventUsers = r.items,
+      error: () => { this.eventUsers = []; },
+    });
     this.load(true);
   }
 
   load(reset = false): void {
     if (reset) { this.page = 1; this.settlements = []; }
-    this.api.getSettlements(this.guid, this.page, 25, undefined, this.euGuid).subscribe(res => {
-      this.settlements = reset ? res.items : [...this.settlements, ...res.items];
-      this.hasNext = res.has_next;
+    this.api.getSettlements(this.guid, this.page, 25, undefined, this.euGuid).subscribe({
+      next: res => {
+        this.settlements = reset ? res.items : [...this.settlements, ...res.items];
+        this.hasNext = res.has_next;
+      },
+      error: () => { this.hasNext = false; },
     });
   }
 

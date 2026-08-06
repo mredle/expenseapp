@@ -33,9 +33,12 @@ export class EventUserDetailPage implements OnInit {
   get userGuid(): string { return this.route.snapshot.paramMap.get('userGuid')!; }
 
   ngOnInit(): void {
-    this.api.getEventUser(this.eventGuid, this.userGuid).subscribe(u => {
-      this.eventUser = u;
-      this.profileForm.patchValue({ username: u.username, email: u.email, weighting: u.weighting, about_me: u.about_me || '', locale: u.locale });
+    this.api.getEventUser(this.eventGuid, this.userGuid).subscribe({
+      next: u => {
+        this.eventUser = u;
+        this.profileForm.patchValue({ username: u.username, email: u.email, weighting: u.weighting, about_me: u.about_me || '', locale: u.locale });
+      },
+      error: () => { /* interceptor handles auth errors; leave the form empty */ },
     });
   }
 

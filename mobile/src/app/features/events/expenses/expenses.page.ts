@@ -4,12 +4,12 @@ import { ActionSheetController, AlertController, ToastController, InfiniteScroll
 import { FormBuilder, Validators } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Expense, Currency, EventUser } from '../../../core/models/models';
+import { Expense, EventCurrency, EventUser } from '../../../core/models/models';
 
 @Component({ standalone: false, selector: 'app-expenses', templateUrl: 'expenses.page.html' })
 export class ExpensesPage implements OnInit {
   expenses: Expense[] = [];
-  currencies: Currency[] = [];
+  currencies: EventCurrency[] = [];
   eventUsers: EventUser[] = [];
   page = 1;
   hasNext = false;
@@ -39,16 +39,26 @@ export class ExpensesPage implements OnInit {
   get euGuid(): string | undefined { return this.auth.getEventUserGuid(this.guid) || undefined; }
 
   ngOnInit(): void {
-    this.api.getCurrencies(1, 100).subscribe(r => this.currencies = r.items);
-    this.api.getEventUsers(this.guid, 1, 100).subscribe(r => this.eventUsers = r.items);
+    // Only the currencies allowed for this event, not the global list.
+    this.api.getEventCurrencies(this.guid).subscribe({
+      next: r => this.currencies = r.items,
+      error: () => { this.currencies = []; },
+    });
+    this.api.getEventUsers(this.guid, 1, 100).subscribe({
+      next: r => this.eventUsers = r.items,
+      error: () => { this.eventUsers = []; },
+    });
     this.load(true);
   }
 
   load(reset = false): void {
     if (reset) { this.page = 1; this.expenses = []; }
-    this.api.getExpenses(this.guid, this.page, 25, this.filterOwn, this.euGuid).subscribe(res => {
-      this.expenses = reset ? res.items : [...this.expenses, ...res.items];
-      this.hasNext = res.has_next;
+    this.api.getExpenses(this.guid, this.page, 25, this.filterOwn, this.euGuid).subscribe({
+      next: res => {
+        this.expenses = reset ? res.items : [...this.expenses, ...res.items];
+        this.hasNext = res.has_next;
+      },
+      error: () => { this.hasNext = false; },
     });
   }
 

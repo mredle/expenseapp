@@ -1,0 +1,68 @@
+# Dependabot configuration.
+#
+# Goals:
+#   1. Keep Angular's lockstep package families on matching versions. Dependabot
+#      bumping a single @angular/* package across a major boundary is what broke
+#      the production mobile build (e.g. @angular/service-worker@21 against an
+#      Angular 20 builder), so those packages are grouped into one PR.
+#   2. Keep the PR volume manageable: grouped updates, a monthly schedule and a
+#      cap on concurrent PRs.
+#
+# Note: patch and minor updates are deliberately NOT ignored — they carry the
+# security fixes. Security updates are enabled separately in the repository
+# settings and arrive regardless of this schedule; the CI "mobile build" job
+# verifies each of them before merge.
+
+version: 2
+
+updates:
+  # ── Mobile (Ionic/Angular) ────────────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: /mobile
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      # The Angular framework packages must always move together: they
+      # peer-depend on each other with exact versions.
+      angular:
+        patterns:
+          - "@angular/*"
+          - "@angular-devkit/*"
+        exclude-patterns:
+          - "@angular-eslint/*"
+      angular-eslint:
+        patterns:
+          - "@angular-eslint/*"
+      ionic:
+        patterns:
+          - "@ionic/*"
+          - "ionicons"
+      capacitor:
+        patterns:
+          - "@capacitor/*"
+      # Everything else (test tooling, eslint, typescript, …) in one PR.
+      dev-dependencies:
+        dependency-type: development
+
+  # ── Backend (Python) ──────────────────────────────────────────────────────
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      python-packages:
+        patterns:
+          - "*"
+
+  # ── GitHub Actions ────────────────────────────────────────────────────────
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"

@@ -17,6 +17,7 @@ from app.models import (
     EventCurrency,
     EventUser,
     Expense,
+    File,
     Image,
     Log,
     Message,
@@ -380,7 +381,7 @@ def get_statistics(user: User, is_admin: bool) -> list[tuple[str, int]]:
     Admins see all models; regular users see a subset.
     """
     if is_admin:
-        classes = [Currency, User, Message, Notification, Image, Log, Task, Event, EventUser, EventCurrency, Expense, Settlement, Post]
+        classes = [Currency, User, Message, Notification, Image, File, Log, Task, Event, EventUser, EventCurrency, Expense, Settlement, Post]
     else:
         classes = [Message, Notification, Log, Task, Expense, Settlement, Event, EventUser, EventCurrency, Post]
 

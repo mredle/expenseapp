@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Token REST API namespace: issue and revoke authentication tokens."""
+"""Token REST API namespace: issue, refresh, and revoke authentication tokens."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ api = Namespace('tokens', description='Token related operations')
 
 token = api.model('Token', {
     'token': fields.String(required=True, description='The Token'),
+    'expires_at': fields.String(description='Token expiry as an ISO-8601 UTC timestamp'),
 })
 
 
@@ -24,9 +25,13 @@ class Token(Resource):
     @api.marshal_with(token)
     def post(self) -> dict:
         """Issue a new token for the authenticated user."""
-        token = {'token': g.current_user.get_token()}
+        issued = g.current_user.get_token()
+        expires_at = g.current_user.get_token_expiration()
         db.session.commit()
-        return token
+        return {
+            'token': issued,
+            'expires_at': expires_at.isoformat() if expires_at else None,
+        }
 
     @token_auth.login_required
     def delete(self) -> tuple:
@@ -34,3 +39,29 @@ class Token(Resource):
         g.current_user.revoke_token()
         db.session.commit()
         return '', 204
+
+
+@api.route('/refresh')
+class TokenRefresh(Resource):
+    """Renew an authentication token before it expires."""
+
+    @token_auth.login_required
+    @api.marshal_with(token)
+    @api.doc(security='Bearer')
+    @api.response(200, 'Token refreshed')
+    @api.response(401, 'Missing, invalid or expired token')
+    def post(self) -> dict:
+        """Issue a fresh token for the currently authenticated user.
+
+        Requires a still-valid token: an expired token fails authentication, so
+        the client must refresh before expiry (or log in again). The token is
+        rotated rather than merely extended, so the previous value stops working
+        immediately.
+        """
+        issued = g.current_user.get_token(force=True)
+        expires_at = g.current_user.get_token_expiration()
+        db.session.commit()
+        return {
+            'token': issued,
+            'expires_at': expires_at.isoformat() if expires_at else None,
+        }

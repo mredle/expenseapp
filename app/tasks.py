@@ -26,13 +26,9 @@ from app.models import (
     Currency,
     Event,
     EventUser,
-    Expense,
-    Image,
     Log,
     Post,
-    Settlement,
     Task,
-    Thumbnail,
     User,
 )
 
@@ -139,54 +135,6 @@ def type_error(guid: str) -> None:
         app.logger.error('Unhandled exception', exc_info=sys.exc_info())
 
 
-def create_thumbnails(image: Image, update_progress: bool = False) -> None:
-    """Generate all configured thumbnail sizes for *image*."""
-    sizes = list(app.config['THUMBNAIL_SIZES'])
-    total = len(app.config['THUMBNAIL_SIZES']) + 1
-    sizes.append(max((image.width, image.height)))
-    i = 0
-    if update_progress:
-        _set_task_progress(100 * (1 + i) // total)
-    for size in sizes:
-        i += 1
-        thumbnail = Thumbnail(image, size)
-        db.session.add(thumbnail)
-        if update_progress:
-            _set_task_progress(100 * (1 + i) // total)
-
-    if update_progress:
-        _set_task_progress(100)
-    db.session.commit()
-
-
-@_clean_session
-def import_image(guid: str, path: str, add_to_class: str, add_to_id: int) -> None:
-    """Import an image from *path* and attach it to the specified model instance."""
-    try:
-        user = User.get_by_guid_or_404(guid)
-        image = Image(path)
-        image.description = f'Image uploaded by {user.username}'
-
-        db.session.add(image)
-        if add_to_class == 'User':
-            db.session.get(User, add_to_id).profile_picture = image
-        elif add_to_class == 'Event':
-            db.session.get(Event, add_to_id).image = image
-        elif add_to_class == 'EventUser':
-            db.session.get(EventUser, add_to_id).profile_picture = image
-        elif add_to_class == 'Expense':
-            db.session.get(Expense, add_to_id).image = image
-        elif add_to_class == 'Settlement':
-            db.session.get(Settlement, add_to_id).image = image
-        db.session.commit()
-
-        # Create thumbnails
-        create_thumbnails(image, update_progress=True)
-    except Exception:
-        _set_task_progress(100)
-        app.logger.error('Unhandled exception', exc_info=sys.exc_info())
-
-
 @_clean_session
 def export_posts(guid: str) -> None:
     """Export all posts for the user identified by *guid* and email as JSON."""
@@ -268,6 +216,17 @@ def request_balance(guid: str, event_guid: str, eventuser_guid: str) -> None:
         eventuser = EventUser.get_by_guid_or_404(eventuser_guid)
 
         _set_task_progress(0)
+
+        # Participants may be created without an email address (see
+        # EventUserForm), in which case there is nobody to send the report to.
+        if not eventuser.email:
+            app.logger.warning(
+                f'request_balance: EventUser {eventuser.guid} has no email address, '
+                f'skipping balance report for event {event.guid}'
+            )
+            _set_task_progress(100)
+            return
+
         timenow = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
         pdf = get_balance_pdf(event, eventuser.locale, timenow, recalculate=True)
 
