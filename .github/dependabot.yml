@@ -1,17 +1,28 @@
 # Dependabot configuration.
 #
 # Goals:
-#   1. Keep Angular's lockstep package families on matching versions. Dependabot
-#      bumping a single @angular/* package across a major boundary is what broke
-#      the production mobile build (e.g. @angular/service-worker@21 against an
-#      Angular 20 builder), so those packages are grouped into one PR.
-#   2. Keep the PR volume manageable: grouped updates, a monthly schedule and a
-#      cap on concurrent PRs.
+#   1. Never split Angular's lockstep package families. The framework packages
+#      peer-depend on each other with EXACT versions (@angular/animations@20.3.27
+#      requires @angular/core@20.3.27), so bumping one on its own produces a tree
+#      npm refuses to install — which took production down twice.
+#   2. Keep PR volume manageable via grouping, a monthly schedule and a cap on
+#      concurrent PRs.
 #
-# Note: patch and minor updates are deliberately NOT ignored — they carry the
-# security fixes. Security updates are enabled separately in the repository
-# settings and arrive regardless of this schedule; the CI "mobile build" job
-# verifies each of them before merge.
+# The primary defence is NOT this file: mobile/package.json uses ~20.3.0 ranges
+# so npm can always resolve the whole family to one coherent patch level.
+# Grouping alone is insufficient — a group only bundles updates that are
+# actually available, so a lone security advisory on @angular/core would still
+# bump just that package. With exact pins npm cannot move the siblings to match;
+# with ranges it can.
+#
+# Patch and minor updates are deliberately NOT ignored: they carry the security
+# fixes. Security updates are enabled in the repository settings and arrive
+# regardless of the schedule below, which is why every group is duplicated with
+# `applies-to: security-updates`.
+#
+# NOTE: groups only apply to PRs Dependabot creates AFTER this file is merged.
+# Already-open PRs keep their previous ungrouped form and should be closed so
+# they are recreated.
 
 version: 2
 
@@ -22,9 +33,12 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    # With ~20.3.0 ranges an in-range patch only needs a lockfile update, so the
+    # manifest stops churning on every Angular patch release.
+    versioning-strategy: increase-if-necessary
+
     groups:
-      # The Angular framework packages must always move together: they
-      # peer-depend on each other with exact versions.
+      # ---- version updates (the default for `applies-to`) ----
       angular:
         patterns:
           - "@angular/*"
@@ -41,9 +55,39 @@ updates:
       capacitor:
         patterns:
           - "@capacitor/*"
-      # Everything else (test tooling, eslint, typescript, …) in one PR.
       dev-dependencies:
         dependency-type: development
+
+      # ---- security updates ----
+      # Without these blocks security fixes are raised one PR per package, which
+      # is exactly how the Angular family got split.
+      # Order matters: the first matching group wins, so the catch-all is last.
+      angular-security:
+        applies-to: security-updates
+        patterns:
+          - "@angular/*"
+          - "@angular-devkit/*"
+        exclude-patterns:
+          - "@angular-eslint/*"
+      angular-eslint-security:
+        applies-to: security-updates
+        patterns:
+          - "@angular-eslint/*"
+      ionic-security:
+        applies-to: security-updates
+        patterns:
+          - "@ionic/*"
+          - "ionicons"
+      capacitor-security:
+        applies-to: security-updates
+        patterns:
+          - "@capacitor/*"
+      # Collapses the transitive noise (fast-uri, undici, shell-quote,
+      # socket.io-parser, …) into a single PR.
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   # ── Backend (Python) ──────────────────────────────────────────────────────
   - package-ecosystem: pip
@@ -55,6 +99,10 @@ updates:
       python-packages:
         patterns:
           - "*"
+      python-packages-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   # ── GitHub Actions ────────────────────────────────────────────────────────
   - package-ecosystem: github-actions
@@ -64,5 +112,9 @@ updates:
     open-pull-requests-limit: 5
     groups:
       github-actions:
+        patterns:
+          - "*"
+      github-actions-security:
+        applies-to: security-updates
         patterns:
           - "*"
